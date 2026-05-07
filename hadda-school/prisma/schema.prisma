@@ -1,0 +1,449 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  super_admin
+  admin
+  teacher
+}
+
+enum StudentStatus {
+  active
+  promoted
+  graduated
+  withdrawn
+  transferred
+}
+
+enum Relationship {
+  Father
+  Mother
+  Guardian
+}
+
+enum AttendanceStatus {
+  present
+  absent
+  late
+  excused
+}
+
+enum TeacherAttendStatus {
+  present
+  absent
+  late
+  on_leave
+}
+
+enum LeaveStatus {
+  pending
+  approved
+  rejected
+}
+
+enum MemLogType {
+  sabaq
+  sabqi
+  manzil
+}
+
+enum MemLogQuality {
+  excellent
+  good
+  average
+  weak
+}
+
+enum FeeFrequency {
+  monthly
+  termly
+  yearly
+  one_time
+}
+
+enum PaymentMethod {
+  cash
+  bank_transfer
+  online
+  other
+}
+
+enum DiscountType {
+  fixed
+  percent
+}
+
+enum PromotionOutcome {
+  promoted
+  retained
+  graduated
+  withdrawn
+  transferred
+}
+
+enum PaymentProvider {
+  paystack
+  flutterwave
+}
+
+enum PaymentIntentStatus {
+  pending
+  success
+  failed
+  abandoned
+}
+
+enum SettingGroup {
+  general
+  school
+  finance
+  sms
+}
+
+enum SettingType {
+  text
+  number
+  boolean
+  select
+  textarea
+}
+
+model User {
+  id                  String   @id @default(cuid())
+  name                String
+  email               String   @unique
+  passwordHash        String
+  role                Role     @default(teacher)
+  isActive            Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  taughtClasses       ClassTeacher[]
+  teacherAttendances  TeacherAttendance[]
+  leaveRequests       LeaveRequest[]      @relation("LeaveRequester")
+  reviewedLeaves      LeaveRequest[]      @relation("LeaveReviewer")
+  memorizationLogs    MemorizationLog[]
+  auditLogs           AuditLog[]
+  notifications       Notification[]
+  recordedAttendances StudentAttendance[]
+  feePayments         FeePayment[]
+  promotionsProcessed Promotion[]
+}
+
+model AcademicYear {
+  id             String   @id @default(cuid())
+  name           String
+  startDate      DateTime
+  endDate        DateTime
+  isCurrent      Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  classes        ClassRoom[]
+  students       Student[]
+  memLogs        MemorizationLog[]
+  promotionsFrom Promotion[]  @relation("FromYear")
+  promotionsTo   Promotion[]  @relation("ToYear")
+  feeStructures  FeeStructure[]
+}
+
+model ClassRoom {
+  id             String   @id @default(cuid())
+  name           String
+  description    String?
+  capacity       Int?
+  order          Int      @default(0)
+  academicYearId String
+  createdAt      DateTime @default(now())
+
+  academicYear   AcademicYear    @relation(fields: [academicYearId], references: [id])
+  teachers       ClassTeacher[]
+  students       Student[]
+  attendances    StudentAttendance[]
+  feeAssignments FeeAssignment[]
+  promotionsFrom Promotion[]     @relation("FromClass")
+  promotionsTo   Promotion[]     @relation("ToClass")
+}
+
+model ClassTeacher {
+  classId   String
+  userId    String
+  isPrimary Boolean   @default(false)
+
+  class     ClassRoom @relation(fields: [classId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([classId, userId])
+}
+
+model Student {
+  id              String        @id @default(cuid())
+  admissionNumber String        @unique
+  firstName       String
+  lastName        String
+  dateOfBirth     DateTime?
+  enrollmentDate  DateTime
+  photoUrl        String?
+  address         String?
+  status          StudentStatus @default(active)
+  currentClassId  String?
+  academicYearId  String
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  deletedAt       DateTime?
+
+  currentClass    ClassRoom?    @relation(fields: [currentClassId], references: [id])
+  academicYear    AcademicYear  @relation(fields: [academicYearId], references: [id])
+  guardians       Guardian[]
+  attendances     StudentAttendance[]
+  feeAssignments  FeeAssignment[]
+  feePayments     FeePayment[]
+  feeDiscounts    FeeDiscount[]
+  memorizationLogs MemorizationLog[]
+  promotions      Promotion[]
+}
+
+model Guardian {
+  id           String       @id @default(cuid())
+  studentId    String
+  name         String
+  phone        String?
+  email        String?
+  relationship Relationship
+  isPrimary    Boolean      @default(false)
+
+  student      Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+}
+
+model StudentAttendance {
+  id           String           @id @default(cuid())
+  studentId    String
+  classId      String
+  recordedById String
+  date         DateTime         @db.Date
+  status       AttendanceStatus
+  note         String?
+
+  student      Student   @relation(fields: [studentId], references: [id])
+  class        ClassRoom @relation(fields: [classId], references: [id])
+  recordedBy   User      @relation(fields: [recordedById], references: [id])
+
+  @@unique([studentId, date])
+}
+
+model TeacherAttendance {
+  id           String              @id @default(cuid())
+  userId       String
+  recordedById String
+  date         DateTime            @db.Date
+  status       TeacherAttendStatus
+  note         String?
+
+  user         User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, date])
+}
+
+model LeaveRequest {
+  id           String      @id @default(cuid())
+  userId       String
+  startDate    DateTime
+  endDate      DateTime
+  reason       String
+  status       LeaveStatus @default(pending)
+  reviewedById String?
+  reviewNote   String?
+  reviewedAt   DateTime?
+  createdAt    DateTime    @default(now())
+
+  user         User  @relation("LeaveRequester", fields: [userId], references: [id])
+  reviewedBy   User? @relation("LeaveReviewer", fields: [reviewedById], references: [id])
+}
+
+model Surah {
+  id          Int    @id
+  nameArabic  String
+  nameEnglish String
+  juzStart    Int
+  ayahCount   Int
+
+  logsFrom    MemorizationLog[] @relation("FromSurah")
+  logsTo      MemorizationLog[] @relation("ToSurah")
+}
+
+model MemorizationLog {
+  id             String        @id @default(cuid())
+  studentId      String
+  teacherId      String
+  academicYearId String
+  logDate        DateTime      @db.Date
+  type           MemLogType
+  surahFromId    Int
+  ayahFrom       Int
+  surahToId      Int
+  ayahTo         Int
+  pages          Decimal       @db.Decimal(5, 2)
+  quality        MemLogQuality
+  notes          String?
+  createdAt      DateTime      @default(now())
+
+  student      Student      @relation(fields: [studentId], references: [id])
+  teacher      User         @relation(fields: [teacherId], references: [id])
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id])
+  surahFrom    Surah        @relation("FromSurah", fields: [surahFromId], references: [id])
+  surahTo      Surah        @relation("ToSurah", fields: [surahToId], references: [id])
+
+  @@index([studentId, logDate, type])
+}
+
+model FeeStructure {
+  id             String       @id @default(cuid())
+  academicYearId String
+  name           String
+  amount         Decimal      @db.Decimal(10, 2)
+  frequency      FeeFrequency
+  isActive       Boolean      @default(true)
+  description    String?
+  createdAt      DateTime     @default(now())
+
+  academicYear AcademicYear    @relation(fields: [academicYearId], references: [id])
+  assignments  FeeAssignment[]
+  payments     FeePayment[]
+  discounts    FeeDiscount[]
+}
+
+model FeeAssignment {
+  id             String   @id @default(cuid())
+  feeStructureId String
+  studentId      String?
+  classId        String?
+  createdAt      DateTime @default(now())
+
+  feeStructure FeeStructure @relation(fields: [feeStructureId], references: [id])
+  student      Student?     @relation(fields: [studentId], references: [id])
+  class        ClassRoom?   @relation(fields: [classId], references: [id])
+}
+
+model FeePayment {
+  id             String        @id @default(cuid())
+  studentId      String
+  feeStructureId String
+  recordedById   String
+  amountPaid     Decimal       @db.Decimal(10, 2)
+  paymentDate    DateTime
+  paymentMethod  PaymentMethod
+  reference      String?
+  period         String?
+  note           String?
+  createdAt      DateTime      @default(now())
+
+  student      Student      @relation(fields: [studentId], references: [id])
+  feeStructure FeeStructure @relation(fields: [feeStructureId], references: [id])
+  recordedBy   User         @relation(fields: [recordedById], references: [id])
+}
+
+model FeeDiscount {
+  id             String      @id @default(cuid())
+  studentId      String
+  feeStructureId String
+  discountType   DiscountType
+  value          Decimal     @db.Decimal(10, 2)
+  reason         String?
+  createdAt      DateTime    @default(now())
+
+  student      Student      @relation(fields: [studentId], references: [id])
+  feeStructure FeeStructure @relation(fields: [feeStructureId], references: [id])
+
+  @@unique([studentId, feeStructureId])
+}
+
+model Promotion {
+  id                 String          @id @default(cuid())
+  studentId          String
+  fromAcademicYearId String
+  toAcademicYearId   String
+  fromClassId        String?
+  toClassId          String?
+  outcome            PromotionOutcome
+  processedById      String
+  notes              String?
+  createdAt          DateTime        @default(now())
+
+  student          Student      @relation(fields: [studentId], references: [id])
+  fromAcademicYear AcademicYear @relation("FromYear", fields: [fromAcademicYearId], references: [id])
+  toAcademicYear   AcademicYear @relation("ToYear", fields: [toAcademicYearId], references: [id])
+  fromClass        ClassRoom?   @relation("FromClass", fields: [fromClassId], references: [id])
+  toClass          ClassRoom?   @relation("ToClass", fields: [toClassId], references: [id])
+  processedBy      User         @relation(fields: [processedById], references: [id])
+
+  @@unique([studentId, fromAcademicYearId])
+}
+
+model PaymentIntent {
+  id                String              @id @default(cuid())
+  reference         String              @unique
+  provider          PaymentProvider
+  guardianPhone     String?
+  amount            Decimal             @db.Decimal(10, 2)
+  items             Json
+  status            PaymentIntentStatus @default(pending)
+  providerReference String?
+  metadata          Json?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+}
+
+model AuditLog {
+  id            String   @id @default(cuid())
+  userId        String?
+  action        String
+  auditableType String?
+  auditableId   String?
+  oldValues     Json?
+  newValues     Json?
+  description   String?
+  ipAddress     String?
+  createdAt     DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([auditableType, auditableId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+model Setting {
+  id      String       @id @default(cuid())
+  key     String       @unique
+  value   String?
+  group   SettingGroup
+  label   String
+  type    SettingType
+  options Json?
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  type      String
+  data      Json
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  youtubeUrl  String
+  eventDate   DateTime
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

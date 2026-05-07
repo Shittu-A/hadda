@@ -1,0 +1,156 @@
+import { PrismaClient } from '@prisma/client'
+import bcryptjs from 'bcryptjs'
+
+const prisma = new PrismaClient()
+
+const SURAHS = [
+  { id: 1, nameArabic: 'الفاتحة', nameEnglish: 'Al-Fatihah', juzStart: 1, ayahCount: 7 },
+  { id: 2, nameArabic: 'البقرة', nameEnglish: 'Al-Baqarah', juzStart: 1, ayahCount: 286 },
+  { id: 3, nameArabic: 'آل عمران', nameEnglish: "Ali 'Imran", juzStart: 3, ayahCount: 200 },
+  { id: 4, nameArabic: 'النساء', nameEnglish: 'An-Nisa', juzStart: 4, ayahCount: 176 },
+  { id: 5, nameArabic: 'المائدة', nameEnglish: "Al-Ma'idah", juzStart: 6, ayahCount: 120 },
+  { id: 6, nameArabic: 'الأنعام', nameEnglish: "Al-An'am", juzStart: 7, ayahCount: 165 },
+  { id: 7, nameArabic: 'الأعراف', nameEnglish: "Al-A'raf", juzStart: 8, ayahCount: 206 },
+  { id: 8, nameArabic: 'الأنفال', nameEnglish: 'Al-Anfal', juzStart: 9, ayahCount: 75 },
+  { id: 9, nameArabic: 'التوبة', nameEnglish: 'At-Tawbah', juzStart: 10, ayahCount: 129 },
+  { id: 10, nameArabic: 'يونس', nameEnglish: 'Yunus', juzStart: 11, ayahCount: 109 },
+  { id: 11, nameArabic: 'هود', nameEnglish: 'Hud', juzStart: 11, ayahCount: 123 },
+  { id: 12, nameArabic: 'يوسف', nameEnglish: 'Yusuf', juzStart: 12, ayahCount: 111 },
+  { id: 13, nameArabic: 'الرعد', nameEnglish: "Ar-Ra'd", juzStart: 13, ayahCount: 43 },
+  { id: 14, nameArabic: 'إبراهيم', nameEnglish: 'Ibrahim', juzStart: 13, ayahCount: 52 },
+  { id: 15, nameArabic: 'الحجر', nameEnglish: 'Al-Hijr', juzStart: 14, ayahCount: 99 },
+  { id: 16, nameArabic: 'النحل', nameEnglish: 'An-Nahl', juzStart: 14, ayahCount: 128 },
+  { id: 17, nameArabic: 'الإسراء', nameEnglish: 'Al-Isra', juzStart: 15, ayahCount: 111 },
+  { id: 18, nameArabic: 'الكهف', nameEnglish: 'Al-Kahf', juzStart: 15, ayahCount: 110 },
+  { id: 19, nameArabic: 'مريم', nameEnglish: 'Maryam', juzStart: 16, ayahCount: 98 },
+  { id: 20, nameArabic: 'طه', nameEnglish: 'Ta-Ha', juzStart: 16, ayahCount: 135 },
+  { id: 21, nameArabic: 'الأنبياء', nameEnglish: 'Al-Anbiya', juzStart: 17, ayahCount: 112 },
+  { id: 22, nameArabic: 'الحج', nameEnglish: 'Al-Hajj', juzStart: 17, ayahCount: 78 },
+  { id: 23, nameArabic: 'المؤمنون', nameEnglish: "Al-Mu'minun", juzStart: 18, ayahCount: 118 },
+  { id: 24, nameArabic: 'النور', nameEnglish: 'An-Nur', juzStart: 18, ayahCount: 64 },
+  { id: 25, nameArabic: 'الفرقان', nameEnglish: 'Al-Furqan', juzStart: 18, ayahCount: 77 },
+  { id: 26, nameArabic: 'الشعراء', nameEnglish: "Ash-Shu'ara", juzStart: 19, ayahCount: 227 },
+  { id: 27, nameArabic: 'النمل', nameEnglish: 'An-Naml', juzStart: 19, ayahCount: 93 },
+  { id: 28, nameArabic: 'القصص', nameEnglish: 'Al-Qasas', juzStart: 20, ayahCount: 88 },
+  { id: 29, nameArabic: 'العنكبوت', nameEnglish: 'Al-Ankabut', juzStart: 20, ayahCount: 69 },
+  { id: 30, nameArabic: 'الروم', nameEnglish: 'Ar-Rum', juzStart: 21, ayahCount: 60 },
+  { id: 31, nameArabic: 'لقمان', nameEnglish: 'Luqman', juzStart: 21, ayahCount: 34 },
+  { id: 32, nameArabic: 'السجدة', nameEnglish: 'As-Sajdah', juzStart: 21, ayahCount: 30 },
+  { id: 33, nameArabic: 'الأحزاب', nameEnglish: 'Al-Ahzab', juzStart: 21, ayahCount: 73 },
+  { id: 34, nameArabic: 'سبأ', nameEnglish: 'Saba', juzStart: 22, ayahCount: 54 },
+  { id: 35, nameArabic: 'فاطر', nameEnglish: 'Fatir', juzStart: 22, ayahCount: 45 },
+  { id: 36, nameArabic: 'يس', nameEnglish: 'Ya-Sin', juzStart: 22, ayahCount: 83 },
+  { id: 37, nameArabic: 'الصافات', nameEnglish: 'As-Saffat', juzStart: 23, ayahCount: 182 },
+  { id: 38, nameArabic: 'ص', nameEnglish: 'Sad', juzStart: 23, ayahCount: 88 },
+  { id: 39, nameArabic: 'الزمر', nameEnglish: 'Az-Zumar', juzStart: 23, ayahCount: 75 },
+  { id: 40, nameArabic: 'غافر', nameEnglish: 'Ghafir', juzStart: 24, ayahCount: 85 },
+  { id: 41, nameArabic: 'فصلت', nameEnglish: 'Fussilat', juzStart: 24, ayahCount: 54 },
+  { id: 42, nameArabic: 'الشورى', nameEnglish: 'Ash-Shura', juzStart: 25, ayahCount: 53 },
+  { id: 43, nameArabic: 'الزخرف', nameEnglish: 'Az-Zukhruf', juzStart: 25, ayahCount: 89 },
+  { id: 44, nameArabic: 'الدخان', nameEnglish: 'Ad-Dukhan', juzStart: 25, ayahCount: 59 },
+  { id: 45, nameArabic: 'الجاثية', nameEnglish: 'Al-Jathiyah', juzStart: 25, ayahCount: 37 },
+  { id: 46, nameArabic: 'الأحقاف', nameEnglish: 'Al-Ahqaf', juzStart: 26, ayahCount: 35 },
+  { id: 47, nameArabic: 'محمد', nameEnglish: 'Muhammad', juzStart: 26, ayahCount: 38 },
+  { id: 48, nameArabic: 'الفتح', nameEnglish: 'Al-Fath', juzStart: 26, ayahCount: 29 },
+  { id: 49, nameArabic: 'الحجرات', nameEnglish: 'Al-Hujurat', juzStart: 26, ayahCount: 18 },
+  { id: 50, nameArabic: 'ق', nameEnglish: 'Qaf', juzStart: 26, ayahCount: 45 },
+  { id: 51, nameArabic: 'الذاريات', nameEnglish: 'Adh-Dhariyat', juzStart: 26, ayahCount: 60 },
+  { id: 52, nameArabic: 'الطور', nameEnglish: 'At-Tur', juzStart: 27, ayahCount: 49 },
+  { id: 53, nameArabic: 'النجم', nameEnglish: 'An-Najm', juzStart: 27, ayahCount: 62 },
+  { id: 54, nameArabic: 'القمر', nameEnglish: 'Al-Qamar', juzStart: 27, ayahCount: 55 },
+  { id: 55, nameArabic: 'الرحمن', nameEnglish: 'Ar-Rahman', juzStart: 27, ayahCount: 78 },
+  { id: 56, nameArabic: 'الواقعة', nameEnglish: "Al-Waqi'ah", juzStart: 27, ayahCount: 96 },
+  { id: 57, nameArabic: 'الحديد', nameEnglish: 'Al-Hadid', juzStart: 27, ayahCount: 29 },
+  { id: 58, nameArabic: 'المجادلة', nameEnglish: 'Al-Mujadila', juzStart: 28, ayahCount: 22 },
+  { id: 59, nameArabic: 'الحشر', nameEnglish: 'Al-Hashr', juzStart: 28, ayahCount: 24 },
+  { id: 60, nameArabic: 'الممتحنة', nameEnglish: 'Al-Mumtahanah', juzStart: 28, ayahCount: 13 },
+  { id: 61, nameArabic: 'الصف', nameEnglish: 'As-Saf', juzStart: 28, ayahCount: 14 },
+  { id: 62, nameArabic: 'الجمعة', nameEnglish: "Al-Jumu'ah", juzStart: 28, ayahCount: 11 },
+  { id: 63, nameArabic: 'المنافقون', nameEnglish: 'Al-Munafiqun', juzStart: 28, ayahCount: 11 },
+  { id: 64, nameArabic: 'التغابن', nameEnglish: 'At-Taghabun', juzStart: 28, ayahCount: 18 },
+  { id: 65, nameArabic: 'الطلاق', nameEnglish: 'At-Talaq', juzStart: 28, ayahCount: 12 },
+  { id: 66, nameArabic: 'التحريم', nameEnglish: 'At-Tahrim', juzStart: 28, ayahCount: 12 },
+  { id: 67, nameArabic: 'الملك', nameEnglish: 'Al-Mulk', juzStart: 29, ayahCount: 30 },
+  { id: 68, nameArabic: 'القلم', nameEnglish: 'Al-Qalam', juzStart: 29, ayahCount: 52 },
+  { id: 69, nameArabic: 'الحاقة', nameEnglish: 'Al-Haqqah', juzStart: 29, ayahCount: 52 },
+  { id: 70, nameArabic: 'المعارج', nameEnglish: "Al-Ma'arij", juzStart: 29, ayahCount: 44 },
+  { id: 71, nameArabic: 'نوح', nameEnglish: 'Nuh', juzStart: 29, ayahCount: 28 },
+  { id: 72, nameArabic: 'الجن', nameEnglish: 'Al-Jinn', juzStart: 29, ayahCount: 28 },
+  { id: 73, nameArabic: 'المزمل', nameEnglish: 'Al-Muzzammil', juzStart: 29, ayahCount: 20 },
+  { id: 74, nameArabic: 'المدثر', nameEnglish: 'Al-Muddaththir', juzStart: 29, ayahCount: 56 },
+  { id: 75, nameArabic: 'القيامة', nameEnglish: 'Al-Qiyamah', juzStart: 29, ayahCount: 40 },
+  { id: 76, nameArabic: 'الإنسان', nameEnglish: 'Al-Insan', juzStart: 29, ayahCount: 31 },
+  { id: 77, nameArabic: 'المرسلات', nameEnglish: 'Al-Mursalat', juzStart: 29, ayahCount: 50 },
+  { id: 78, nameArabic: 'النبأ', nameEnglish: 'An-Naba', juzStart: 30, ayahCount: 40 },
+  { id: 79, nameArabic: 'النازعات', nameEnglish: "An-Nazi'at", juzStart: 30, ayahCount: 46 },
+  { id: 80, nameArabic: 'عبس', nameEnglish: 'Abasa', juzStart: 30, ayahCount: 42 },
+  { id: 81, nameArabic: 'التكوير', nameEnglish: 'At-Takwir', juzStart: 30, ayahCount: 29 },
+  { id: 82, nameArabic: 'الانفطار', nameEnglish: 'Al-Infitar', juzStart: 30, ayahCount: 19 },
+  { id: 83, nameArabic: 'المطففين', nameEnglish: 'Al-Mutaffifin', juzStart: 30, ayahCount: 36 },
+  { id: 84, nameArabic: 'الانشقاق', nameEnglish: 'Al-Inshiqaq', juzStart: 30, ayahCount: 25 },
+  { id: 85, nameArabic: 'البروج', nameEnglish: 'Al-Buruj', juzStart: 30, ayahCount: 22 },
+  { id: 86, nameArabic: 'الطارق', nameEnglish: 'At-Tariq', juzStart: 30, ayahCount: 17 },
+  { id: 87, nameArabic: 'الأعلى', nameEnglish: "Al-A'la", juzStart: 30, ayahCount: 19 },
+  { id: 88, nameArabic: 'الغاشية', nameEnglish: 'Al-Ghashiyah', juzStart: 30, ayahCount: 26 },
+  { id: 89, nameArabic: 'الفجر', nameEnglish: 'Al-Fajr', juzStart: 30, ayahCount: 30 },
+  { id: 90, nameArabic: 'البلد', nameEnglish: 'Al-Balad', juzStart: 30, ayahCount: 20 },
+  { id: 91, nameArabic: 'الشمس', nameEnglish: 'Ash-Shams', juzStart: 30, ayahCount: 15 },
+  { id: 92, nameArabic: 'الليل', nameEnglish: 'Al-Layl', juzStart: 30, ayahCount: 21 },
+  { id: 93, nameArabic: 'الضحى', nameEnglish: 'Ad-Duhaa', juzStart: 30, ayahCount: 11 },
+  { id: 94, nameArabic: 'الشرح', nameEnglish: 'Ash-Sharh', juzStart: 30, ayahCount: 8 },
+  { id: 95, nameArabic: 'التين', nameEnglish: 'At-Tin', juzStart: 30, ayahCount: 8 },
+  { id: 96, nameArabic: 'العلق', nameEnglish: 'Al-Alaq', juzStart: 30, ayahCount: 19 },
+  { id: 97, nameArabic: 'القدر', nameEnglish: 'Al-Qadr', juzStart: 30, ayahCount: 5 },
+  { id: 98, nameArabic: 'البينة', nameEnglish: 'Al-Bayyinah', juzStart: 30, ayahCount: 8 },
+  { id: 99, nameArabic: 'الزلزلة', nameEnglish: 'Az-Zalzalah', juzStart: 30, ayahCount: 8 },
+  { id: 100, nameArabic: 'العاديات', nameEnglish: 'Al-Adiyat', juzStart: 30, ayahCount: 11 },
+  { id: 101, nameArabic: 'القارعة', nameEnglish: "Al-Qari'ah", juzStart: 30, ayahCount: 11 },
+  { id: 102, nameArabic: 'التكاثر', nameEnglish: 'At-Takathur', juzStart: 30, ayahCount: 8 },
+  { id: 103, nameArabic: 'العصر', nameEnglish: 'Al-Asr', juzStart: 30, ayahCount: 3 },
+  { id: 104, nameArabic: 'الهمزة', nameEnglish: 'Al-Humazah', juzStart: 30, ayahCount: 9 },
+  { id: 105, nameArabic: 'الفيل', nameEnglish: 'Al-Fil', juzStart: 30, ayahCount: 5 },
+  { id: 106, nameArabic: 'قريش', nameEnglish: 'Quraysh', juzStart: 30, ayahCount: 4 },
+  { id: 107, nameArabic: 'الماعون', nameEnglish: "Al-Ma'un", juzStart: 30, ayahCount: 7 },
+  { id: 108, nameArabic: 'الكوثر', nameEnglish: 'Al-Kawthar', juzStart: 30, ayahCount: 3 },
+  { id: 109, nameArabic: 'الكافرون', nameEnglish: 'Al-Kafirun', juzStart: 30, ayahCount: 6 },
+  { id: 110, nameArabic: 'النصر', nameEnglish: 'An-Nasr', juzStart: 30, ayahCount: 3 },
+  { id: 111, nameArabic: 'المسد', nameEnglish: 'Al-Masad', juzStart: 30, ayahCount: 5 },
+  { id: 112, nameArabic: 'الإخلاص', nameEnglish: 'Al-Ikhlas', juzStart: 30, ayahCount: 4 },
+  { id: 113, nameArabic: 'الفلق', nameEnglish: 'Al-Falaq', juzStart: 30, ayahCount: 5 },
+  { id: 114, nameArabic: 'الناس', nameEnglish: 'An-Nas', juzStart: 30, ayahCount: 6 },
+]
+
+async function main() {
+  console.log('Seeding Surahs...')
+  for (const surah of SURAHS) {
+    await prisma.surah.upsert({ where: { id: surah.id }, update: {}, create: surah })
+  }
+
+  console.log('Creating default super admin...')
+  const passwordHash = await bcryptjs.hash('password123', 10)
+  await prisma.user.upsert({
+    where: { email: 'admin@hadda.school' },
+    update: {},
+    create: { name: 'Super Admin', email: 'admin@hadda.school', passwordHash, role: 'super_admin', isActive: true },
+  })
+
+  console.log('Seeding settings...')
+  const settings = [
+    { key: 'school_name', label: 'School Name', group: 'general' as const, type: 'text' as const, value: 'Hadda School' },
+    { key: 'school_address', label: 'School Address', group: 'school' as const, type: 'textarea' as const, value: null },
+    { key: 'school_phone', label: 'School Phone', group: 'school' as const, type: 'text' as const, value: null },
+    { key: 'school_email', label: 'School Email', group: 'school' as const, type: 'text' as const, value: null },
+    { key: 'currency_symbol', label: 'Currency Symbol', group: 'finance' as const, type: 'text' as const, value: '₦' },
+    { key: 'paystack_public_key', label: 'Paystack Public Key', group: 'finance' as const, type: 'text' as const, value: null },
+    { key: 'flutterwave_public_key', label: 'Flutterwave Public Key', group: 'finance' as const, type: 'text' as const, value: null },
+    { key: 'sms_provider', label: 'SMS Provider', group: 'sms' as const, type: 'text' as const, value: null },
+    { key: 'sms_api_key', label: 'SMS API Key', group: 'sms' as const, type: 'text' as const, value: null },
+  ]
+  for (const s of settings) {
+    await prisma.setting.upsert({ where: { key: s.key }, update: {}, create: s })
+  }
+
+  console.log('Seed complete!')
+}
+
+main().catch((e) => { console.error(e); process.exit(1) }).finally(() => prisma.$disconnect())

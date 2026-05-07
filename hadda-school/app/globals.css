@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+@theme {
+  /* Coffee color palette */
+  --color-coffee-50: #FDF8F0;
+  --color-coffee-100: #F7EDD8;
+  --color-coffee-200: #E8D5B0;
+  --color-coffee-300: #D4B08A;
+  --color-coffee-400: #C4956A;
+  --color-coffee-500: #A0652D;
+  --color-coffee-600: #7C4A1E;
+  --color-coffee-700: #5C2D0E;
+  --color-coffee-800: #3D1A08;
+  --color-coffee-900: #2C1206;
+
+  /* Font */
+  --font-sans: 'Figtree', sans-serif;
+}
+
+body {
+  background-color: var(--color-coffee-100);
+  color: var(--color-coffee-900);
+}
