@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { db } from '@/lib/db'
 import { youtubeToEmbed, formatDate } from '@/lib/utils'
 import PublicNav from '@/components/layout/PublicNav'
