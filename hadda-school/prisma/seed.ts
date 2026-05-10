@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client'
+import { db as prisma } from '../lib/db'
 import bcryptjs from 'bcryptjs'
-
-const prisma = new PrismaClient()
 
 const SURAHS = [
   { id: 1, nameArabic: 'الفاتحة', nameEnglish: 'Al-Fatihah', juzStart: 1, ayahCount: 7 },
