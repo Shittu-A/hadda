@@ -17,6 +17,7 @@ export default auth((req) => {
     pathname === '/login' ||
     pathname === '/forgot-password' ||
     pathname.startsWith('/reset-password') ||
+    pathname.startsWith('/api/auth/') ||
     pathname === '/deactivated'
 
   if (isPublic) return NextResponse.next()
