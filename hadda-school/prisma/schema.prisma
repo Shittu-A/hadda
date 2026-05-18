@@ -185,6 +185,7 @@ model Student {
   admissionNumber String        @unique
   firstName       String
   lastName        String
+  gender          String?
   dateOfBirth     DateTime?
   enrollmentDate  DateTime
   photoUrl        String?

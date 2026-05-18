@@ -16,6 +16,7 @@ const teacherLinks = [
 export default async function TeacherLayout({ children }: { children: React.ReactNode }) {
   const session = await auth()
   if (!session) redirect('/login')
+  if (session.user.role !== 'teacher' && session.user.role !== 'admin' && session.user.role !== 'super_admin') redirect('/')
 
   const notificationCount = await db.notification.count({
     where: { userId: session.user.id, readAt: null },
