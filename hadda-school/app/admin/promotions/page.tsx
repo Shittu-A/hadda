@@ -91,7 +91,7 @@ export default async function PromotionsPage({
       {/* Year selector */}
       <form method="GET" className="bg-white border border-coffee-200 rounded-xl p-5">
         <h2 className="font-semibold text-coffee-800 mb-4">Select Academic Years</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div>
             <label className="block text-sm font-medium text-coffee-700 mb-1">From Year *</label>
             <select
@@ -169,18 +169,19 @@ export default async function PromotionsPage({
                     ? 'Unassigned'
                     : classStudents[0]?.currentClass?.name ?? 'Unknown'
                 return (
-                  <div key={classId} className="bg-white border border-coffee-200 rounded-xl overflow-hidden">
+                  <div key={classId} className="bg-white border border-coffee-200 rounded-xl overflow-hidden overflow-x-auto">
                     <div className="px-5 py-3 bg-coffee-50 border-b border-coffee-200">
                       <span className="font-semibold text-coffee-800">{className}</span>
                       <span className="text-coffee-400 text-sm ml-2">({classStudents.length} students)</span>
                     </div>
+                    <div className="overflow-x-auto">
                     <table className="w-full text-sm">
                       <thead className="border-b border-coffee-100">
                         <tr>
-                          <th className="text-left px-4 py-2.5 text-coffee-600 font-medium">Student</th>
-                          <th className="text-left px-4 py-2.5 text-coffee-600 font-medium w-40">Outcome *</th>
-                          <th className="text-left px-4 py-2.5 text-coffee-600 font-medium w-44">To Class</th>
-                          <th className="text-left px-4 py-2.5 text-coffee-600 font-medium">Notes</th>
+                          <th className="text-left px-4 py-2.5 text-coffee-600 font-medium whitespace-nowrap">Student</th>
+                          <th className="text-left px-4 py-2.5 text-coffee-600 font-medium whitespace-nowrap w-40">Outcome *</th>
+                          <th className="text-left px-4 py-2.5 text-coffee-600 font-medium whitespace-nowrap w-44">To Class</th>
+                          <th className="text-left px-4 py-2.5 text-coffee-600 font-medium whitespace-nowrap hidden sm:table-cell">Notes</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-coffee-50">
@@ -220,7 +221,7 @@ export default async function PromotionsPage({
                                 ))}
                               </select>
                             </td>
-                            <td className="px-4 py-2.5">
+                            <td className="px-4 py-2.5 hidden sm:table-cell">
                               <input
                                 type="text"
                                 name={`notes_${s.id}`}
@@ -232,6 +233,7 @@ export default async function PromotionsPage({
                         ))}
                       </tbody>
                     </table>
+                    </div>
                   </div>
                 )
               })}
@@ -257,7 +259,9 @@ export default async function PromotionsPage({
 
       {/* Promotion history */}
       {fromYearId && processedCount > 0 && (
-        <PromotionHistory fromYearId={fromYearId} />
+        <div className="overflow-x-auto">
+          <PromotionHistory fromYearId={fromYearId} />
+        </div>
       )}
     </div>
   )
@@ -281,17 +285,17 @@ async function PromotionHistory({ fromYearId }: { fromYearId: string }) {
   return (
     <div>
       <h2 className="font-semibold text-coffee-800 mb-3">Processed ({promotions.length})</h2>
-      <div className="bg-white border border-coffee-200 rounded-xl overflow-hidden">
+      <div className="bg-white border border-coffee-200 rounded-xl overflow-hidden overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-coffee-50 border-b border-coffee-200">
             <tr>
-              <th className="text-left px-4 py-3 text-coffee-700 font-semibold">Student</th>
-              <th className="text-left px-4 py-3 text-coffee-700 font-semibold">From Class</th>
-              <th className="text-left px-4 py-3 text-coffee-700 font-semibold">Outcome</th>
-              <th className="text-left px-4 py-3 text-coffee-700 font-semibold">To Class</th>
-              <th className="text-left px-4 py-3 text-coffee-700 font-semibold">To Year</th>
-              <th className="text-left px-4 py-3 text-coffee-700 font-semibold">Notes</th>
-              <th className="text-left px-4 py-3 text-coffee-700 font-semibold">By</th>
+              <th className="text-left px-4 py-3 text-coffee-700 font-semibold whitespace-nowrap">Student</th>
+              <th className="text-left px-4 py-3 text-coffee-700 font-semibold whitespace-nowrap hidden sm:table-cell">From Class</th>
+              <th className="text-left px-4 py-3 text-coffee-700 font-semibold whitespace-nowrap">Outcome</th>
+              <th className="text-left px-4 py-3 text-coffee-700 font-semibold whitespace-nowrap hidden sm:table-cell">To Class</th>
+              <th className="text-left px-4 py-3 text-coffee-700 font-semibold whitespace-nowrap hidden md:table-cell">To Year</th>
+              <th className="text-left px-4 py-3 text-coffee-700 font-semibold whitespace-nowrap hidden lg:table-cell">Notes</th>
+              <th className="text-left px-4 py-3 text-coffee-700 font-semibold whitespace-nowrap hidden lg:table-cell">By</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-coffee-100">
@@ -303,14 +307,14 @@ async function PromotionHistory({ fromYearId }: { fromYearId: string }) {
                   </p>
                   <p className="text-xs text-coffee-400 font-mono">{p.student.admissionNumber}</p>
                 </td>
-                <td className="px-4 py-2.5 text-coffee-600 text-xs">{p.fromClass?.name ?? '—'}</td>
+                <td className="px-4 py-2.5 text-coffee-600 text-xs hidden sm:table-cell">{p.fromClass?.name ?? '—'}</td>
                 <td className="px-4 py-2.5">
                   <Badge variant={OUTCOME_VARIANT[p.outcome]}>{OUTCOME_LABEL[p.outcome]}</Badge>
                 </td>
-                <td className="px-4 py-2.5 text-coffee-600 text-xs">{p.toClass?.name ?? '—'}</td>
-                <td className="px-4 py-2.5 text-coffee-600 text-xs">{p.toAcademicYear.name}</td>
-                <td className="px-4 py-2.5 text-coffee-400 text-xs">{p.notes || '—'}</td>
-                <td className="px-4 py-2.5 text-coffee-400 text-xs">{p.processedBy.name}</td>
+                <td className="px-4 py-2.5 text-coffee-600 text-xs hidden sm:table-cell">{p.toClass?.name ?? '—'}</td>
+                <td className="px-4 py-2.5 text-coffee-600 text-xs hidden md:table-cell">{p.toAcademicYear.name}</td>
+                <td className="px-4 py-2.5 text-coffee-400 text-xs hidden lg:table-cell">{p.notes || '—'}</td>
+                <td className="px-4 py-2.5 text-coffee-400 text-xs hidden lg:table-cell">{p.processedBy.name}</td>
               </tr>
             ))}
           </tbody>

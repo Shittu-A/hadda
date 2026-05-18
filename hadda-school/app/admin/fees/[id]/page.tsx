@@ -61,7 +61,7 @@ export default async function FeeStructureDetailPage({ params }: { params: { id:
   const totalCollected = fee.payments.reduce((sum, p) => sum + Number(p.amountPaid), 0)
 
   return (
-    <div className="p-6 space-y-6 max-w-5xl">
+    <div className="p-4 sm:p-6 space-y-6 max-w-5xl">
       {/* Header */}
       <div>
         <Link href="/admin/fees" className="text-coffee-500 text-sm hover:text-coffee-700">
@@ -80,17 +80,17 @@ export default async function FeeStructureDetailPage({ params }: { params: { id:
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white border border-coffee-200 rounded-xl p-4 text-center">
-          <p className="text-2xl font-bold text-coffee-900">{fee.payments.length}</p>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+        <div className="bg-white border border-coffee-200 rounded-xl p-3 sm:p-4 text-center">
+          <p className="text-xl sm:text-2xl font-bold text-coffee-900">{fee.payments.length}</p>
           <p className="text-xs text-coffee-500 mt-0.5">Total Payments</p>
         </div>
-        <div className="bg-white border border-coffee-200 rounded-xl p-4 text-center">
-          <p className="text-2xl font-bold text-coffee-900">{formatCurrency(totalCollected)}</p>
+        <div className="bg-white border border-coffee-200 rounded-xl p-3 sm:p-4 text-center">
+          <p className="text-xl sm:text-2xl font-bold text-coffee-900">{formatCurrency(totalCollected)}</p>
           <p className="text-xs text-coffee-500 mt-0.5">Total Collected</p>
         </div>
-        <div className="bg-white border border-coffee-200 rounded-xl p-4 text-center">
-          <p className="text-2xl font-bold text-coffee-900">{classAssignments.length}</p>
+        <div className="bg-white border border-coffee-200 rounded-xl p-3 sm:p-4 text-center">
+          <p className="text-xl sm:text-2xl font-bold text-coffee-900">{classAssignments.length}</p>
           <p className="text-xs text-coffee-500 mt-0.5">Classes Assigned</p>
         </div>
       </div>
@@ -99,7 +99,7 @@ export default async function FeeStructureDetailPage({ params }: { params: { id:
         {/* Left: Assignments + Discounts */}
         <div className="space-y-6">
           {/* Class Assignments */}
-          <div className="bg-white border border-coffee-200 rounded-xl p-5">
+          <div className="bg-white border border-coffee-200 rounded-xl p-4 sm:p-5">
             <h2 className="font-semibold text-coffee-800 mb-4">Class Assignments</h2>
             {classAssignments.length === 0 ? (
               <p className="text-coffee-400 text-sm mb-4">No classes assigned.</p>
@@ -124,7 +124,7 @@ export default async function FeeStructureDetailPage({ params }: { params: { id:
             )}
 
             {unassignedClasses.length > 0 && (
-              <form action={handleAssign} className="flex gap-2">
+              <form action={handleAssign} className="flex flex-col sm:flex-row gap-2">
                 <input type="hidden" name="feeStructureId" value={fee.id} />
                 <select
                   name="classId"
@@ -138,7 +138,7 @@ export default async function FeeStructureDetailPage({ params }: { params: { id:
                 </select>
                 <button
                   type="submit"
-                  className="bg-coffee-900 text-white rounded-lg px-3 py-1.5 text-xs font-medium hover:bg-coffee-800 transition-colors"
+                  className="sm:w-auto bg-coffee-900 text-white rounded-lg px-3 py-1.5 text-xs font-medium hover:bg-coffee-800 transition-colors"
                 >
                   Add
                 </button>
@@ -148,7 +148,7 @@ export default async function FeeStructureDetailPage({ params }: { params: { id:
 
           {/* Discounts */}
           {fee.discounts.length > 0 && (
-            <div className="bg-white border border-coffee-200 rounded-xl p-5">
+            <div className="bg-white border border-coffee-200 rounded-xl p-4 sm:p-5">
               <h2 className="font-semibold text-coffee-800 mb-3">Student Discounts</h2>
               <div className="space-y-2">
                 {fee.discounts.map((d) => (
@@ -189,41 +189,41 @@ export default async function FeeStructureDetailPage({ params }: { params: { id:
               No payments recorded for this fee yet.
             </div>
           ) : (
-            <div className="bg-white border border-coffee-200 rounded-xl overflow-hidden">
+            <div className="bg-white border border-coffee-200 rounded-xl overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-coffee-50 border-b border-coffee-200">
                   <tr>
-                    <th className="text-left px-4 py-3 text-coffee-700 font-semibold">Student</th>
-                    <th className="text-left px-4 py-3 text-coffee-700 font-semibold">Date</th>
-                    <th className="text-left px-4 py-3 text-coffee-700 font-semibold">Amount</th>
-                    <th className="text-left px-4 py-3 text-coffee-700 font-semibold">Method</th>
-                    <th className="text-left px-4 py-3 text-coffee-700 font-semibold">Period</th>
-                    <th className="text-left px-4 py-3 text-coffee-700 font-semibold">By</th>
+                    <th className="text-left px-3 sm:px-4 py-3 text-coffee-700 font-semibold">Student</th>
+                    <th className="text-left px-3 sm:px-4 py-3 text-coffee-700 font-semibold hidden sm:table-cell">Date</th>
+                    <th className="text-left px-3 sm:px-4 py-3 text-coffee-700 font-semibold">Amount</th>
+                    <th className="text-left px-3 sm:px-4 py-3 text-coffee-700 font-semibold hidden lg:table-cell">Method</th>
+                    <th className="text-left px-3 sm:px-4 py-3 text-coffee-700 font-semibold hidden lg:table-cell">Period</th>
+                    <th className="text-left px-3 sm:px-4 py-3 text-coffee-700 font-semibold hidden sm:table-cell">By</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-coffee-100">
                   {fee.payments.map((p) => (
                     <tr key={p.id} className="hover:bg-coffee-50 transition-colors">
-                      <td className="px-4 py-2.5">
+                      <td className="px-3 sm:px-4 py-2.5">
                         <Link
                           href={`/admin/students/${p.student.id}`}
-                          className="font-medium text-coffee-900 hover:text-coffee-600"
+                          className="font-medium text-coffee-900 hover:text-coffee-600 text-xs sm:text-sm"
                         >
                           {p.student.firstName} {p.student.lastName}
                         </Link>
                         <p className="text-xs text-coffee-400 font-mono">{p.student.admissionNumber}</p>
                       </td>
-                      <td className="px-4 py-2.5 text-coffee-500 text-xs whitespace-nowrap">
+                      <td className="px-3 sm:px-4 py-2.5 text-coffee-500 text-xs whitespace-nowrap hidden sm:table-cell">
                         {formatDate(p.paymentDate)}
                       </td>
-                      <td className="px-4 py-2.5 font-medium text-coffee-900">
+                      <td className="px-3 sm:px-4 py-2.5 font-medium text-coffee-900 text-xs sm:text-sm">
                         {formatCurrency(Number(p.amountPaid))}
                       </td>
-                      <td className="px-4 py-2.5 text-coffee-600 capitalize text-xs">
+                      <td className="px-3 sm:px-4 py-2.5 text-coffee-600 capitalize text-xs hidden lg:table-cell">
                         {p.paymentMethod.replace('_', ' ')}
                       </td>
-                      <td className="px-4 py-2.5 text-coffee-500 text-xs">{p.period || '—'}</td>
-                      <td className="px-4 py-2.5 text-coffee-400 text-xs">{p.recordedBy.name}</td>
+                      <td className="px-3 sm:px-4 py-2.5 text-coffee-500 text-xs hidden lg:table-cell">{p.period || '—'}</td>
+                      <td className="px-3 sm:px-4 py-2.5 text-coffee-400 text-xs hidden sm:table-cell">{p.recordedBy.name}</td>
                     </tr>
                   ))}
                 </tbody>

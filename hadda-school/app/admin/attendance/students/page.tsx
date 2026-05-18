@@ -58,20 +58,20 @@ export default async function StudentAttendancePage({
   const alreadySaved = Object.keys(existingAttendance).length > 0
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-coffee-900">Student Attendance</h1>
         <p className="text-coffee-600 text-sm mt-0.5">Mark daily attendance by class</p>
       </div>
 
       {/* Filters */}
-      <form method="GET" className="flex flex-wrap gap-3 items-end">
-        <div>
+      <form method="GET" className="flex flex-col sm:flex-row sm:flex-wrap gap-3 sm:items-end">
+        <div className="w-full sm:w-auto">
           <label className="block text-xs font-medium text-coffee-600 mb-1">Class</label>
           <select
             name="classId"
             defaultValue={selectedClassId}
-            className="border border-coffee-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-coffee-400"
+            className="w-full border border-coffee-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-coffee-400"
           >
             <option value="">Select class</option>
             {classes.map((c) => (
@@ -79,19 +79,19 @@ export default async function StudentAttendancePage({
             ))}
           </select>
         </div>
-        <div>
+        <div className="w-full sm:w-auto">
           <label className="block text-xs font-medium text-coffee-600 mb-1">Date</label>
           <input
             type="date"
             name="date"
             defaultValue={selectedDate}
             max={today}
-            className="border border-coffee-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-coffee-400"
+            className="w-full border border-coffee-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-coffee-400"
           />
         </div>
         <button
           type="submit"
-          className="bg-coffee-900 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
+          className="w-full sm:w-auto bg-coffee-900 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
         >
           Load
         </button>
@@ -114,8 +114,8 @@ export default async function StudentAttendancePage({
             </div>
           )}
 
-          <div className="bg-white border border-coffee-200 rounded-xl overflow-hidden">
-            <div className="px-5 py-3 bg-coffee-50 border-b border-coffee-200 flex items-center justify-between">
+          <div className="bg-white border border-coffee-200 rounded-xl overflow-x-auto">
+            <div className="px-4 sm:px-5 py-3 bg-coffee-50 border-b border-coffee-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <span className="text-sm font-semibold text-coffee-700">
                 {students.length} student{students.length !== 1 ? 's' : ''}
               </span>
@@ -126,7 +126,7 @@ export default async function StudentAttendancePage({
               {students.map((s) => {
                 const existing = existingAttendance[s.id]
                 return (
-                  <div key={s.id} className="px-5 py-3 flex items-center gap-4">
+                  <div key={s.id} className="px-4 sm:px-5 py-3 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                     <input type="hidden" name="studentId" value={s.id} />
 
                     <div className="flex-1 min-w-0">
@@ -136,9 +136,9 @@ export default async function StudentAttendancePage({
                       <p className="text-xs text-coffee-400 font-mono">{s.admissionNumber}</p>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                       {STATUS_OPTIONS.map((status) => (
-                        <label key={status} className="flex items-center gap-1 cursor-pointer">
+                        <label key={status} className="flex items-center gap-1 cursor-pointer whitespace-nowrap">
                           <input
                             type="radio"
                             name={`status_${s.id}`}
@@ -158,7 +158,7 @@ export default async function StudentAttendancePage({
                       name={`note_${s.id}`}
                       defaultValue={existing?.note ?? ''}
                       placeholder="Note (optional)"
-                      className="border border-coffee-200 rounded px-2 py-1 text-xs w-36 focus:outline-none focus:ring-1 focus:ring-coffee-400"
+                      className="w-full sm:w-36 border border-coffee-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-coffee-400"
                     />
                   </div>
                 )
@@ -169,7 +169,7 @@ export default async function StudentAttendancePage({
           <div className="flex justify-end">
             <button
               type="submit"
-              className="bg-coffee-900 text-white rounded-lg px-6 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
+              className="w-full sm:w-auto bg-coffee-900 text-white rounded-lg px-6 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
             >
               {alreadySaved ? 'Update Attendance' : 'Save Attendance'}
             </button>

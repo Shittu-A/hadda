@@ -89,25 +89,25 @@ export default async function FeePaymentsPage({
   }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-4 sm:p-6 space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-coffee-900">Fee Payments</h1>
           <p className="text-coffee-600 text-sm mt-0.5">Record and view all fee payments</p>
         </div>
         <Link
           href="/admin/fees"
-          className="text-sm text-coffee-500 hover:text-coffee-800 transition-colors"
+          className="w-full sm:w-auto text-center text-sm text-coffee-500 hover:text-coffee-800 transition-colors"
         >
           ← Fee Structures
         </Link>
       </div>
 
       {/* Record payment form */}
-      <div className="bg-white border border-coffee-200 rounded-xl p-5">
+      <div className="bg-white border border-coffee-200 rounded-xl p-4 sm:p-5">
         <h2 className="font-semibold text-coffee-800 mb-4">Record Payment</h2>
         <form action={handleRecord} className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             <div>
               <label className="block text-sm font-medium text-coffee-700 mb-1">Student *</label>
               <select
@@ -224,8 +224,8 @@ export default async function FeePaymentsPage({
       </div>
 
       {/* Filters */}
-      <form method="GET" className="bg-white border border-coffee-200 rounded-xl p-4">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      <form method="GET" className="bg-white border border-coffee-200 rounded-xl p-3 sm:p-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-3">
           <div>
             <label className="block text-xs font-medium text-coffee-600 mb-1">Student</label>
             <select
@@ -278,16 +278,16 @@ export default async function FeePaymentsPage({
             />
           </div>
 
-          <div className="flex items-end gap-2">
+          <div className="flex flex-col sm:flex-row items-end gap-2 sm:col-span-1 lg:col-span-2">
             <button
               type="submit"
-              className="flex-1 bg-coffee-900 text-white rounded-lg px-3 py-2 text-xs font-medium hover:bg-coffee-800 transition-colors"
+              className="w-full sm:flex-1 bg-coffee-900 text-white rounded-lg px-3 py-2 text-xs font-medium hover:bg-coffee-800 transition-colors"
             >
               Filter
             </button>
             <a
               href="/admin/fees/payments"
-              className="flex-1 text-center border border-coffee-200 text-coffee-600 rounded-lg px-3 py-2 text-xs font-medium hover:bg-coffee-50 transition-colors"
+              className="w-full sm:flex-1 text-center border border-coffee-200 text-coffee-600 rounded-lg px-3 py-2 text-xs font-medium hover:bg-coffee-50 transition-colors"
             >
               Clear
             </a>
@@ -297,7 +297,7 @@ export default async function FeePaymentsPage({
 
       {/* Summary */}
       {total > 0 && (
-        <div className="flex items-center gap-6 text-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6 text-xs sm:text-sm">
           <span className="text-coffee-600">
             <span className="font-semibold text-coffee-900">{total}</span> payment{total !== 1 ? 's' : ''}
           </span>
@@ -315,47 +315,47 @@ export default async function FeePaymentsPage({
         <div className="text-center py-16 text-coffee-400">No payments found.</div>
       ) : (
         <>
-          <div className="bg-white border border-coffee-200 rounded-xl overflow-hidden">
+          <div className="bg-white border border-coffee-200 rounded-xl overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-coffee-50 border-b border-coffee-200">
                 <tr>
-                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold">Student</th>
-                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold">Fee</th>
-                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold">Date</th>
-                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold">Amount</th>
-                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold">Method</th>
-                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold">Period</th>
-                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold">Reference</th>
-                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold">By</th>
-                  <th className="px-4 py-3"></th>
+                  <th className="text-left px-3 sm:px-4 py-3 text-coffee-700 font-semibold">Student</th>
+                  <th className="text-left px-3 sm:px-4 py-3 text-coffee-700 font-semibold hidden sm:table-cell">Fee</th>
+                  <th className="text-left px-3 sm:px-4 py-3 text-coffee-700 font-semibold hidden md:table-cell">Date</th>
+                  <th className="text-left px-3 sm:px-4 py-3 text-coffee-700 font-semibold">Amount</th>
+                  <th className="text-left px-3 sm:px-4 py-3 text-coffee-700 font-semibold hidden lg:table-cell">Method</th>
+                  <th className="text-left px-3 sm:px-4 py-3 text-coffee-700 font-semibold hidden lg:table-cell">Period</th>
+                  <th className="text-left px-3 sm:px-4 py-3 text-coffee-700 font-semibold hidden lg:table-cell">Reference</th>
+                  <th className="text-left px-3 sm:px-4 py-3 text-coffee-700 font-semibold hidden sm:table-cell">By</th>
+                  <th className="px-3 sm:px-4 py-3"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-coffee-100">
                 {payments.map((p) => (
                   <tr key={p.id} className="hover:bg-coffee-50 transition-colors">
-                    <td className="px-4 py-2.5">
+                    <td className="px-3 sm:px-4 py-2.5">
                       <Link
                         href={`/admin/students/${p.student.id}`}
-                        className="font-medium text-coffee-900 hover:text-coffee-600"
+                        className="font-medium text-coffee-900 hover:text-coffee-600 text-xs sm:text-sm"
                       >
                         {p.student.firstName} {p.student.lastName}
                       </Link>
                       <p className="text-xs text-coffee-400 font-mono">{p.student.admissionNumber}</p>
                     </td>
-                    <td className="px-4 py-2.5 text-coffee-600 text-xs">{p.feeStructure.name}</td>
-                    <td className="px-4 py-2.5 text-coffee-500 text-xs whitespace-nowrap">
+                    <td className="px-3 sm:px-4 py-2.5 text-coffee-600 text-xs hidden sm:table-cell">{p.feeStructure.name}</td>
+                    <td className="px-3 sm:px-4 py-2.5 text-coffee-500 text-xs whitespace-nowrap hidden md:table-cell">
                       {formatDate(p.paymentDate)}
                     </td>
-                    <td className="px-4 py-2.5 font-medium text-coffee-900">
+                    <td className="px-3 sm:px-4 py-2.5 font-medium text-coffee-900 text-xs sm:text-sm">
                       {formatCurrency(Number(p.amountPaid))}
                     </td>
-                    <td className="px-4 py-2.5 text-coffee-600 capitalize text-xs">
+                    <td className="px-3 sm:px-4 py-2.5 text-coffee-600 capitalize text-xs hidden lg:table-cell">
                       {p.paymentMethod.replace('_', ' ')}
                     </td>
-                    <td className="px-4 py-2.5 text-coffee-500 text-xs">{p.period || '—'}</td>
-                    <td className="px-4 py-2.5 text-coffee-400 text-xs font-mono">{p.reference || '—'}</td>
-                    <td className="px-4 py-2.5 text-coffee-400 text-xs">{p.recordedBy.name}</td>
-                    <td className="px-4 py-2.5 text-right">
+                    <td className="px-3 sm:px-4 py-2.5 text-coffee-500 text-xs hidden lg:table-cell">{p.period || '—'}</td>
+                    <td className="px-3 sm:px-4 py-2.5 text-coffee-400 text-xs font-mono hidden lg:table-cell">{p.reference || '—'}</td>
+                    <td className="px-3 sm:px-4 py-2.5 text-coffee-400 text-xs hidden sm:table-cell">{p.recordedBy.name}</td>
+                    <td className="px-3 sm:px-4 py-2.5 text-right">
                       <form action={handleDelete}>
                         <input type="hidden" name="id" value={p.id} />
                         <button
@@ -374,22 +374,22 @@ export default async function FeePaymentsPage({
 
           {/* Pagination */}
           {Math.ceil(total / pageSize) > 1 && (
-            <div className="flex items-center justify-center gap-2">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-center gap-2">
               {pageNum > 1 && (
                 <a
                   href={buildQuery({ page: String(pageNum - 1) })}
-                  className="px-4 py-2 text-sm border border-coffee-200 rounded-lg text-coffee-600 hover:bg-coffee-50 transition-colors"
+                  className="w-full sm:w-auto text-center px-4 py-2 text-xs sm:text-sm border border-coffee-200 rounded-lg text-coffee-600 hover:bg-coffee-50 transition-colors"
                 >
                   Previous
                 </a>
               )}
-              <span className="text-sm text-coffee-500">
+              <span className="text-xs sm:text-sm text-coffee-500 text-center">
                 Page {pageNum} of {Math.ceil(total / pageSize)}
               </span>
               {pageNum < Math.ceil(total / pageSize) && (
                 <a
                   href={buildQuery({ page: String(pageNum + 1) })}
-                  className="px-4 py-2 text-sm border border-coffee-200 rounded-lg text-coffee-600 hover:bg-coffee-50 transition-colors"
+                  className="w-full sm:w-auto text-center px-4 py-2 text-xs sm:text-sm border border-coffee-200 rounded-lg text-coffee-600 hover:bg-coffee-50 transition-colors"
                 >
                   Next
                 </a>

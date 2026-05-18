@@ -140,7 +140,7 @@ export default async function AdminMemorizationPage({
 
       {/* Filters */}
       <form method="GET" className="bg-white border border-coffee-200 rounded-xl p-4">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           <div>
             <label className="block text-xs font-medium text-coffee-600 mb-1">Class</label>
             <select
@@ -228,7 +228,7 @@ export default async function AdminMemorizationPage({
         <div className="text-center py-16 text-coffee-400">No memorization logs found.</div>
       ) : (
         <>
-          <div className="bg-white border border-coffee-200 rounded-xl overflow-hidden">
+          <div className="bg-white border border-coffee-200 rounded-xl overflow-hidden overflow-x-auto">
             <div className="px-5 py-3 bg-coffee-50 border-b border-coffee-200 flex items-center justify-between">
               <span className="text-sm text-coffee-600">
                 {total} log{total !== 1 ? 's' : ''} found
@@ -237,17 +237,18 @@ export default async function AdminMemorizationPage({
                 Page {pageNum} of {Math.ceil(total / pageSize) || 1}
               </span>
             </div>
+            <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-coffee-50 border-b border-coffee-200">
                 <tr>
-                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold">Date</th>
-                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold">Student</th>
-                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold">Teacher</th>
-                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold">Type</th>
-                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold">Range</th>
-                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold">Pages</th>
-                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold">Quality</th>
-                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold">Notes</th>
+                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold whitespace-nowrap">Date</th>
+                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold whitespace-nowrap">Student</th>
+                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold whitespace-nowrap hidden sm:table-cell">Teacher</th>
+                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold whitespace-nowrap hidden sm:table-cell">Type</th>
+                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold whitespace-nowrap hidden md:table-cell">Range</th>
+                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold whitespace-nowrap hidden md:table-cell">Pages</th>
+                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold whitespace-nowrap">Quality</th>
+                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold whitespace-nowrap hidden lg:table-cell">Notes</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-coffee-100">
@@ -265,30 +266,31 @@ export default async function AdminMemorizationPage({
                       </a>
                       <p className="text-xs text-coffee-400 font-mono">{log.student.admissionNumber}</p>
                     </td>
-                    <td className="px-4 py-2.5 text-coffee-600 text-xs">{log.teacher.name}</td>
-                    <td className="px-4 py-2.5 text-coffee-600 text-xs">
+                    <td className="px-4 py-2.5 text-coffee-600 text-xs hidden sm:table-cell">{log.teacher.name}</td>
+                    <td className="px-4 py-2.5 text-coffee-600 text-xs hidden sm:table-cell">
                       {TYPE_LABELS[log.type] || log.type}
                     </td>
-                    <td className="px-4 py-2.5 text-coffee-600 text-xs whitespace-nowrap">
+                    <td className="px-4 py-2.5 text-coffee-600 text-xs whitespace-nowrap hidden md:table-cell">
                       <span className="font-medium">{log.surahFrom.nameEnglish}</span>
                       {' '}:{log.ayahFrom}
                       {' → '}
                       <span className="font-medium">{log.surahTo.nameEnglish}</span>
                       {' '}:{log.ayahTo}
                     </td>
-                    <td className="px-4 py-2.5 text-coffee-700 font-medium text-xs">
+                    <td className="px-4 py-2.5 text-coffee-700 font-medium text-xs hidden md:table-cell">
                       {Number(log.pages).toFixed(2)}
                     </td>
                     <td className="px-4 py-2.5">
                       <Badge variant={QUALITY_VARIANT[log.quality]}>{log.quality}</Badge>
                     </td>
-                    <td className="px-4 py-2.5 text-coffee-400 text-xs max-w-[150px] truncate">
+                    <td className="px-4 py-2.5 text-coffee-400 text-xs max-w-[150px] truncate hidden lg:table-cell">
                       {log.notes || '—'}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+            </div>
           </div>
 
           {/* Pagination */}

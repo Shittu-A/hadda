@@ -9,7 +9,7 @@ export type SettingDef = {
 
 export const SETTINGS_CONFIG: SettingDef[] = [
   // School
-  { key: 'school_name', label: 'School Name', group: 'school', type: 'text', placeholder: 'Hadda School' },
+  { key: 'school_name', label: 'School Name', group: 'school', type: 'text', placeholder: 'Abdullahi Bin Masuud Academy' },
   { key: 'school_tagline', label: 'Tagline / Motto', group: 'school', type: 'text', placeholder: 'Excellence in Hifz' },
   { key: 'school_address', label: 'Address', group: 'school', type: 'textarea', placeholder: '123 School Road, City' },
   { key: 'school_phone', label: 'Phone', group: 'school', type: 'text', placeholder: '+234...' },
@@ -30,7 +30,7 @@ export const SETTINGS_CONFIG: SettingDef[] = [
     options: ['none', 'termii', 'twilio'],
   },
   { key: 'sms_api_key', label: 'SMS API Key', group: 'sms', type: 'text', placeholder: 'Your API key' },
-  { key: 'sms_sender_id', label: 'SMS Sender ID', group: 'sms', type: 'text', placeholder: 'HaddaSchool' },
+  { key: 'sms_sender_id', label: 'SMS Sender ID', group: 'sms', type: 'text', placeholder: 'AbdullahiAcademy' },
   // General
   { key: 'date_format', label: 'Date Format', group: 'general', type: 'select', options: ['DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD'] },
   { key: 'timezone', label: 'Timezone', group: 'general', type: 'text', placeholder: 'Africa/Lagos' },

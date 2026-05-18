@@ -35,27 +35,27 @@ export default async function TeacherAttendancePage({
   const alreadySaved = records.length > 0
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-coffee-900">Teacher Attendance</h1>
         <p className="text-coffee-600 text-sm mt-0.5">Mark daily staff attendance</p>
       </div>
 
       {/* Date selector */}
-      <form method="GET" className="flex items-end gap-3">
-        <div>
+      <form method="GET" className="flex flex-col sm:flex-row sm:items-end gap-3">
+        <div className="w-full sm:w-auto">
           <label className="block text-xs font-medium text-coffee-600 mb-1">Date</label>
           <input
             type="date"
             name="date"
             defaultValue={selectedDate}
             max={today}
-            className="border border-coffee-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-coffee-400"
+            className="w-full border border-coffee-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-coffee-400"
           />
         </div>
         <button
           type="submit"
-          className="bg-coffee-900 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
+          className="w-full sm:w-auto bg-coffee-900 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
         >
           Load
         </button>
@@ -70,8 +70,8 @@ export default async function TeacherAttendancePage({
           </div>
         )}
 
-        <div className="bg-white border border-coffee-200 rounded-xl overflow-hidden">
-          <div className="px-5 py-3 bg-coffee-50 border-b border-coffee-200 flex items-center justify-between">
+        <div className="bg-white border border-coffee-200 rounded-xl overflow-x-auto">
+          <div className="px-4 sm:px-5 py-3 bg-coffee-50 border-b border-coffee-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <span className="text-sm font-semibold text-coffee-700">
               {teachers.length} staff member{teachers.length !== 1 ? 's' : ''}
             </span>
@@ -82,7 +82,7 @@ export default async function TeacherAttendancePage({
             {teachers.map((teacher) => {
               const rec = existing[teacher.id]
               return (
-                <div key={teacher.id} className="px-5 py-3 flex items-center gap-4">
+                <div key={teacher.id} className="px-4 sm:px-5 py-3 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                   <input type="hidden" name="teacherId" value={teacher.id} />
 
                   <div className="flex-1 min-w-0">
@@ -96,9 +96,9 @@ export default async function TeacherAttendancePage({
                     </Badge>
                   )}
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                     {STATUS_OPTIONS.map((status) => (
-                      <label key={status} className="flex items-center gap-1 cursor-pointer">
+                      <label key={status} className="flex items-center gap-1 cursor-pointer whitespace-nowrap">
                         <input
                           type="radio"
                           name={`status_${teacher.id}`}
@@ -118,7 +118,7 @@ export default async function TeacherAttendancePage({
                     name={`note_${teacher.id}`}
                     defaultValue={rec?.note ?? ''}
                     placeholder="Note"
-                    className="border border-coffee-200 rounded px-2 py-1 text-xs w-32 focus:outline-none focus:ring-1 focus:ring-coffee-400"
+                    className="w-full sm:w-32 border border-coffee-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-coffee-400"
                   />
                 </div>
               )
@@ -129,7 +129,7 @@ export default async function TeacherAttendancePage({
         <div className="flex justify-end">
           <button
             type="submit"
-            className="bg-coffee-900 text-white rounded-lg px-6 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
+            className="w-full sm:w-auto bg-coffee-900 text-white rounded-lg px-6 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
           >
             {alreadySaved ? 'Update Attendance' : 'Save Attendance'}
           </button>

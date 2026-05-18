@@ -63,14 +63,14 @@ export default async function TeacherMemorizationPage() {
   )
 
   return (
-    <div className="p-6 space-y-8">
+    <div className="p-4 sm:p-6 space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-coffee-900">Memorization Logs</h1>
         <p className="text-coffee-600 text-sm mt-0.5">Log sabaq, sabqi, and manzil sessions</p>
       </div>
 
       {/* Log Form */}
-      <div className="bg-white border border-coffee-200 rounded-xl p-5">
+      <div className="bg-white border border-coffee-200 rounded-xl p-4 sm:p-5">
         <h2 className="font-semibold text-coffee-800 mb-4">Log a Session</h2>
 
         {allStudents.length === 0 ? (
@@ -128,7 +128,7 @@ export default async function TeacherMemorizationPage() {
             </div>
 
             {/* Row 2: surah from/to */}
-            <div className="grid grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               <div className="space-y-2">
                 <p className="text-sm font-medium text-coffee-700">From</p>
                 <div className="grid grid-cols-2 gap-2">
@@ -253,58 +253,60 @@ export default async function TeacherMemorizationPage() {
           <p className="text-coffee-400 text-sm">No logs yet.</p>
         ) : (
           <div className="bg-white border border-coffee-200 rounded-xl overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-coffee-50 border-b border-coffee-200">
-                <tr>
-                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold">Date</th>
-                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold">Student</th>
-                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold">Type</th>
-                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold">Range</th>
-                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold">Pages</th>
-                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold">Quality</th>
-                  <th className="px-4 py-3"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-coffee-100">
-                {recentLogs.map((log) => (
-                  <tr key={log.id} className="hover:bg-coffee-50 transition-colors">
-                    <td className="px-4 py-2.5 text-coffee-500 whitespace-nowrap">
-                      {formatDate(log.logDate)}
-                    </td>
-                    <td className="px-4 py-2.5 font-medium text-coffee-900">
-                      {log.student.firstName} {log.student.lastName}
-                    </td>
-                    <td className="px-4 py-2.5 text-coffee-600 capitalize">
-                      {TYPE_LABELS[log.type] || log.type}
-                    </td>
-                    <td className="px-4 py-2.5 text-coffee-600 text-xs">
-                      <span className="font-medium">{log.surahFrom.nameEnglish}</span>
-                      {' '}:{log.ayahFrom}
-                      {' → '}
-                      <span className="font-medium">{log.surahTo.nameEnglish}</span>
-                      {' '}:{log.ayahTo}
-                    </td>
-                    <td className="px-4 py-2.5 text-coffee-700 font-medium">
-                      {Number(log.pages).toFixed(2)}
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <Badge variant={QUALITY_VARIANT[log.quality]}>{log.quality}</Badge>
-                    </td>
-                    <td className="px-4 py-2.5 text-right">
-                      <form action={handleDelete}>
-                        <input type="hidden" name="id" value={log.id} />
-                        <button
-                          type="submit"
-                          className="text-xs text-red-400 hover:text-red-600 transition-colors"
-                        >
-                          Delete
-                        </button>
-                      </form>
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-coffee-50 border-b border-coffee-200">
+                  <tr>
+                    <th className="text-left px-3 sm:px-4 py-3 text-coffee-700 font-semibold">Date</th>
+                    <th className="text-left px-3 sm:px-4 py-3 text-coffee-700 font-semibold">Student</th>
+                    <th className="text-left px-3 sm:px-4 py-3 text-coffee-700 font-semibold hidden sm:table-cell">Type</th>
+                    <th className="text-left px-3 sm:px-4 py-3 text-coffee-700 font-semibold hidden md:table-cell">Range</th>
+                    <th className="text-left px-3 sm:px-4 py-3 text-coffee-700 font-semibold">Pages</th>
+                    <th className="text-left px-3 sm:px-4 py-3 text-coffee-700 font-semibold">Quality</th>
+                    <th className="px-3 sm:px-4 py-3"></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-coffee-100">
+                  {recentLogs.map((log) => (
+                    <tr key={log.id} className="hover:bg-coffee-50 transition-colors">
+                      <td className="px-3 sm:px-4 py-2.5 text-coffee-500 whitespace-nowrap text-xs sm:text-sm">
+                        {formatDate(log.logDate)}
+                      </td>
+                      <td className="px-3 sm:px-4 py-2.5 font-medium text-coffee-900 text-xs sm:text-sm">
+                        {log.student.firstName} {log.student.lastName}
+                      </td>
+                      <td className="px-3 sm:px-4 py-2.5 text-coffee-600 capitalize hidden sm:table-cell text-xs">
+                        {TYPE_LABELS[log.type] || log.type}
+                      </td>
+                      <td className="px-3 sm:px-4 py-2.5 text-coffee-600 text-xs hidden md:table-cell">
+                        <span className="font-medium">{log.surahFrom.nameEnglish}</span>
+                        {' '}:{log.ayahFrom}
+                        {' → '}
+                        <span className="font-medium">{log.surahTo.nameEnglish}</span>
+                        {' '}:{log.ayahTo}
+                      </td>
+                      <td className="px-3 sm:px-4 py-2.5 text-coffee-700 font-medium text-xs sm:text-sm">
+                        {Number(log.pages).toFixed(2)}
+                      </td>
+                      <td className="px-3 sm:px-4 py-2.5">
+                        <Badge variant={QUALITY_VARIANT[log.quality]}>{log.quality}</Badge>
+                      </td>
+                      <td className="px-3 sm:px-4 py-2.5 text-right">
+                        <form action={handleDelete}>
+                          <input type="hidden" name="id" value={log.id} />
+                          <button
+                            type="submit"
+                            className="text-xs text-red-400 hover:text-red-600 transition-colors"
+                          >
+                            Delete
+                          </button>
+                        </form>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>

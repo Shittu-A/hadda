@@ -43,23 +43,23 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-4xl">
+    <div className="p-4 sm:p-6 space-y-6 max-w-4xl">
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
         <div>
           <Link href="/admin/students" className="text-coffee-500 text-sm hover:text-coffee-700">
             ← Back to Students
           </Link>
-          <h1 className="text-2xl font-bold text-coffee-900 mt-2">
+          <h1 className="text-xl sm:text-2xl font-bold text-coffee-900 mt-2">
             {student.firstName} {student.lastName}
           </h1>
           <p className="text-coffee-500 font-mono text-sm mt-0.5">{student.admissionNumber}</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <Badge variant={STATUS_VARIANT[student.status] ?? 'neutral'}>{student.status}</Badge>
           <Link
             href={`/admin/students/${student.id}/edit`}
-            className="border border-coffee-200 text-coffee-700 rounded-lg px-3 py-1.5 text-sm font-medium hover:bg-coffee-50"
+            className="w-full sm:w-auto text-center border border-coffee-200 text-coffee-700 rounded-lg px-3 py-1.5 text-sm font-medium hover:bg-coffee-50"
           >
             Edit
           </Link>
@@ -70,9 +70,9 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
         {/* Left: Details */}
         <div className="lg:col-span-2 space-y-6">
           {/* Student Info */}
-          <div className="bg-white border border-coffee-200 rounded-xl p-5">
+          <div className="bg-white border border-coffee-200 rounded-xl p-4 sm:p-5">
             <h2 className="font-semibold text-coffee-800 mb-4">Student Information</h2>
-            <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
               <div>
                 <dt className="text-coffee-500">Date of Birth</dt>
                 <dd className="text-coffee-900 font-medium">
@@ -101,16 +101,16 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
           </div>
 
           {/* Guardians */}
-          <div className="bg-white border border-coffee-200 rounded-xl p-5">
+          <div className="bg-white border border-coffee-200 rounded-xl p-4 sm:p-5">
             <h2 className="font-semibold text-coffee-800 mb-4">Guardians</h2>
             <div className="space-y-3">
               {student.guardians.map((g) => (
-                <div key={g.id} className="flex items-start justify-between p-3 bg-coffee-50 rounded-lg">
+                <div key={g.id} className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 p-3 bg-coffee-50 rounded-lg">
                   <div>
                     <p className="font-medium text-coffee-900 text-sm">{g.name}</p>
                     <p className="text-coffee-500 text-xs">{g.relationship}{g.isPrimary ? ' · Primary' : ''}</p>
                   </div>
-                  <div className="text-right text-xs text-coffee-600">
+                  <div className="text-left sm:text-right text-xs text-coffee-600">
                     {g.phone && <p>{g.phone}</p>}
                     {g.email && <p>{g.email}</p>}
                   </div>
@@ -121,7 +121,7 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
 
           {/* Recent Payments */}
           {student.feePayments.length > 0 && (
-            <div className="bg-white border border-coffee-200 rounded-xl p-5">
+            <div className="bg-white border border-coffee-200 rounded-xl p-4 sm:p-5 overflow-x-auto">
               <h2 className="font-semibold text-coffee-800 mb-4">Recent Payments</h2>
               <table className="w-full text-sm">
                 <thead>
@@ -150,18 +150,18 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
 
           {/* Recent Memorization */}
           {student.memorizationLogs.length > 0 && (
-            <div className="bg-white border border-coffee-200 rounded-xl p-5">
+            <div className="bg-white border border-coffee-200 rounded-xl p-4 sm:p-5">
               <h2 className="font-semibold text-coffee-800 mb-4">Recent Memorization</h2>
               <div className="space-y-2">
                 {student.memorizationLogs.map((log) => (
-                  <div key={log.id} className="flex items-center justify-between p-3 bg-coffee-50 rounded-lg text-sm">
-                    <div>
+                  <div key={log.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-coffee-50 rounded-lg text-sm">
+                    <div className="flex-1 min-w-0">
                       <span className="font-medium text-coffee-900 capitalize">{log.type}</span>
-                      <span className="text-coffee-600 ml-2">
+                      <span className="text-coffee-600 ml-2 break-words">
                         {log.surahFrom.nameEnglish} {log.ayahFrom} → {log.surahTo.nameEnglish} {log.ayahTo}
                       </span>
                     </div>
-                    <div className="text-right">
+                    <div className="text-left sm:text-right">
                       <Badge
                         variant={
                           log.quality === 'excellent' ? 'success'
@@ -183,7 +183,7 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
 
         {/* Right: Actions */}
         <div className="space-y-4">
-          <div className="bg-white border border-coffee-200 rounded-xl p-5">
+          <div className="bg-white border border-coffee-200 rounded-xl p-4 sm:p-5">
             <h2 className="font-semibold text-coffee-800 mb-3">Actions</h2>
             <div className="space-y-2">
               <Link
@@ -202,7 +202,7 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
           </div>
 
           {student.status === 'active' && (
-            <div className="bg-white border border-red-100 rounded-xl p-5">
+            <div className="bg-white border border-red-100 rounded-xl p-4 sm:p-5">
               <h2 className="font-semibold text-red-700 mb-3">Danger Zone</h2>
               <p className="text-xs text-coffee-500 mb-3">
                 Withdrawing a student will mark them as withdrawn and remove them from class rosters.

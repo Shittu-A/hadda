@@ -39,13 +39,13 @@ export default async function EventsPage({ searchParams }: PageProps) {
       <PublicNav />
 
       {/* Hero Section */}
-      <section className="pt-32 pb-16 bg-coffee-50">
-        <div className="max-w-6xl mx-auto px-6 text-center">
-          <h1 className="text-5xl sm:text-6xl font-extrabold text-coffee-900">
+      <section className="pt-24 sm:pt-32 pb-12 sm:pb-16 bg-coffee-50">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 text-center">
+          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold text-coffee-900">
             School Events
           </h1>
-          <p className="text-xl text-coffee-600 mt-4 max-w-2xl mx-auto">
-            Join us for celebrations, competitions, and community gatherings at Hadda School
+          <p className="text-base sm:text-lg lg:text-xl text-coffee-600 mt-3 sm:mt-4 max-w-2xl mx-auto px-2">
+            Join us for celebrations, competitions, and community gatherings at Abdullahi Bin Masuud Academy
           </p>
         </div>
       </section>
@@ -54,7 +54,7 @@ export default async function EventsPage({ searchParams }: PageProps) {
       <div className="flex-1">
         {events.length > 0 ? (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto px-6 py-12">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
               {events.map((event: any) => (
                 <div
                   key={event.id}
@@ -75,14 +75,14 @@ export default async function EventsPage({ searchParams }: PageProps) {
                   </div>
 
                   {/* Content */}
-                  <div className="p-6">
-                    <p className="text-coffee-500 text-sm font-medium">
+                  <div className="p-4 sm:p-6">
+                    <p className="text-coffee-500 text-xs sm:text-sm font-medium">
                       {formatDate(event.eventDate)}
                     </p>
-                    <h3 className="font-bold text-coffee-900 mt-2 text-lg line-clamp-2">
+                    <h3 className="font-bold text-coffee-900 mt-2 text-base sm:text-lg line-clamp-2">
                       {event.title}
                     </h3>
-                    <p className="text-coffee-600 text-sm mt-2 line-clamp-2">
+                    <p className="text-coffee-600 text-xs sm:text-sm mt-2 line-clamp-2">
                       {event.description}
                     </p>
                   </div>
@@ -92,24 +92,24 @@ export default async function EventsPage({ searchParams }: PageProps) {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="max-w-6xl mx-auto px-6 pb-12 flex items-center justify-center gap-4">
+              <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-8 sm:pb-12 flex flex-wrap items-center justify-center gap-2 sm:gap-4">
                 {hasPrevious && (
                   <Link
                     href={`/events?page=${page - 1}`}
-                    className="bg-coffee-900 text-white rounded-xl px-4 py-2 font-semibold hover:bg-coffee-800 transition-colors"
+                    className="bg-coffee-900 text-white rounded-xl px-3 sm:px-4 py-2 font-semibold text-sm sm:text-base hover:bg-coffee-800 transition-colors"
                   >
                     Previous
                   </Link>
                 )}
 
-                <span className="text-coffee-700 font-medium">
+                <span className="text-coffee-700 font-medium text-sm sm:text-base">
                   Page {page} of {totalPages}
                 </span>
 
                 {hasNext && (
                   <Link
                     href={`/events?page=${page + 1}`}
-                    className="bg-coffee-900 text-white rounded-xl px-4 py-2 font-semibold hover:bg-coffee-800 transition-colors"
+                    className="bg-coffee-900 text-white rounded-xl px-3 sm:px-4 py-2 font-semibold text-sm sm:text-base hover:bg-coffee-800 transition-colors"
                   >
                     Next
                   </Link>
@@ -118,13 +118,13 @@ export default async function EventsPage({ searchParams }: PageProps) {
             )}
           </>
         ) : (
-          <div className="flex items-center justify-center py-24">
-            <div className="text-center">
-              <p className="text-2xl font-semibold text-coffee-900">No events published yet.</p>
-              <p className="text-coffee-600 mt-2">Check back soon for updates!</p>
+          <div className="flex items-center justify-center py-16 sm:py-24 px-4">
+            <div className="text-center max-w-md">
+              <p className="text-xl sm:text-2xl font-semibold text-coffee-900">No events published yet.</p>
+              <p className="text-coffee-600 mt-2 text-sm sm:text-base">Check back soon for updates!</p>
               <Link
                 href="/"
-                className="inline-block bg-coffee-900 text-white rounded-xl px-6 py-3 font-semibold hover:bg-coffee-800 transition-colors mt-6"
+                className="inline-block bg-coffee-900 text-white rounded-xl px-5 sm:px-6 py-2 sm:py-3 font-semibold text-sm sm:text-base hover:bg-coffee-800 transition-colors mt-6"
               >
                 Back to Home
               </Link>

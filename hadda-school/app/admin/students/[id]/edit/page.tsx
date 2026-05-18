@@ -28,19 +28,19 @@ export default async function EditStudentPage({ params }: { params: { id: string
     : ''
 
   return (
-    <div className="p-6 max-w-2xl">
+    <div className="p-4 sm:p-6 max-w-2xl">
       <div className="mb-6">
         <Link href={`/admin/students/${student.id}`} className="text-coffee-500 text-sm hover:text-coffee-700">
           ← Back to Student
         </Link>
-        <h1 className="text-2xl font-bold text-coffee-900 mt-2">
+        <h1 className="text-xl sm:text-2xl font-bold text-coffee-900 mt-2">
           Edit: {student.firstName} {student.lastName}
         </h1>
         <p className="text-coffee-400 font-mono text-sm">{student.admissionNumber}</p>
       </div>
 
-      <form action={handleUpdate} className="space-y-6 bg-white border border-coffee-200 rounded-xl p-6">
-        <div className="grid grid-cols-2 gap-4">
+      <form action={handleUpdate} className="space-y-6 bg-white border border-coffee-200 rounded-xl p-4 sm:p-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-coffee-700 mb-1">First Name *</label>
             <input
@@ -108,16 +108,16 @@ export default async function EditStudentPage({ params }: { params: { id: string
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 pt-2">
+        <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-2">
           <Link
             href={`/admin/students/${student.id}`}
-            className="border border-coffee-200 text-coffee-700 rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-50 transition-colors"
+            className="w-full sm:w-auto text-center border border-coffee-200 text-coffee-700 rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-50 transition-colors"
           >
             Cancel
           </Link>
           <button
             type="submit"
-            className="bg-coffee-900 text-white rounded-lg px-5 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
+            className="w-full sm:w-auto bg-coffee-900 text-white rounded-lg px-5 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
           >
             Save Changes
           </button>

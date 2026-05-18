@@ -20,7 +20,7 @@ export default async function EditUserPage({ params }: { params: { id: string } 
   }
 
   return (
-    <div className="p-6 max-w-xl space-y-6">
+    <div className="p-4 sm:p-6 max-w-xl space-y-6">
       <div>
         <Link href="/super-admin/users" className="text-coffee-500 text-sm hover:text-coffee-700">
           ← Back to Users
@@ -29,7 +29,7 @@ export default async function EditUserPage({ params }: { params: { id: string } 
       </div>
 
       {/* Update info */}
-      <form action={handleUpdate} className="bg-white border border-coffee-200 rounded-xl p-5 space-y-4">
+      <form action={handleUpdate} className="bg-white border border-coffee-200 rounded-xl p-4 sm:p-5 space-y-4">
         <h2 className="font-semibold text-coffee-800 mb-2">User Information</h2>
         <div>
           <label className="block text-sm font-medium text-coffee-700 mb-1">Name *</label>
@@ -65,10 +65,10 @@ export default async function EditUserPage({ params }: { params: { id: string } 
             <p className="text-xs text-coffee-400 mt-1">Role cannot be changed for super admin accounts.</p>
           )}
         </div>
-        <div className="flex justify-end gap-3 pt-1">
+        <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-1">
           <Link
             href="/super-admin/users"
-            className="border border-coffee-200 text-coffee-700 rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-50"
+            className="border border-coffee-200 text-coffee-700 rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-50 text-center"
           >
             Cancel
           </Link>
@@ -83,7 +83,7 @@ export default async function EditUserPage({ params }: { params: { id: string } 
       </form>
 
       {/* Change password */}
-      <form action={handlePasswordChange} className="bg-white border border-coffee-200 rounded-xl p-5 space-y-4">
+      <form action={handlePasswordChange} className="bg-white border border-coffee-200 rounded-xl p-4 sm:p-5 space-y-4">
         <h2 className="font-semibold text-coffee-800 mb-2">Change Password</h2>
         <div>
           <label className="block text-sm font-medium text-coffee-700 mb-1">New Password *</label>

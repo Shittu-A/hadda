@@ -53,7 +53,7 @@ export default async function NotificationsPage() {
 
   return (
     <div className="p-6 space-y-6 max-w-2xl">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-coffee-900">Notifications</h1>
           {unreadCount > 0 && (
@@ -89,7 +89,7 @@ export default async function NotificationsPage() {
             return (
               <div
                 key={n.id}
-                className={`bg-white border rounded-xl px-5 py-4 flex items-start gap-4 transition-colors ${
+                className={`bg-white border rounded-xl px-4 sm:px-5 py-4 flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4 transition-colors ${
                   isUnread ? 'border-coffee-300 bg-coffee-50' : 'border-coffee-100'
                 }`}
               >
@@ -102,7 +102,7 @@ export default async function NotificationsPage() {
                     )}
                   </div>
                   <p className="text-sm text-coffee-600">{message}</p>
-                  <div className="flex items-center gap-4 mt-1.5">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-1.5">
                     <span className="text-xs text-coffee-400">{formatDate(n.createdAt)}</span>
                     {link !== '#' && (
                       <a
@@ -115,7 +115,7 @@ export default async function NotificationsPage() {
                   </div>
                 </div>
                 {isUnread && (
-                  <form action={handleMarkOne} className="shrink-0">
+                  <form action={handleMarkOne} className="shrink-0 self-start sm:self-auto">
                     <input type="hidden" name="id" value={n.id} />
                     <button
                       type="submit"

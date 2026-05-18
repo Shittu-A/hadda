@@ -55,23 +55,23 @@ export default async function TeacherAttendancePage({
   const existing = Object.fromEntries(existingRecords.map((r) => [r.studentId, r]))
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-4 sm:p-6 space-y-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-coffee-900">Mark Attendance</h1>
           <p className="text-coffee-600 text-sm mt-0.5">Mark attendance for your students</p>
         </div>
-        <form method="GET" className="flex items-end gap-2">
+        <form method="GET" className="flex flex-col sm:flex-row items-end gap-2 w-full sm:w-auto">
           <input
             type="date"
             name="date"
             defaultValue={selectedDate}
             max={today}
-            className="border border-coffee-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-coffee-400"
+            className="border border-coffee-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-coffee-400 w-full sm:w-auto"
           />
           <button
             type="submit"
-            className="bg-coffee-900 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
+            className="bg-coffee-900 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors w-full sm:w-auto"
           >
             Load
           </button>
@@ -103,13 +103,13 @@ export default async function TeacherAttendancePage({
               </div>
 
               {classStudents.length === 0 ? (
-                <div className="px-5 py-4 text-sm text-coffee-400">No active students.</div>
+                <div className="px-4 sm:px-5 py-4 text-sm text-coffee-400">No active students.</div>
               ) : (
                 <div className="divide-y divide-coffee-100">
                   {classStudents.map((s) => {
                     const rec = existing[s.id]
                     return (
-                      <div key={s.id} className="px-5 py-3 flex items-center gap-4">
+                      <div key={s.id} className="px-4 sm:px-5 py-3 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                         <input type="hidden" name="studentId" value={s.id} />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-coffee-900">
@@ -117,7 +117,7 @@ export default async function TeacherAttendancePage({
                           </p>
                           <p className="text-xs font-mono text-coffee-400">{s.admissionNumber}</p>
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                           {STATUS_OPTIONS.map((status) => (
                             <label key={status} className="flex items-center gap-1 cursor-pointer">
                               <input
@@ -136,7 +136,7 @@ export default async function TeacherAttendancePage({
                           name={`note_${s.id}`}
                           defaultValue={rec?.note ?? ''}
                           placeholder="Note"
-                          className="border border-coffee-200 rounded px-2 py-1 text-xs w-28 focus:outline-none focus:ring-1 focus:ring-coffee-400"
+                          className="border border-coffee-200 rounded px-2 py-1 text-xs w-full sm:w-28 focus:outline-none focus:ring-1 focus:ring-coffee-400"
                         />
                       </div>
                     )

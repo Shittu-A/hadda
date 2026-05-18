@@ -4,6 +4,12 @@ import { db } from '@/lib/db'
 import Link from 'next/link'
 import { formatDate, formatCurrency } from '@/lib/utils'
 import { Users, GraduationCap, Banknote, ClipboardList, BookOpen, CalendarCheck } from 'lucide-react'
+import { createEvent } from '@/lib/actions/events'
+
+async function handleCreate(formData: FormData): Promise<void> {
+  'use server'
+  await createEvent(formData)
+}
 
 export default async function SuperAdminDashboardPage() {
   const session = await auth()
@@ -48,14 +54,14 @@ export default async function SuperAdminDashboardPage() {
   ]
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-coffee-900">Super Admin Dashboard</h1>
         <p className="text-coffee-500 text-sm mt-0.5">{formatDate(new Date())}</p>
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((s) => (
           <Link
             key={s.label}
@@ -74,7 +80,7 @@ export default async function SuperAdminDashboardPage() {
       </div>
 
       {/* Today's pulse row */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="bg-white border border-coffee-200 rounded-xl p-4 flex items-center gap-3">
           <div className="p-2.5 bg-coffee-50 rounded-xl text-coffee-700 shrink-0">
             <BookOpen size={20} />
@@ -100,8 +106,8 @@ export default async function SuperAdminDashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent audit activity */}
-        <div className="lg:col-span-2 bg-white border border-coffee-200 rounded-xl p-5">
-          <div className="flex items-center justify-between mb-3">
+        <div className="lg:col-span-2 bg-white border border-coffee-200 rounded-xl p-4 sm:p-5">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 gap-2">
             <h2 className="font-semibold text-coffee-800">Recent Audit Activity</h2>
             <Link href="/super-admin/audit-logs" className="text-xs text-coffee-400 hover:text-coffee-700">View all →</Link>
           </div>
@@ -131,8 +137,8 @@ export default async function SuperAdminDashboardPage() {
 
         {/* Upcoming events + Quick links */}
         <div className="space-y-4">
-          <div className="bg-white border border-coffee-200 rounded-xl p-5">
-            <div className="flex items-center justify-between mb-3">
+          <div className="bg-white border border-coffee-200 rounded-xl p-4 sm:p-5">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 gap-2">
               <h2 className="font-semibold text-coffee-800">Upcoming Events</h2>
               <Link href="/super-admin/events" className="text-xs text-coffee-400 hover:text-coffee-700">Manage →</Link>
             </div>
@@ -150,7 +156,49 @@ export default async function SuperAdminDashboardPage() {
             )}
           </div>
 
-          <div className="bg-white border border-coffee-200 rounded-xl p-5">
+          {/* Add Event */}
+          <div className="bg-white border border-coffee-200 rounded-xl p-4 sm:p-5">
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-semibold text-coffee-800">Add Event</h2>
+              <Link href="/super-admin/events" className="text-xs text-coffee-400 hover:text-coffee-700">All events →</Link>
+            </div>
+            <form action={handleCreate} className="space-y-3">
+              <input
+                type="text"
+                name="title"
+                required
+                placeholder="Event title *"
+                className="w-full border border-coffee-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-400"
+              />
+              <input
+                type="date"
+                name="eventDate"
+                required
+                min={new Date().toISOString().split('T')[0]}
+                className="w-full border border-coffee-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-400"
+              />
+              <input
+                type="url"
+                name="youtubeUrl"
+                placeholder="YouTube URL (optional)"
+                className="w-full border border-coffee-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-400"
+              />
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2 text-xs text-coffee-600 cursor-pointer">
+                  <input type="checkbox" name="isPublished" value="true" className="rounded border-coffee-300" />
+                  Publish immediately
+                </label>
+                <button
+                  type="submit"
+                  className="bg-coffee-900 text-white rounded-lg px-4 py-1.5 text-xs font-medium hover:bg-coffee-800 transition-colors"
+                >
+                  Create
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <div className="bg-white border border-coffee-200 rounded-xl p-4 sm:p-5">
             <h2 className="font-semibold text-coffee-800 mb-3">Quick Links</h2>
             <div className="space-y-2">
               {[

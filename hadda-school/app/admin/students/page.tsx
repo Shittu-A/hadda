@@ -52,33 +52,33 @@ export default async function StudentsPage({
   const totalPages = Math.ceil(total / perPage)
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-coffee-900">Students</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-coffee-900">Students</h1>
           <p className="text-coffee-600 text-sm mt-0.5">{total} total students</p>
         </div>
         <Link
           href="/admin/students/new"
-          className="bg-coffee-900 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
+          className="w-full sm:w-auto text-center bg-coffee-900 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
         >
           + Enroll Student
         </Link>
       </div>
 
       {/* Filters */}
-      <form method="GET" className="flex flex-wrap gap-3">
+      <form method="GET" className="flex flex-col sm:flex-row flex-wrap gap-3">
         <input
           name="q"
           defaultValue={searchParams.q}
           placeholder="Search name or admission no…"
-          className="border border-coffee-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-coffee-400 w-64"
+          className="w-full sm:w-64 border border-coffee-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-coffee-400"
         />
         <select
           name="classId"
           defaultValue={searchParams.classId}
-          className="border border-coffee-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-coffee-400"
+          className="w-full sm:w-auto border border-coffee-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-coffee-400"
         >
           <option value="">All Classes</option>
           {classes.map((c) => (
@@ -90,7 +90,7 @@ export default async function StudentsPage({
         <select
           name="status"
           defaultValue={searchParams.status}
-          className="border border-coffee-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-coffee-400"
+          className="w-full sm:w-auto border border-coffee-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-coffee-400"
         >
           <option value="">All Statuses</option>
           <option value="active">Active</option>
@@ -101,7 +101,7 @@ export default async function StudentsPage({
         </select>
         <button
           type="submit"
-          className="bg-coffee-100 text-coffee-800 rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-200 transition-colors"
+          className="w-full sm:w-auto bg-coffee-100 text-coffee-800 rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-200 transition-colors"
         >
           Filter
         </button>
@@ -116,7 +116,7 @@ export default async function StudentsPage({
       </form>
 
       {/* Table */}
-      <div className="bg-white border border-coffee-200 rounded-xl overflow-hidden">
+      <div className="bg-white border border-coffee-200 rounded-xl overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-coffee-50 border-b border-coffee-200">
             <tr>

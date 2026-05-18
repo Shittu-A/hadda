@@ -64,13 +64,13 @@ export default async function AttendanceHistoryPage({
   const dates = Object.keys(byDate).sort((a, b) => b.localeCompare(a))
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-coffee-900">Attendance History</h1>
         <p className="text-coffee-600 text-sm mt-0.5">Your submitted attendance records</p>
       </div>
 
-      <form method="GET" className="flex flex-wrap gap-3 items-end">
+      <form method="GET" className="flex flex-col sm:flex-row flex-wrap gap-3 items-end">
         <div>
           <label className="block text-xs font-medium text-coffee-600 mb-1">From</label>
           <input
@@ -78,7 +78,7 @@ export default async function AttendanceHistoryPage({
             name="from"
             defaultValue={fromDate.toISOString().split('T')[0]}
             max={today}
-            className="border border-coffee-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-coffee-400"
+            className="border border-coffee-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-coffee-400 w-full sm:w-auto"
           />
         </div>
         <div>
@@ -88,12 +88,12 @@ export default async function AttendanceHistoryPage({
             name="to"
             defaultValue={toDate.toISOString().split('T')[0]}
             max={today}
-            className="border border-coffee-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-coffee-400"
+            className="border border-coffee-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-coffee-400 w-full sm:w-auto"
           />
         </div>
         <button
           type="submit"
-          className="bg-coffee-900 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-800"
+          className="bg-coffee-900 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-800 w-full sm:w-auto"
         >
           Filter
         </button>
@@ -113,9 +113,9 @@ export default async function AttendanceHistoryPage({
             }, {})
             return (
               <div key={date} className="bg-white border border-coffee-200 rounded-xl overflow-hidden">
-                <div className="px-5 py-3 bg-coffee-50 border-b border-coffee-200 flex items-center justify-between">
+                <div className="px-4 sm:px-5 py-3 bg-coffee-50 border-b border-coffee-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
                   <span className="font-semibold text-coffee-800">{formatDate(new Date(date))}</span>
-                  <div className="flex items-center gap-3 text-xs">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs">
                     {Object.entries(counts).map(([status, n]) => (
                       <Badge key={status} variant={STATUS_VARIANT[status]}>
                         {n} {status}
@@ -123,25 +123,27 @@ export default async function AttendanceHistoryPage({
                     ))}
                   </div>
                 </div>
-                <table className="w-full text-sm">
-                  <tbody className="divide-y divide-coffee-50">
-                    {dayRecords.map((r) => (
-                      <tr key={r.id} className="hover:bg-coffee-50">
-                        <td className="px-5 py-2.5 font-medium text-coffee-900">
-                          {r.student.firstName} {r.student.lastName}
-                        </td>
-                        <td className="px-5 py-2.5 text-coffee-500 text-xs font-mono">
-                          {r.student.admissionNumber}
-                        </td>
-                        <td className="px-5 py-2.5 text-coffee-500">{r.class.name}</td>
-                        <td className="px-5 py-2.5">
-                          <Badge variant={STATUS_VARIANT[r.status]}>{r.status}</Badge>
-                        </td>
-                        <td className="px-5 py-2.5 text-coffee-400 text-xs">{r.note || ''}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <tbody className="divide-y divide-coffee-50">
+                      {dayRecords.map((r) => (
+                        <tr key={r.id} className="hover:bg-coffee-50">
+                          <td className="px-4 sm:px-5 py-2.5 font-medium text-coffee-900">
+                            {r.student.firstName} {r.student.lastName}
+                          </td>
+                          <td className="px-4 sm:px-5 py-2.5 text-coffee-500 text-xs font-mono hidden sm:table-cell">
+                            {r.student.admissionNumber}
+                          </td>
+                          <td className="px-4 sm:px-5 py-2.5 text-coffee-500 hidden sm:table-cell">{r.class.name}</td>
+                          <td className="px-4 sm:px-5 py-2.5">
+                            <Badge variant={STATUS_VARIANT[r.status]}>{r.status}</Badge>
+                          </td>
+                          <td className="px-4 sm:px-5 py-2.5 text-coffee-400 text-xs hidden sm:table-cell">{r.note || ''}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             )
           })}

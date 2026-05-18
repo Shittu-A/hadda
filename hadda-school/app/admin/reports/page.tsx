@@ -42,7 +42,7 @@ export default async function ReportsPage() {
                 ))}
               </select>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium text-coffee-600 mb-1">From</label>
                 <input
@@ -64,7 +64,7 @@ export default async function ReportsPage() {
                 />
               </div>
             </div>
-            <div className="flex gap-2 pt-1">
+            <div className="flex flex-col sm:flex-row gap-2 pt-1">
               <button
                 type="submit"
                 name="format"
@@ -111,7 +111,7 @@ export default async function ReportsPage() {
                 ))}
               </select>
             </div>
-            <div className="flex gap-2 pt-1">
+            <div className="flex flex-col sm:flex-row gap-2 pt-1">
               <button
                 type="submit"
                 name="format"
@@ -152,7 +152,7 @@ export default async function ReportsPage() {
                 ))}
               </select>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium text-coffee-600 mb-1">From</label>
                 <input
@@ -174,7 +174,7 @@ export default async function ReportsPage() {
                 />
               </div>
             </div>
-            <div className="flex gap-2 pt-1">
+            <div className="flex flex-col sm:flex-row gap-2 pt-1">
               <button
                 type="submit"
                 name="format"
@@ -194,7 +194,7 @@ export default async function ReportsPage() {
             <p className="text-xs text-coffee-400 mt-0.5">Teacher attendance summary for a date range</p>
           </div>
           <form method="GET" action="/api/reports/teacher-attendance" className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium text-coffee-600 mb-1">From</label>
                 <input
@@ -216,7 +216,7 @@ export default async function ReportsPage() {
                 />
               </div>
             </div>
-            <div className="flex gap-2 pt-1">
+            <div className="flex flex-col sm:flex-row gap-2 pt-1">
               <button
                 type="submit"
                 name="format"

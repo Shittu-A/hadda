@@ -11,8 +11,9 @@ interface TopnavProps {
 
 export default function Topnav({ user, notificationCount = 0 }: TopnavProps) {
   return (
-    <header className="fixed top-0 left-64 right-0 h-16 bg-white border-b border-coffee-200 flex items-center justify-end px-6 z-20">
-      <div className="flex items-center gap-4">
+    <header className="fixed top-0 left-0 md:left-64 right-0 h-16 bg-white border-b border-coffee-200 flex items-center justify-between md:justify-end px-4 md:px-6 z-20">
+      <span className="md:hidden text-sm font-semibold text-coffee-900">ABMA</span>
+      <div className="flex items-center gap-2 sm:gap-4">
         <Link
           href={user.role === 'teacher' ? '/teacher/notifications' : user.role === 'super_admin' ? '/super-admin/notifications' : '/admin/notifications'}
           className="relative text-coffee-600 hover:text-coffee-900 transition-colors"
@@ -25,17 +26,23 @@ export default function Topnav({ user, notificationCount = 0 }: TopnavProps) {
           )}
         </Link>
 
-        <div className="border-l border-coffee-200 pl-4">
-          <p className="text-sm font-semibold text-coffee-900 leading-none">{user.name}</p>
+        <div className="hidden sm:block border-l border-coffee-200 pl-4">
+          <p className="text-sm font-semibold text-coffee-900 leading-none truncate">{user.name}</p>
           <p className="text-xs text-coffee-500 mt-0.5">{user.role.replace('_', ' ')}</p>
         </div>
 
         <button
           onClick={() => signOut({ callbackUrl: '/login' })}
-          className="flex items-center gap-1.5 text-coffee-600 hover:text-coffee-900 text-sm transition-colors"
+          className="hidden sm:flex items-center gap-1.5 text-coffee-600 hover:text-coffee-900 text-sm transition-colors"
         >
           <LogOut size={18} />
           Sign out
+        </button>
+        <button
+          onClick={() => signOut({ callbackUrl: '/login' })}
+          className="sm:hidden text-coffee-600 hover:text-coffee-900 transition-colors"
+        >
+          <LogOut size={18} />
         </button>
       </div>
     </header>

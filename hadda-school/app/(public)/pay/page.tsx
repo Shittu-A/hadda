@@ -61,17 +61,17 @@ export default function PayPage() {
     <div className="min-h-screen bg-coffee-50">
       <PublicNav />
 
-      <section className="pt-32 pb-12 bg-coffee-100">
-        <div className="max-w-2xl mx-auto px-6 text-center">
+      <section className="pt-24 sm:pt-32 pb-8 sm:pb-12 bg-coffee-100">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 text-center">
           <p className="text-xs font-semibold uppercase tracking-widest text-coffee-500">Parent Portal</p>
-          <h1 className="text-4xl font-extrabold text-coffee-900 mt-2">Pay School Fees</h1>
-          <p className="text-coffee-600 mt-3">Enter your child&apos;s admission number or your phone number to view outstanding fees.</p>
+          <h1 className="text-2xl sm:text-4xl font-extrabold text-coffee-900 mt-2">Pay School Fees</h1>
+          <p className="text-coffee-600 mt-3 text-sm sm:text-base px-2">Enter your child&apos;s admission number or your phone number to view outstanding fees.</p>
         </div>
       </section>
 
-      <section className="py-12">
-        <div className="max-w-2xl mx-auto px-6">
-          <div className="bg-white border border-coffee-200 rounded-2xl p-8">
+      <section className="py-8 sm:py-12">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6">
+          <div className="bg-white border border-coffee-200 rounded-2xl p-6 sm:p-8">
             <form onSubmit={handleLookup} className="space-y-4">
               <Input
                 label="Admission Number or Guardian Phone"
@@ -90,10 +90,10 @@ export default function PayPage() {
           </div>
 
           {student && (
-            <div className="mt-6 bg-white border border-coffee-200 rounded-2xl p-8">
+            <div className="mt-6 bg-white border border-coffee-200 rounded-2xl p-6 sm:p-8">
               <div className="mb-6">
-                <h2 className="text-xl font-bold text-coffee-900">{student.firstName} {student.lastName}</h2>
-                <p className="text-coffee-500 text-sm">{student.admissionNumber} · {student.className}</p>
+                <h2 className="text-lg sm:text-xl font-bold text-coffee-900">{student.firstName} {student.lastName}</h2>
+                <p className="text-coffee-500 text-xs sm:text-sm">{student.admissionNumber} · {student.className}</p>
               </div>
 
               {student.fees.length === 0 ? (
@@ -104,30 +104,30 @@ export default function PayPage() {
                 </div>
               ) : (
                 <>
-                  <div className="space-y-3 mb-6">
+                  <div className="space-y-2 sm:space-y-3 mb-6">
                     {student.fees.map((fee) => (
-                      <div key={fee.feeStructureId} className="flex items-center justify-between p-4 bg-coffee-50 rounded-xl">
+                      <div key={fee.feeStructureId} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 bg-coffee-50 rounded-xl gap-2">
                         <div>
-                          <p className="font-medium text-coffee-900">{fee.name}</p>
+                          <p className="font-medium text-coffee-900 text-sm sm:text-base">{fee.name}</p>
                           <p className="text-coffee-500 text-xs capitalize">{fee.frequency}</p>
                           {fee.discount > 0 && (
                             <p className="text-green-600 text-xs">Discount applied: {formatCurrency(fee.discount)}</p>
                           )}
                         </div>
                         <div className="text-right">
-                          <p className="font-bold text-coffee-900">{formatCurrency(fee.outstanding)}</p>
+                          <p className="font-bold text-coffee-900 text-sm sm:text-base">{formatCurrency(fee.outstanding)}</p>
                           <p className="text-coffee-500 text-xs">outstanding</p>
                         </div>
                       </div>
                     ))}
                   </div>
 
-                  <div className="border-t border-coffee-200 pt-4 flex items-center justify-between mb-6">
+                  <div className="border-t border-coffee-200 pt-4 flex flex-col sm:flex-row items-start sm:items-center sm:justify-between mb-6 gap-2">
                     <span className="font-bold text-coffee-900">Total Outstanding</span>
-                    <span className="text-2xl font-extrabold text-coffee-900">{formatCurrency(student.total)}</span>
+                    <span className="text-xl sm:text-2xl font-extrabold text-coffee-900">{formatCurrency(student.total)}</span>
                   </div>
 
-                  <p className="text-coffee-500 text-sm text-center mb-4">
+                  <p className="text-coffee-500 text-xs sm:text-sm text-center mb-4 px-2">
                     Online payment integration coming soon. Please pay at school and bring your receipt.
                   </p>
                 </>

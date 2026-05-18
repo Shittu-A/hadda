@@ -15,13 +15,13 @@ export default async function EditEventPage({ params }: { params: { id: string }
   const eventDateStr = event.eventDate.toISOString().split('T')[0]
 
   return (
-    <div className="p-6 max-w-xl">
+    <div className="p-4 sm:p-6 max-w-xl">
       <Link href="/super-admin/events" className="text-coffee-500 text-sm hover:text-coffee-700">
         ← Back to Events
       </Link>
       <h1 className="text-2xl font-bold text-coffee-900 mt-3 mb-6">Edit Event</h1>
 
-      <form action={handleUpdate} className="space-y-4 bg-white border border-coffee-200 rounded-xl p-5">
+      <form action={handleUpdate} className="space-y-4 bg-white border border-coffee-200 rounded-xl p-4 sm:p-5">
         <input type="hidden" name="id" value={event.id} />
 
         <div>

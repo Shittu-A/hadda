@@ -92,7 +92,7 @@ export default async function AlumniPage({
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div className="bg-white border border-coffee-200 rounded-xl p-4 text-center">
           <p className="text-2xl font-bold text-coffee-900">{totalGraduated}</p>
           <p className="text-xs text-coffee-500 mt-0.5">Graduated</p>
@@ -109,7 +109,7 @@ export default async function AlumniPage({
 
       {/* Filters */}
       <form method="GET" className="bg-white border border-coffee-200 rounded-xl p-4">
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <div>
             <label className="block text-xs font-medium text-coffee-600 mb-1">Search</label>
             <input
@@ -170,16 +170,16 @@ export default async function AlumniPage({
           <div className="flex items-center text-sm text-coffee-600 mb-1">
             <span><span className="font-semibold text-coffee-900">{total}</span> record{total !== 1 ? 's' : ''}</span>
           </div>
-          <div className="bg-white border border-coffee-200 rounded-xl overflow-hidden">
+          <div className="bg-white border border-coffee-200 rounded-xl overflow-hidden overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-coffee-50 border-b border-coffee-200">
                 <tr>
-                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold">Student</th>
-                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold">Status</th>
-                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold">Last Class</th>
-                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold">Enrolled Year</th>
-                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold">Processed</th>
-                  <th className="px-4 py-3"></th>
+                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold whitespace-nowrap">Student</th>
+                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold whitespace-nowrap">Status</th>
+                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold whitespace-nowrap hidden sm:table-cell">Last Class</th>
+                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold whitespace-nowrap hidden md:table-cell">Enrolled Year</th>
+                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold whitespace-nowrap hidden lg:table-cell">Processed</th>
+                  <th className="px-4 py-3 whitespace-nowrap"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-coffee-100">
@@ -198,13 +198,13 @@ export default async function AlumniPage({
                           {s.status.charAt(0).toUpperCase() + s.status.slice(1)}
                         </Badge>
                       </td>
-                      <td className="px-4 py-2.5 text-coffee-600 text-xs">
+                      <td className="px-4 py-2.5 text-coffee-600 text-xs hidden sm:table-cell">
                         {lastPromotion?.fromClass?.name ?? '—'}
                       </td>
-                      <td className="px-4 py-2.5 text-coffee-500 text-xs">
+                      <td className="px-4 py-2.5 text-coffee-500 text-xs hidden md:table-cell">
                         {s.academicYear.name}
                       </td>
-                      <td className="px-4 py-2.5 text-coffee-500 text-xs">
+                      <td className="px-4 py-2.5 text-coffee-500 text-xs hidden lg:table-cell">
                         {lastPromotion ? formatDate(lastPromotion.createdAt) : '—'}
                       </td>
                       <td className="px-4 py-2.5 text-right">

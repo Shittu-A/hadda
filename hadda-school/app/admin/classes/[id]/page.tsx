@@ -24,26 +24,26 @@ export default async function ClassDetailPage({ params }: { params: { id: string
   const isFull = classroom.capacity != null && classroom.students.length >= classroom.capacity
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
         <div>
           <Link href="/admin/classes" className="text-coffee-500 text-sm hover:text-coffee-700">
             ← Back to Classes
           </Link>
-          <h1 className="text-2xl font-bold text-coffee-900 mt-2">{classroom.name}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-coffee-900 mt-2">{classroom.name}</h1>
           {classroom.description && <p className="text-coffee-500 text-sm">{classroom.description}</p>}
         </div>
         <Link
           href={`/admin/classes/${classroom.id}/edit`}
-          className="border border-coffee-200 text-coffee-700 rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-50 transition-colors"
+          className="w-full sm:w-auto text-center border border-coffee-200 text-coffee-700 rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-50 transition-colors"
         >
           Edit
         </Link>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         {[
           { label: 'Academic Year', value: classroom.academicYear.name },
           {
@@ -69,7 +69,7 @@ export default async function ClassDetailPage({ params }: { params: { id: string
 
       {/* Teachers */}
       <Card>
-        <CardContent className="pt-5">
+        <CardContent className="pt-4 sm:pt-5">
           <h2 className="font-semibold text-coffee-800 mb-3">
             Assigned Teachers ({classroom.teachers.length})
           </h2>
@@ -78,7 +78,7 @@ export default async function ClassDetailPage({ params }: { params: { id: string
           ) : (
             <div className="space-y-2">
               {classroom.teachers.map((t) => (
-                <div key={t.userId} className="flex items-center justify-between p-3 bg-coffee-50 rounded-lg">
+                <div key={t.userId} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-coffee-50 rounded-lg">
                   <p className="text-sm font-medium text-coffee-900">{t.user.name}</p>
                   {t.isPrimary && <Badge variant="info">Primary</Badge>}
                 </div>
@@ -90,7 +90,7 @@ export default async function ClassDetailPage({ params }: { params: { id: string
 
       {/* Student Roster */}
       <Card>
-        <CardContent className="pt-5">
+        <CardContent className="pt-4 sm:pt-5 overflow-x-auto">
           <h2 className="font-semibold text-coffee-800 mb-3">
             Student Roster ({classroom.students.length})
           </h2>
@@ -102,7 +102,7 @@ export default async function ClassDetailPage({ params }: { params: { id: string
                 <tr>
                   <th className="text-left pb-2 text-coffee-500 font-medium">Admission No.</th>
                   <th className="text-left pb-2 text-coffee-500 font-medium">Name</th>
-                  <th className="text-left pb-2 text-coffee-500 font-medium">Enrolled</th>
+                  <th className="text-left pb-2 text-coffee-500 font-medium hidden sm:table-cell">Enrolled</th>
                   <th className="pb-2"></th>
                 </tr>
               </thead>
@@ -111,7 +111,7 @@ export default async function ClassDetailPage({ params }: { params: { id: string
                   <tr key={s.id} className="hover:bg-coffee-50">
                     <td className="py-2.5 font-mono text-coffee-600 text-xs">{s.admissionNumber}</td>
                     <td className="py-2.5 font-medium text-coffee-900">{s.firstName} {s.lastName}</td>
-                    <td className="py-2.5 text-coffee-500">{formatDate(s.enrollmentDate)}</td>
+                    <td className="py-2.5 text-coffee-500 hidden sm:table-cell">{formatDate(s.enrollmentDate)}</td>
                     <td className="py-2.5 text-right">
                       <Link
                         href={`/admin/students/${s.id}`}

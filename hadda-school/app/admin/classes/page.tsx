@@ -22,17 +22,17 @@ export default async function ClassesPage() {
   })
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="p-4 sm:p-6 space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-coffee-900">Classes</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-coffee-900">Classes</h1>
           {currentYear && (
             <p className="text-coffee-600 text-sm mt-0.5">{currentYear.name} · {classes.length} classes</p>
           )}
         </div>
         <Link
           href="/admin/classes/new"
-          className="bg-coffee-900 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
+          className="w-full sm:w-auto text-center bg-coffee-900 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
         >
           + Add Class
         </Link>
@@ -45,15 +45,15 @@ export default async function ClassesPage() {
         </div>
       )}
 
-      <div className="bg-white border border-coffee-200 rounded-xl overflow-hidden">
+      <div className="bg-white border border-coffee-200 rounded-xl overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-coffee-50 border-b border-coffee-200">
             <tr>
-              <th className="text-left px-5 py-3 text-coffee-700 font-semibold">Name</th>
-              <th className="text-left px-5 py-3 text-coffee-700 font-semibold">Students</th>
-              <th className="text-left px-5 py-3 text-coffee-700 font-semibold">Primary Teacher</th>
-              <th className="text-left px-5 py-3 text-coffee-700 font-semibold">Order</th>
-              <th className="px-5 py-3"></th>
+              <th className="text-left px-4 sm:px-5 py-3 text-coffee-700 font-semibold">Name</th>
+              <th className="text-left px-4 sm:px-5 py-3 text-coffee-700 font-semibold">Students</th>
+              <th className="hidden sm:table-cell text-left px-4 sm:px-5 py-3 text-coffee-700 font-semibold">Primary Teacher</th>
+              <th className="hidden md:table-cell text-left px-4 sm:px-5 py-3 text-coffee-700 font-semibold">Order</th>
+              <th className="px-4 sm:px-5 py-3"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-coffee-100">
@@ -71,41 +71,41 @@ export default async function ClassesPage() {
 
                 return (
                   <tr key={classroom.id} className="hover:bg-coffee-50 transition-colors">
-                    <td className="px-5 py-3">
+                    <td className="px-4 sm:px-5 py-3">
                       <p className="font-medium text-coffee-900">{classroom.name}</p>
                       {classroom.description && (
                         <p className="text-xs text-coffee-500">{classroom.description}</p>
                       )}
                     </td>
-                    <td className="px-5 py-3">
+                    <td className="px-4 sm:px-5 py-3">
                       <span className="text-coffee-900">
                         {classroom._count.students}
                         {classroom.capacity ? `/${classroom.capacity}` : ''}
                       </span>
                       {isFull && <Badge variant="danger" className="ml-2">Full</Badge>}
                     </td>
-                    <td className="px-5 py-3 text-coffee-600">{primaryTeacher}</td>
-                    <td className="px-5 py-3 text-coffee-500">{classroom.order}</td>
-                    <td className="px-5 py-3">
-                      <div className="flex items-center gap-2 justify-end">
+                    <td className="hidden sm:table-cell px-4 sm:px-5 py-3 text-coffee-600">{primaryTeacher}</td>
+                    <td className="hidden md:table-cell px-4 sm:px-5 py-3 text-coffee-500">{classroom.order}</td>
+                    <td className="px-4 sm:px-5 py-3">
+                      <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 justify-end">
                         <Link
                           href={`/admin/classes/${classroom.id}`}
-                          className="text-xs font-medium text-coffee-600 hover:text-coffee-900 border border-coffee-200 rounded-lg px-3 py-1.5 hover:bg-coffee-50 transition-colors"
+                          className="w-full sm:w-auto text-center text-xs font-medium text-coffee-600 hover:text-coffee-900 border border-coffee-200 rounded-lg px-3 py-1.5 hover:bg-coffee-50 transition-colors"
                         >
                           View
                         </Link>
                         <Link
                           href={`/admin/classes/${classroom.id}/edit`}
-                          className="text-xs font-medium text-coffee-600 hover:text-coffee-900 border border-coffee-200 rounded-lg px-3 py-1.5 hover:bg-coffee-50 transition-colors"
+                          className="w-full sm:w-auto text-center text-xs font-medium text-coffee-600 hover:text-coffee-900 border border-coffee-200 rounded-lg px-3 py-1.5 hover:bg-coffee-50 transition-colors"
                         >
                           Edit
                         </Link>
                         {classroom._count.students === 0 && (
-                          <form action={handleDelete}>
+                          <form action={handleDelete} className="w-full sm:w-auto">
                             <input type="hidden" name="id" value={classroom.id} />
                             <button
                               type="submit"
-                              className="text-xs font-medium text-red-600 border border-red-200 rounded-lg px-3 py-1.5 hover:bg-red-50 transition-colors"
+                              className="w-full sm:w-auto text-xs font-medium text-red-600 border border-red-200 rounded-lg px-3 py-1.5 hover:bg-red-50 transition-colors"
                             >
                               Delete
                             </button>

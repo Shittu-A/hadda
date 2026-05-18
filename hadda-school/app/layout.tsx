@@ -9,7 +9,7 @@ const figtree = Figtree({
 })
 
 export const metadata: Metadata = {
-  title: 'Hadda School',
+  title: 'Abdullahi Bin Masuud Academy',
   description: 'Where Every Heart Finds Its Verse — Quran Memorization School Management System',
 }
 

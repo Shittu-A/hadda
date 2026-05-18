@@ -61,7 +61,7 @@ export default function NewUserPage() {
   }
 
   return (
-    <div className="min-h-screen bg-coffee-50 p-8">
+    <div className="min-h-screen bg-coffee-50 p-4 sm:p-8">
       <div className="max-w-2xl mx-auto">
         <div className="mb-8">
           <Link href="/super-admin/users">
@@ -72,7 +72,7 @@ export default function NewUserPage() {
         </div>
 
         <Card className="bg-white border border-coffee-200">
-          <CardContent className="p-8">
+          <CardContent className="p-4 sm:p-8">
             <h1 className="text-2xl font-bold text-coffee-900 mb-6">Create New User</h1>
 
             {serverError && (
@@ -144,7 +144,7 @@ export default function NewUserPage() {
                 )}
               </div>
 
-              <div className="flex gap-4 pt-6">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-6">
                 <Button
                   type="submit"
                   disabled={isLoading}

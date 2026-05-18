@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
 
@@ -32,14 +33,17 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-coffee-100 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-coffee-100 flex items-center justify-center px-4 py-6">
       <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-extrabold text-coffee-900">📖 Hadda School</h1>
-          <p className="text-coffee-600 mt-2">Staff Portal Login</p>
+        <div className="text-center mb-6 sm:mb-8">
+          <div className="flex justify-center mb-3">
+            <Image src="/logo-removebg.png" alt="Logo" width={64} height={64} className="object-contain" />
+          </div>
+          <h1 className="text-xl sm:text-2xl font-extrabold text-coffee-900">Abdullahi Bin Masuud Academy</h1>
+          <p className="text-coffee-600 mt-2 text-sm sm:text-base">Staff Portal Login</p>
         </div>
 
-        <div className="bg-white border border-coffee-200 rounded-2xl p-8 shadow-sm">
+        <div className="bg-white border border-coffee-200 rounded-2xl p-6 sm:p-8 shadow-sm">
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
               label="Email"
@@ -59,7 +63,7 @@ export default function LoginPage() {
             />
 
             {error && (
-              <p className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+              <p className="text-red-600 text-xs sm:text-sm bg-red-50 border border-red-200 rounded-lg px-3 py-2">
                 {error}
               </p>
             )}

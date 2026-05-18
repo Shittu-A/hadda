@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import PublicNav from '@/components/layout/PublicNav'
 import PublicFooter from '@/components/layout/PublicFooter'
+import HeroSlider from '@/components/ui/HeroSlider'
 import { db } from '@/lib/db'
 import { youtubeToEmbed, formatDate } from '@/lib/utils'
 import Link from 'next/link'
@@ -18,22 +19,21 @@ export default async function LandingPage() {
       <PublicNav />
 
       {/* Hero */}
-      <section className="relative pt-32 pb-24 overflow-hidden">
-        <div className="absolute top-20 left-10 w-96 h-96 bg-coffee-300 rounded-full blur-3xl opacity-20 pointer-events-none" />
-        <div className="absolute bottom-10 right-10 w-72 h-72 bg-coffee-200 rounded-full blur-3xl opacity-30 pointer-events-none" />
-        <div className="max-w-6xl mx-auto px-6 text-center relative">
-          <p className="text-xs font-semibold uppercase tracking-widest text-coffee-500 mb-4">Hafiz Academy</p>
-          <h1 className="text-5xl sm:text-6xl font-extrabold text-coffee-900 leading-tight">
+      <section className="relative min-h-[calc(100vh-4rem)] flex items-center overflow-hidden mt-16">
+        <HeroSlider />
+        <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 text-center w-full py-12 sm:py-16">
+          <p className="text-xs font-semibold uppercase tracking-widest text-white mb-4" style={{textShadow:'0 2px 8px rgba(0,0,0,0.8)'}}>Hafiz Academy</p>
+          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold text-white leading-tight" style={{textShadow:'0 2px 16px rgba(0,0,0,0.9)'}}>
             Where Every Heart<br />Finds Its Verse
           </h1>
-          <p className="text-coffee-600 text-xl mt-6 max-w-2xl mx-auto">
+          <p className="text-white text-base sm:text-lg lg:text-xl mt-4 sm:mt-6 max-w-2xl mx-auto px-2" style={{textShadow:'0 2px 8px rgba(0,0,0,0.8)'}}>
             A Quran memorization school dedicated to nurturing the next generation of Huffadh with care, structure, and love.
           </p>
-          <div className="flex flex-wrap gap-4 justify-center mt-8">
-            <Link href="/pay" className="bg-coffee-900 text-coffee-100 hover:bg-coffee-800 rounded-xl px-6 py-3 font-medium transition-colors">
+          <div className="flex flex-wrap gap-3 sm:gap-4 justify-center mt-6 sm:mt-8">
+            <Link href="/pay" className="bg-white text-coffee-900 hover:bg-coffee-100 rounded-xl px-5 sm:px-6 py-2 sm:py-3 font-medium text-sm sm:text-base transition-colors">
               Pay School Fees
             </Link>
-            <a href="#about" className="border-2 border-coffee-300 text-coffee-700 hover:border-coffee-500 rounded-xl px-6 py-3 font-medium transition-colors">
+            <a href="#about" className="border-2 border-white text-white hover:bg-white/20 rounded-xl px-5 sm:px-6 py-2 sm:py-3 font-medium text-sm sm:text-base transition-colors">
               Learn More
             </a>
           </div>
@@ -41,8 +41,8 @@ export default async function LandingPage() {
       </section>
 
       {/* Stats Bar */}
-      <section className="bg-coffee-900 py-10">
-        <div className="max-w-4xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+      <section className="bg-coffee-900 py-8 sm:py-10">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-8 text-center">
           {[
             { value: '500+', label: 'Students' },
             { value: '120+', label: 'Graduates' },
@@ -50,21 +50,21 @@ export default async function LandingPage() {
             { value: '10+', label: 'Years' },
           ].map((s) => (
             <div key={s.label}>
-              <p className="text-4xl font-extrabold text-white">{s.value}</p>
-              <p className="text-coffee-400 mt-1">{s.label}</p>
+              <p className="text-2xl sm:text-4xl font-extrabold text-white">{s.value}</p>
+              <p className="text-coffee-400 mt-1 text-xs sm:text-base">{s.label}</p>
             </div>
           ))}
         </div>
       </section>
 
       {/* About */}
-      <section id="about" className="py-24">
-        <div className="max-w-6xl mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center">
+      <section id="about" className="py-12 sm:py-24">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 grid lg:grid-cols-2 gap-8 sm:gap-16 items-center">
           <div>
             <p className="text-xs font-semibold uppercase tracking-widest text-coffee-500">About Us</p>
-            <h2 className="text-4xl font-bold text-coffee-900 mt-2">Nurturing Huffadh Since Day One</h2>
+            <h2 className="text-2xl sm:text-4xl font-bold text-coffee-900 mt-2">Nurturing Huffadh Since Day One</h2>
             <p className="text-coffee-600 mt-4 leading-relaxed">
-              Hadda School is a dedicated Quran memorization institution built on the belief that every child has
+              Abdullahi Bin Masuud Academy is a dedicated Quran memorization institution built on the belief that every child has
               the capacity to become a Hafiz or Hafiza. Our structured curriculum, caring teachers, and modern
               management system ensure every student reaches their full potential.
             </p>
@@ -82,8 +82,8 @@ export default async function LandingPage() {
               ))}
             </ul>
           </div>
-          <div className="bg-coffee-900 rounded-2xl p-8">
-            <p className="text-3xl text-coffee-200 text-right leading-relaxed" dir="rtl">
+          <div className="bg-coffee-900 rounded-2xl p-6 sm:p-8">
+            <p className="text-xl sm:text-3xl text-coffee-200 text-right leading-relaxed" dir="rtl">
               خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ
             </p>
             <p className="text-coffee-300 italic mt-6 text-sm">
@@ -95,13 +95,13 @@ export default async function LandingPage() {
       </section>
 
       {/* Features */}
-      <section className="py-24 bg-coffee-100">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="text-center mb-12">
+      <section className="py-12 sm:py-24 bg-coffee-100">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-8 sm:mb-12">
             <p className="text-xs font-semibold uppercase tracking-widest text-coffee-500">Why Choose Us</p>
-            <h2 className="text-4xl font-bold text-coffee-900 mt-2">Everything Your Child Needs to Succeed</h2>
+            <h2 className="text-2xl sm:text-4xl font-bold text-coffee-900 mt-2">Everything Your Child Needs to Succeed</h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {[
               { icon: '📊', title: 'Daily Progress Tracking', desc: "Real-time monitoring of each student's sabaq, sabqi, and manzil sessions." },
               { icon: '👥', title: 'Small Class Sizes', desc: 'Personalized attention for every student to ensure optimal memorization.' },
@@ -110,10 +110,10 @@ export default async function LandingPage() {
               { icon: '🎓', title: 'Graduated Promotion', desc: 'Structured progression through levels as students advance.' },
               { icon: '💳', title: 'Transparent Fee Management', desc: 'Clear fee structure with online payment option for parents.' },
             ].map((f) => (
-              <div key={f.title} className="bg-white border border-coffee-200 rounded-2xl p-6 hover:border-coffee-400 hover:shadow-md transition-all">
-                <div className="text-3xl mb-4">{f.icon}</div>
-                <h3 className="text-lg font-bold text-coffee-900">{f.title}</h3>
-                <p className="text-coffee-600 text-sm mt-2">{f.desc}</p>
+              <div key={f.title} className="bg-white border border-coffee-200 rounded-2xl p-4 sm:p-6 hover:border-coffee-400 hover:shadow-md transition-all">
+                <div className="text-2xl sm:text-3xl mb-4">{f.icon}</div>
+                <h3 className="text-base sm:text-lg font-bold text-coffee-900">{f.title}</h3>
+                <p className="text-coffee-600 text-xs sm:text-sm mt-2">{f.desc}</p>
               </div>
             ))}
           </div>
@@ -122,13 +122,13 @@ export default async function LandingPage() {
 
       {/* Events */}
       {events.length > 0 && (
-        <section className="py-24">
-          <div className="max-w-6xl mx-auto px-6">
-            <div className="text-center mb-12">
+        <section className="py-12 sm:py-24">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6">
+            <div className="text-center mb-8 sm:mb-12">
               <p className="text-xs font-semibold uppercase tracking-widest text-coffee-500">Latest Events</p>
-              <h2 className="text-4xl font-bold text-coffee-900 mt-2">School Highlights</h2>
+              <h2 className="text-2xl sm:text-4xl font-bold text-coffee-900 mt-2">School Highlights</h2>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
               {events.map((event) => (
                 <div key={event.id} className="bg-white border border-coffee-200 rounded-2xl overflow-hidden hover:border-coffee-400 hover:shadow-md transition-all">
                   <div className="aspect-video">
@@ -149,8 +149,8 @@ export default async function LandingPage() {
                 </div>
               ))}
             </div>
-            <div className="text-center mt-8">
-              <Link href="/events" className="border-2 border-coffee-300 text-coffee-700 hover:border-coffee-500 rounded-xl px-6 py-3 font-medium transition-colors inline-block">
+            <div className="text-center mt-6 sm:mt-8">
+              <Link href="/events" className="border-2 border-coffee-300 text-coffee-700 hover:border-coffee-500 rounded-xl px-5 sm:px-6 py-2 sm:py-3 font-medium text-sm sm:text-base transition-colors inline-block">
                 See All Events
               </Link>
             </div>
@@ -159,18 +159,18 @@ export default async function LandingPage() {
       )}
 
       {/* CTA */}
-      <section className="py-24 px-6">
-        <div className="max-w-5xl mx-auto bg-coffee-900 rounded-3xl p-12 text-center">
-          <p className="text-coffee-300 italic text-lg max-w-2xl mx-auto">
+      <section className="py-12 sm:py-24 px-4 sm:px-6">
+        <div className="max-w-5xl mx-auto bg-coffee-900 rounded-3xl p-6 sm:p-12 text-center">
+          <p className="text-coffee-300 italic text-base sm:text-lg max-w-2xl mx-auto px-2">
             &quot;Alhamdulillah, the school&apos;s online system makes it so easy to track my child&apos;s progress and pay fees from anywhere.&quot;
           </p>
-          <p className="text-coffee-400 text-sm mt-2">— Parent, 2024</p>
-          <h2 className="text-3xl font-bold text-white mt-8">Ready to Enroll?</h2>
-          <div className="flex flex-wrap gap-4 justify-center mt-6">
-            <Link href="/pay" className="bg-white text-coffee-900 hover:bg-coffee-100 rounded-xl px-6 py-3 font-medium transition-colors">
+          <p className="text-coffee-400 text-xs sm:text-sm mt-2">— Parent, 2024</p>
+          <h2 className="text-2xl sm:text-3xl font-bold text-white mt-6 sm:mt-8">Ready to Enroll?</h2>
+          <div className="flex flex-wrap gap-3 sm:gap-4 justify-center mt-4 sm:mt-6">
+            <Link href="/pay" className="bg-white text-coffee-900 hover:bg-coffee-100 rounded-xl px-5 sm:px-6 py-2 sm:py-3 font-medium text-sm sm:text-base transition-colors w-full sm:w-auto">
               Pay Fees Online
             </Link>
-            <Link href="/login" className="border-2 border-coffee-400 text-coffee-200 hover:border-coffee-300 rounded-xl px-6 py-3 font-medium transition-colors">
+            <Link href="/login" className="border-2 border-coffee-400 text-coffee-200 hover:border-coffee-300 rounded-xl px-5 sm:px-6 py-2 sm:py-3 font-medium text-sm sm:text-base transition-colors w-full sm:w-auto">
               Staff Portal
             </Link>
           </div>

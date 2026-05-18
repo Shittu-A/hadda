@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 
@@ -21,10 +22,11 @@ export default function Sidebar({ links, role }: SidebarProps) {
   const pathname = usePathname()
 
   return (
-    <aside className="fixed left-0 top-0 w-64 h-screen bg-coffee-900 flex flex-col z-30 overflow-y-auto">
+    <aside className="hidden md:flex md:fixed left-0 top-0 w-64 h-screen bg-coffee-900 flex-col z-30 overflow-y-auto">
       <div className="p-6 border-b border-coffee-800">
-        <h1 className="text-xl font-bold text-white flex items-center gap-2">
-          <span>📖</span> Hadda School
+        <h1 className="text-base font-bold text-white flex items-center gap-2">
+          <Image src="/logo-removebg.png" alt="Logo" width={30} height={30} className="object-contain brightness-200" />
+          Abdullahi Bin Masuud Academy
         </h1>
         <p className="text-coffee-400 text-xs mt-1">{roleLabels[role]}</p>
       </div>

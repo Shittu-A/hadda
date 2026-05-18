@@ -134,7 +134,7 @@ async function main() {
 
   console.log('Seeding settings...')
   const settings = [
-    { key: 'school_name', label: 'School Name', group: 'general' as const, type: 'text' as const, value: 'Hadda School' },
+    { key: 'school_name', label: 'School Name', group: 'general' as const, type: 'text' as const, value: 'Abdullahi Bin Masuud Academy' },
     { key: 'school_address', label: 'School Address', group: 'school' as const, type: 'textarea' as const, value: null },
     { key: 'school_phone', label: 'School Phone', group: 'school' as const, type: 'text' as const, value: null },
     { key: 'school_email', label: 'School Email', group: 'school' as const, type: 'text' as const, value: null },

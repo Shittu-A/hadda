@@ -29,17 +29,17 @@ export default async function TeacherLeavePage() {
   const today = new Date().toISOString().split('T')[0]
 
   return (
-    <div className="p-6 space-y-6 max-w-3xl">
+    <div className="p-4 sm:p-6 space-y-6 max-w-3xl">
       <div>
         <h1 className="text-2xl font-bold text-coffee-900">Leave Requests</h1>
         <p className="text-coffee-600 text-sm mt-0.5">Submit and track your leave requests</p>
       </div>
 
       {/* Submit form */}
-      <div className="bg-white border border-coffee-200 rounded-xl p-5">
+      <div className="bg-white border border-coffee-200 rounded-xl p-4 sm:p-5">
         <h2 className="font-semibold text-coffee-800 mb-4">Request Leave</h2>
         <form action={handleCreate} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-coffee-700 mb-1">Start Date *</label>
               <input
@@ -89,41 +89,43 @@ export default async function TeacherLeavePage() {
           <p className="text-coffee-400 text-sm">No leave requests yet.</p>
         ) : (
           <div className="bg-white border border-coffee-200 rounded-xl overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-coffee-50 border-b border-coffee-200">
-                <tr>
-                  <th className="text-left px-5 py-3 text-coffee-700 font-semibold">Dates</th>
-                  <th className="text-left px-5 py-3 text-coffee-700 font-semibold">Reason</th>
-                  <th className="text-left px-5 py-3 text-coffee-700 font-semibold">Status</th>
-                  <th className="text-left px-5 py-3 text-coffee-700 font-semibold">Review</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-coffee-100">
-                {requests.map((req) => (
-                  <tr key={req.id} className="hover:bg-coffee-50">
-                    <td className="px-5 py-3 text-coffee-600 whitespace-nowrap">
-                      {formatDate(req.startDate)} → {formatDate(req.endDate)}
-                    </td>
-                    <td className="px-5 py-3 text-coffee-700 max-w-xs">
-                      <p className="line-clamp-2">{req.reason}</p>
-                    </td>
-                    <td className="px-5 py-3">
-                      <Badge variant={STATUS_VARIANT[req.status]}>{req.status}</Badge>
-                    </td>
-                    <td className="px-5 py-3 text-coffee-500 text-xs">
-                      {req.reviewedBy ? (
-                        <>
-                          <p>{req.reviewedBy.name}</p>
-                          {req.reviewNote && (
-                            <p className="italic text-coffee-400">{req.reviewNote}</p>
-                          )}
-                        </>
-                      ) : '—'}
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-coffee-50 border-b border-coffee-200">
+                  <tr>
+                    <th className="text-left px-4 sm:px-5 py-3 text-coffee-700 font-semibold">Dates</th>
+                    <th className="text-left px-4 sm:px-5 py-3 text-coffee-700 font-semibold hidden sm:table-cell">Reason</th>
+                    <th className="text-left px-4 sm:px-5 py-3 text-coffee-700 font-semibold">Status</th>
+                    <th className="text-left px-4 sm:px-5 py-3 text-coffee-700 font-semibold hidden sm:table-cell">Review</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-coffee-100">
+                  {requests.map((req) => (
+                    <tr key={req.id} className="hover:bg-coffee-50">
+                      <td className="px-4 sm:px-5 py-3 text-coffee-600 whitespace-nowrap text-xs sm:text-sm">
+                        {formatDate(req.startDate)} → {formatDate(req.endDate)}
+                      </td>
+                      <td className="px-4 sm:px-5 py-3 text-coffee-700 max-w-xs hidden sm:table-cell">
+                        <p className="line-clamp-2">{req.reason}</p>
+                      </td>
+                      <td className="px-4 sm:px-5 py-3">
+                        <Badge variant={STATUS_VARIANT[req.status]}>{req.status}</Badge>
+                      </td>
+                      <td className="px-4 sm:px-5 py-3 text-coffee-500 text-xs hidden sm:table-cell">
+                        {req.reviewedBy ? (
+                          <>
+                            <p>{req.reviewedBy.name}</p>
+                            {req.reviewNote && (
+                              <p className="italic text-coffee-400">{req.reviewNote}</p>
+                            )}
+                          </>
+                        ) : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>

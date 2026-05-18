@@ -35,7 +35,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <div className="min-h-screen bg-coffee-100">
       <Sidebar links={adminLinks} role="admin" />
       <Topnav user={{ name: session.user.name!, role: session.user.role }} notificationCount={notificationCount} />
-      <main className="ml-64 pt-16 p-8">
+      <main className="ml-0 md:ml-64 pt-16 p-4 md:p-8">
         {children}
       </main>
     </div>

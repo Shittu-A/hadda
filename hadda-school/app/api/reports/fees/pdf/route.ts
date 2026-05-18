@@ -124,7 +124,7 @@ function FeeReportDoc({ rows, generatedAt, yearName }: { rows: FeeRow[]; generat
         ),
       ),
 
-      createElement(Text, { style: styles.footer }, 'Hadda School Management System'),
+      createElement(Text, { style: styles.footer }, 'Abdullahi Bin Masuud Academy Management System'),
     )
   )
 }

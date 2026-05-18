@@ -35,16 +35,16 @@ export default async function EditClassPage({ params }: { params: { id: string }
   }
 
   return (
-    <div className="p-6 max-w-xl space-y-6">
+    <div className="p-4 sm:p-6 max-w-xl space-y-6">
       <div>
         <Link href={`/admin/classes/${params.id}`} className="text-coffee-500 text-sm hover:text-coffee-700">
           ← Back to Class
         </Link>
-        <h1 className="text-2xl font-bold text-coffee-900 mt-2">Edit: {classroom.name}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-coffee-900 mt-2">Edit: {classroom.name}</h1>
       </div>
 
       {/* Class details */}
-      <form action={handleUpdate} className="bg-white border border-coffee-200 rounded-xl p-5 space-y-4">
+      <form action={handleUpdate} className="bg-white border border-coffee-200 rounded-xl p-4 sm:p-5 space-y-4">
         <h2 className="font-semibold text-coffee-800 mb-2">Class Details</h2>
 
         <div>
@@ -83,7 +83,7 @@ export default async function EditClassPage({ params }: { params: { id: string }
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-coffee-700 mb-1">Capacity</label>
             <input
@@ -106,16 +106,16 @@ export default async function EditClassPage({ params }: { params: { id: string }
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 pt-1">
+        <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-1">
           <Link
             href={`/admin/classes/${params.id}`}
-            className="border border-coffee-200 text-coffee-700 rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-50"
+            className="w-full sm:w-auto text-center border border-coffee-200 text-coffee-700 rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-50"
           >
             Cancel
           </Link>
           <button
             type="submit"
-            className="bg-coffee-900 text-white rounded-lg px-5 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
+            className="w-full sm:w-auto bg-coffee-900 text-white rounded-lg px-5 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
           >
             Save Changes
           </button>
@@ -123,7 +123,7 @@ export default async function EditClassPage({ params }: { params: { id: string }
       </form>
 
       {/* Teacher assignment */}
-      <form action={handleAssign} className="bg-white border border-coffee-200 rounded-xl p-5 space-y-4">
+      <form action={handleAssign} className="bg-white border border-coffee-200 rounded-xl p-4 sm:p-5 space-y-4">
         <h2 className="font-semibold text-coffee-800 mb-2">Assign Teachers</h2>
         <p className="text-xs text-coffee-500">Check teachers to assign. Select the primary teacher with the radio button.</p>
 
@@ -134,7 +134,7 @@ export default async function EditClassPage({ params }: { params: { id: string }
             {allTeachers.map((teacher) => {
               const checked = selectedTeacherIds.has(teacher.id)
               return (
-                <div key={teacher.id} className="flex items-center gap-3 p-3 border border-coffee-100 rounded-lg">
+                <div key={teacher.id} className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 border border-coffee-100 rounded-lg">
                   <input
                     type="checkbox"
                     name="teacherIds"
@@ -142,11 +142,11 @@ export default async function EditClassPage({ params }: { params: { id: string }
                     defaultChecked={checked}
                     className="w-4 h-4"
                   />
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-coffee-900">{teacher.name}</p>
-                    <p className="text-xs text-coffee-500">{teacher.email} · {teacher.role}</p>
+                    <p className="text-xs text-coffee-500 break-words">{teacher.email} · {teacher.role}</p>
                   </div>
-                  <label className="flex items-center gap-1.5 text-xs text-coffee-500">
+                  <label className="flex items-center gap-1.5 text-xs text-coffee-500 whitespace-nowrap">
                     <input
                       type="radio"
                       name="primaryTeacherId"
@@ -162,16 +162,16 @@ export default async function EditClassPage({ params }: { params: { id: string }
           </div>
         )}
 
-        <div className="flex justify-end gap-3 pt-1">
+        <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-1">
           <Link
             href={`/admin/classes/${params.id}`}
-            className="border border-coffee-200 text-coffee-700 rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-50"
+            className="w-full sm:w-auto text-center border border-coffee-200 text-coffee-700 rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-50"
           >
             Cancel
           </Link>
           <button
             type="submit"
-            className="bg-coffee-700 text-white rounded-lg px-5 py-2 text-sm font-medium hover:bg-coffee-600 transition-colors"
+            className="w-full sm:w-auto bg-coffee-700 text-white rounded-lg px-5 py-2 text-sm font-medium hover:bg-coffee-600 transition-colors"
           >
             Save Teachers
           </button>

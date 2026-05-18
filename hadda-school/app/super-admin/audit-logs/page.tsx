@@ -62,15 +62,15 @@ export default async function AuditLogsPage({
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-coffee-900">Audit Logs</h1>
         <p className="text-coffee-600 text-sm mt-0.5">Full history of all system actions</p>
       </div>
 
       {/* Filters */}
-      <form method="GET" className="bg-white border border-coffee-200 rounded-xl p-4">
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3">
+      <form method="GET" className="bg-white border border-coffee-200 rounded-xl p-3 sm:p-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
           <div className="lg:col-span-2">
             <label className="block text-xs font-medium text-coffee-600 mb-1">Search action / description</label>
             <input
@@ -144,49 +144,51 @@ export default async function AuditLogsPage({
       ) : (
         <>
           <div className="bg-white border border-coffee-200 rounded-xl overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-coffee-50 border-b border-coffee-200">
-                <tr>
-                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold w-36">Date</th>
-                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold w-36">User</th>
-                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold w-48">Action</th>
-                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold">Description</th>
-                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold w-28">Type</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-coffee-100">
-                {logs.map((log) => (
-                  <tr key={log.id} className="hover:bg-coffee-50 transition-colors">
-                    <td className="px-4 py-2.5 text-coffee-400 text-xs whitespace-nowrap">
-                      {formatDate(log.createdAt)}
-                    </td>
-                    <td className="px-4 py-2.5 text-coffee-600 text-xs truncate max-w-[130px]">
-                      {log.user?.name ?? <span className="text-coffee-300">System</span>}
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <code className="text-xs bg-coffee-100 text-coffee-700 rounded px-1.5 py-0.5 font-mono">
-                        {log.action}
-                      </code>
-                    </td>
-                    <td className="px-4 py-2.5 text-coffee-600 text-xs max-w-xs truncate">
-                      {log.description || '—'}
-                    </td>
-                    <td className="px-4 py-2.5 text-coffee-400 text-xs">
-                      {log.auditableType ?? '—'}
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-coffee-50 border-b border-coffee-200">
+                  <tr>
+                    <th className="text-left px-3 sm:px-4 py-3 text-coffee-700 font-semibold">Date</th>
+                    <th className="text-left px-3 sm:px-4 py-3 text-coffee-700 font-semibold hidden sm:table-cell">User</th>
+                    <th className="text-left px-3 sm:px-4 py-3 text-coffee-700 font-semibold">Action</th>
+                    <th className="text-left px-3 sm:px-4 py-3 text-coffee-700 font-semibold hidden md:table-cell">Description</th>
+                    <th className="text-left px-3 sm:px-4 py-3 text-coffee-700 font-semibold hidden lg:table-cell">Type</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-coffee-100">
+                  {logs.map((log) => (
+                    <tr key={log.id} className="hover:bg-coffee-50 transition-colors">
+                      <td className="px-3 sm:px-4 py-2.5 text-coffee-400 text-xs whitespace-nowrap">
+                        {formatDate(log.createdAt)}
+                      </td>
+                      <td className="px-3 sm:px-4 py-2.5 text-coffee-600 text-xs truncate max-w-[130px] hidden sm:table-cell">
+                        {log.user?.name ?? <span className="text-coffee-300">System</span>}
+                      </td>
+                      <td className="px-3 sm:px-4 py-2.5">
+                        <code className="text-xs bg-coffee-100 text-coffee-700 rounded px-1.5 py-0.5 font-mono">
+                          {log.action}
+                        </code>
+                      </td>
+                      <td className="px-3 sm:px-4 py-2.5 text-coffee-600 text-xs max-w-xs truncate hidden md:table-cell">
+                        {log.description || '—'}
+                      </td>
+                      <td className="px-3 sm:px-4 py-2.5 text-coffee-400 text-xs hidden lg:table-cell">
+                        {log.auditableType ?? '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           {/* Pagination */}
           {Math.ceil(total / pageSize) > 1 && (
-            <div className="flex items-center justify-center gap-2">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-2">
               {pageNum > 1 && (
                 <a
                   href={buildQuery({ page: String(pageNum - 1) })}
-                  className="px-4 py-2 text-sm border border-coffee-200 rounded-lg text-coffee-600 hover:bg-coffee-50 transition-colors"
+                  className="px-4 py-2 text-sm border border-coffee-200 rounded-lg text-coffee-600 hover:bg-coffee-50 transition-colors w-full sm:w-auto text-center"
                 >
                   Previous
                 </a>
@@ -197,7 +199,7 @@ export default async function AuditLogsPage({
               {pageNum < Math.ceil(total / pageSize) && (
                 <a
                   href={buildQuery({ page: String(pageNum + 1) })}
-                  className="px-4 py-2 text-sm border border-coffee-200 rounded-lg text-coffee-600 hover:bg-coffee-50 transition-colors"
+                  className="px-4 py-2 text-sm border border-coffee-200 rounded-lg text-coffee-600 hover:bg-coffee-50 transition-colors w-full sm:w-auto text-center"
                 >
                   Next
                 </a>

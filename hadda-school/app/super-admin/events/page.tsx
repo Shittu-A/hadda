@@ -29,17 +29,17 @@ export default async function EventsPage() {
   const today = new Date().toISOString().split('T')[0]
 
   return (
-    <div className="p-6 space-y-8">
+    <div className="p-4 sm:p-6 space-y-8">
       <div>
         <h1 className="text-2xl font-bold text-coffee-900">Events</h1>
         <p className="text-coffee-600 text-sm mt-0.5">Manage school events and announcements</p>
       </div>
 
       {/* Create form */}
-      <div className="bg-white border border-coffee-200 rounded-xl p-5">
+      <div className="bg-white border border-coffee-200 rounded-xl p-4 sm:p-5">
         <h2 className="font-semibold text-coffee-800 mb-4">Create Event</h2>
         <form action={handleCreate} className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div>
               <label className="block text-sm font-medium text-coffee-700 mb-1">Title *</label>
               <input
@@ -104,73 +104,75 @@ export default async function EventsPage() {
         <p className="text-coffee-400 text-sm">No events yet.</p>
       ) : (
         <div className="bg-white border border-coffee-200 rounded-xl overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-coffee-50 border-b border-coffee-200">
-              <tr>
-                <th className="text-left px-4 py-3 text-coffee-700 font-semibold">Title</th>
-                <th className="text-left px-4 py-3 text-coffee-700 font-semibold">Date</th>
-                <th className="text-left px-4 py-3 text-coffee-700 font-semibold">Video</th>
-                <th className="text-left px-4 py-3 text-coffee-700 font-semibold">Status</th>
-                <th className="px-4 py-3"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-coffee-100">
-              {events.map((event) => (
-                <tr key={event.id} className="hover:bg-coffee-50 transition-colors">
-                  <td className="px-4 py-3">
-                    <p className="font-medium text-coffee-900">{event.title}</p>
-                    {event.description && (
-                      <p className="text-xs text-coffee-400 mt-0.5 max-w-xs truncate">{event.description}</p>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-coffee-600 text-xs whitespace-nowrap">
-                    {formatDate(event.eventDate)}
-                  </td>
-                  <td className="px-4 py-3 text-xs">
-                    {event.youtubeUrl ? (
-                      <a
-                        href={event.youtubeUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-red-500 hover:text-red-700 underline underline-offset-2"
-                      >
-                        YouTube ↗
-                      </a>
-                    ) : (
-                      <span className="text-coffee-300">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <Badge variant={event.isPublished ? 'success' : 'neutral'}>
-                      {event.isPublished ? 'Published' : 'Draft'}
-                    </Badge>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-3 justify-end">
-                      <Link
-                        href={`/super-admin/events/${event.id}/edit`}
-                        className="text-xs text-coffee-500 hover:text-coffee-800 transition-colors"
-                      >
-                        Edit
-                      </Link>
-                      <form action={handleToggle}>
-                        <input type="hidden" name="id" value={event.id} />
-                        <button type="submit" className="text-xs text-coffee-500 hover:text-coffee-800 transition-colors">
-                          {event.isPublished ? 'Unpublish' : 'Publish'}
-                        </button>
-                      </form>
-                      <form action={handleDelete}>
-                        <input type="hidden" name="id" value={event.id} />
-                        <button type="submit" className="text-xs text-red-400 hover:text-red-600 transition-colors">
-                          Delete
-                        </button>
-                      </form>
-                    </div>
-                  </td>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-coffee-50 border-b border-coffee-200">
+                <tr>
+                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold">Title</th>
+                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold hidden sm:table-cell">Date</th>
+                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold hidden sm:table-cell">Video</th>
+                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold">Status</th>
+                  <th className="px-4 py-3"></th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-coffee-100">
+                {events.map((event) => (
+                  <tr key={event.id} className="hover:bg-coffee-50 transition-colors">
+                    <td className="px-4 py-3">
+                      <p className="font-medium text-coffee-900 text-sm">{event.title}</p>
+                      {event.description && (
+                        <p className="text-xs text-coffee-400 mt-0.5 max-w-xs truncate">{event.description}</p>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-coffee-600 text-xs whitespace-nowrap hidden sm:table-cell">
+                      {formatDate(event.eventDate)}
+                    </td>
+                    <td className="px-4 py-3 text-xs hidden sm:table-cell">
+                      {event.youtubeUrl ? (
+                        <a
+                          href={event.youtubeUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-red-500 hover:text-red-700 underline underline-offset-2"
+                        >
+                          YouTube ↗
+                        </a>
+                      ) : (
+                        <span className="text-coffee-300">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <Badge variant={event.isPublished ? 'success' : 'neutral'}>
+                        {event.isPublished ? 'Published' : 'Draft'}
+                      </Badge>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 sm:gap-3 justify-end">
+                        <Link
+                          href={`/super-admin/events/${event.id}/edit`}
+                          className="text-xs text-coffee-500 hover:text-coffee-800 transition-colors"
+                        >
+                          Edit
+                        </Link>
+                        <form action={handleToggle}>
+                          <input type="hidden" name="id" value={event.id} />
+                          <button type="submit" className="text-xs text-coffee-500 hover:text-coffee-800 transition-colors">
+                            {event.isPublished ? 'Unpublish' : 'Publish'}
+                          </button>
+                        </form>
+                        <form action={handleDelete}>
+                          <input type="hidden" name="id" value={event.id} />
+                          <button type="submit" className="text-xs text-red-400 hover:text-red-600 transition-colors">
+                            Delete
+                          </button>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

@@ -30,14 +30,14 @@ export default async function SettingsPage({
   const groupOrder = ['school', 'finance', 'sms', 'general'] as const
 
   return (
-    <div className="p-6 space-y-6 max-w-3xl">
+    <div className="p-4 sm:p-6 space-y-6 max-w-3xl">
       <div>
         <h1 className="text-2xl font-bold text-coffee-900">Settings</h1>
         <p className="text-coffee-600 text-sm mt-0.5">Configure system-wide preferences</p>
       </div>
 
       {searchParams.saved === '1' && (
-        <div className="bg-green-50 border border-green-200 rounded-xl px-5 py-3 text-green-800 text-sm font-medium">
+        <div className="bg-green-50 border border-green-200 rounded-xl px-4 sm:px-5 py-3 text-green-800 text-sm font-medium">
           Settings saved successfully.
         </div>
       )}
@@ -47,7 +47,7 @@ export default async function SettingsPage({
           const settings = grouped[groupKey]
           if (!settings || settings.length === 0) return null
           return (
-            <div key={groupKey} className="bg-white border border-coffee-200 rounded-xl p-5">
+            <div key={groupKey} className="bg-white border border-coffee-200 rounded-xl p-4 sm:p-5">
               <h2 className="font-semibold text-coffee-800 mb-4">
                 {SETTING_GROUP_LABELS[groupKey]}
               </h2>

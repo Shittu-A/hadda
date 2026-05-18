@@ -59,25 +59,25 @@ export default async function AdminFeesPage() {
   )
 
   return (
-    <div className="p-6 space-y-8">
-      <div className="flex items-center justify-between">
+    <div className="p-4 sm:p-6 space-y-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-coffee-900">Fee Structures</h1>
           <p className="text-coffee-600 text-sm mt-0.5">Manage school fee types and amounts</p>
         </div>
         <Link
           href="/admin/fees/payments"
-          className="border border-coffee-200 text-coffee-700 rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-50 transition-colors"
+          className="w-full sm:w-auto text-center border border-coffee-200 text-coffee-700 rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-50 transition-colors"
         >
           View Payments →
         </Link>
       </div>
 
       {/* Create form */}
-      <div className="bg-white border border-coffee-200 rounded-xl p-5">
+      <div className="bg-white border border-coffee-200 rounded-xl p-4 sm:p-5">
         <h2 className="font-semibold text-coffee-800 mb-4">Create Fee Structure</h2>
         <form action={handleCreate} className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <div>
               <label className="block text-sm font-medium text-coffee-700 mb-1">Name *</label>
               <input
@@ -143,7 +143,7 @@ export default async function AdminFeesPage() {
             <div className="flex items-end">
               <button
                 type="submit"
-                className="bg-coffee-900 text-white rounded-lg px-6 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
+                className="w-full sm:w-auto bg-coffee-900 text-white rounded-lg px-6 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
               >
                 Create Fee
               </button>
@@ -167,17 +167,17 @@ export default async function AdminFeesPage() {
                   <h2 className="font-semibold text-coffee-800">{yearName}</h2>
                   {isCurrent && <Badge variant="success">Current</Badge>}
                 </div>
-                <div className="bg-white border border-coffee-200 rounded-xl overflow-hidden">
+                <div className="bg-white border border-coffee-200 rounded-xl overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead className="bg-coffee-50 border-b border-coffee-200">
                       <tr>
-                        <th className="text-left px-4 py-3 text-coffee-700 font-semibold">Name</th>
-                        <th className="text-left px-4 py-3 text-coffee-700 font-semibold">Amount</th>
-                        <th className="text-left px-4 py-3 text-coffee-700 font-semibold">Frequency</th>
-                        <th className="text-left px-4 py-3 text-coffee-700 font-semibold">Assigned To</th>
-                        <th className="text-left px-4 py-3 text-coffee-700 font-semibold">Payments</th>
-                        <th className="text-left px-4 py-3 text-coffee-700 font-semibold">Status</th>
-                        <th className="px-4 py-3"></th>
+                        <th className="text-left px-3 sm:px-4 py-3 text-coffee-700 font-semibold">Name</th>
+                        <th className="text-left px-3 sm:px-4 py-3 text-coffee-700 font-semibold">Amount</th>
+                        <th className="text-left px-3 sm:px-4 py-3 text-coffee-700 font-semibold hidden sm:table-cell">Frequency</th>
+                        <th className="text-left px-3 sm:px-4 py-3 text-coffee-700 font-semibold hidden lg:table-cell">Assigned To</th>
+                        <th className="text-left px-3 sm:px-4 py-3 text-coffee-700 font-semibold hidden sm:table-cell">Payments</th>
+                        <th className="text-left px-3 sm:px-4 py-3 text-coffee-700 font-semibold">Status</th>
+                        <th className="px-3 sm:px-4 py-3"></th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-coffee-100">
@@ -186,7 +186,7 @@ export default async function AdminFeesPage() {
                         const studentAssignments = fee.assignments.filter((a) => a.studentId)
                         return (
                           <tr key={fee.id} className="hover:bg-coffee-50 transition-colors">
-                            <td className="px-4 py-3">
+                            <td className="px-3 sm:px-4 py-3">
                               <Link
                                 href={`/admin/fees/${fee.id}`}
                                 className="font-medium text-coffee-900 hover:text-coffee-600 transition-colors"
@@ -194,16 +194,16 @@ export default async function AdminFeesPage() {
                                 {fee.name}
                               </Link>
                               {fee.description && (
-                                <p className="text-xs text-coffee-400 mt-0.5">{fee.description}</p>
+                                <p className="text-xs text-coffee-400 mt-0.5 hidden sm:block">{fee.description}</p>
                               )}
                             </td>
-                            <td className="px-4 py-3 font-medium text-coffee-900">
+                            <td className="px-3 sm:px-4 py-3 font-medium text-coffee-900 text-xs sm:text-sm">
                               {formatCurrency(Number(fee.amount))}
                             </td>
-                            <td className="px-4 py-3 text-coffee-600">
+                            <td className="px-3 sm:px-4 py-3 text-coffee-600 text-xs hidden sm:table-cell">
                               {FREQ_LABEL[fee.frequency] || fee.frequency}
                             </td>
-                            <td className="px-4 py-3 text-coffee-600 text-xs">
+                            <td className="px-3 sm:px-4 py-3 text-coffee-600 text-xs hidden lg:table-cell">
                               {classAssignments.length > 0 && (
                                 <span>{classAssignments.map((a) => a.class?.name).join(', ')}</span>
                               )}
@@ -212,17 +212,17 @@ export default async function AdminFeesPage() {
                               )}
                               {fee.assignments.length === 0 && <span className="text-coffee-300">Unassigned</span>}
                             </td>
-                            <td className="px-4 py-3 text-coffee-600">{fee._count.payments}</td>
-                            <td className="px-4 py-3">
+                            <td className="px-3 sm:px-4 py-3 text-coffee-600 text-xs hidden sm:table-cell">{fee._count.payments}</td>
+                            <td className="px-3 sm:px-4 py-3">
                               <Badge variant={fee.isActive ? 'success' : 'neutral'}>
                                 {fee.isActive ? 'Active' : 'Inactive'}
                               </Badge>
                             </td>
-                            <td className="px-4 py-3">
-                              <div className="flex items-center gap-3 justify-end">
+                            <td className="px-3 sm:px-4 py-3">
+                              <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 sm:gap-3 justify-end">
                                 <Link
                                   href={`/admin/fees/${fee.id}`}
-                                  className="text-xs text-coffee-500 hover:text-coffee-800 transition-colors"
+                                  className="text-xs text-coffee-500 hover:text-coffee-800 transition-colors whitespace-nowrap"
                                 >
                                   Manage
                                 </Link>
@@ -230,7 +230,7 @@ export default async function AdminFeesPage() {
                                   <input type="hidden" name="id" value={fee.id} />
                                   <button
                                     type="submit"
-                                    className="text-xs text-coffee-500 hover:text-coffee-800 transition-colors"
+                                    className="text-xs text-coffee-500 hover:text-coffee-800 transition-colors whitespace-nowrap"
                                   >
                                     {fee.isActive ? 'Deactivate' : 'Activate'}
                                   </button>
@@ -240,7 +240,7 @@ export default async function AdminFeesPage() {
                                     <input type="hidden" name="id" value={fee.id} />
                                     <button
                                       type="submit"
-                                      className="text-xs text-red-400 hover:text-red-600 transition-colors"
+                                      className="text-xs text-red-400 hover:text-red-600 transition-colors whitespace-nowrap"
                                     >
                                       Delete
                                     </button>
