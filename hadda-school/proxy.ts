@@ -13,6 +13,7 @@ export default auth((req) => {
     pathname === '/events' ||
     pathname === '/pay' ||
     pathname.startsWith('/pay/') ||
+    pathname.startsWith('/api/pay/') ||
     pathname.startsWith('/api/webhooks/') ||
     pathname === '/login' ||
     pathname === '/forgot-password' ||
@@ -22,26 +23,32 @@ export default auth((req) => {
 
   if (isPublic) return NextResponse.next()
 
+  const redirectTo = (path: string) => {
+    const url = req.nextUrl.clone()
+    url.pathname = path
+    return NextResponse.redirect(url)
+  }
+
   if (!session) {
-    return NextResponse.redirect(new URL('/login', req.url))
+    return redirectTo('/login')
   }
 
   if (!session.user.isActive && pathname !== '/deactivated') {
-    return NextResponse.redirect(new URL('/deactivated', req.url))
+    return redirectTo('/deactivated')
   }
 
   const role = session.user.role
 
   if (pathname.startsWith('/super-admin') && role !== 'super_admin') {
-    return NextResponse.redirect(new URL('/', req.url))
+    return redirectTo('/')
   }
 
   if (pathname.startsWith('/admin') && role !== 'admin' && role !== 'super_admin') {
-    return NextResponse.redirect(new URL('/', req.url))
+    return redirectTo('/')
   }
 
   if (pathname.startsWith('/teacher') && role !== 'teacher' && role !== 'admin' && role !== 'super_admin') {
-    return NextResponse.redirect(new URL('/', req.url))
+    return redirectTo('/')
   }
 
   return NextResponse.next()
