@@ -13,13 +13,14 @@ async function handleMark(formData: FormData): Promise<void> {
 export default async function TeacherAttendancePage({
   searchParams,
 }: {
-  searchParams: { date?: string }
+  searchParams: Promise<{ date?: string }>
 }) {
   const session = await auth()
   if (!session) redirect('/login')
 
+  const sp = await searchParams
   const today = new Date().toISOString().split('T')[0]
-  const selectedDate = searchParams.date || today
+  const selectedDate = sp.date || today
   const attendanceDate = new Date(selectedDate)
 
   // Get classes where this teacher is assigned

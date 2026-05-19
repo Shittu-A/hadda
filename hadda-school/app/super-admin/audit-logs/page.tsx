@@ -6,12 +6,13 @@ import { formatDate } from '@/lib/utils'
 export default async function AuditLogsPage({
   searchParams,
 }: {
-  searchParams: { q?: string; userId?: string; from?: string; to?: string; page?: string }
+  searchParams: Promise<{ q?: string; userId?: string; from?: string; to?: string; page?: string }>
 }) {
   const session = await auth()
   if (!session) redirect('/login')
 
-  const pageNum = Math.max(1, parseInt(searchParams.page || '1'))
+  const sp = await searchParams
+  const pageNum = Math.max(1, parseInt(sp.page || '1'))
   const pageSize = 50
   const today = new Date().toISOString().split('T')[0]
 
@@ -21,19 +22,19 @@ export default async function AuditLogsPage({
   })
 
   const where: any = {}
-  if (searchParams.userId) where.userId = searchParams.userId
-  if (searchParams.q) {
-    const q = searchParams.q.trim()
+  if (sp.userId) where.userId = sp.userId
+  if (sp.q) {
+    const q = sp.q.trim()
     where.OR = [
       { action: { contains: q, mode: 'insensitive' } },
       { description: { contains: q, mode: 'insensitive' } },
       { auditableType: { contains: q, mode: 'insensitive' } },
     ]
   }
-  if (searchParams.from || searchParams.to) {
+  if (sp.from || sp.to) {
     where.createdAt = {}
-    if (searchParams.from) where.createdAt.gte = new Date(searchParams.from)
-    if (searchParams.to) where.createdAt.lte = new Date(searchParams.to + 'T23:59:59')
+    if (sp.from) where.createdAt.gte = new Date(sp.from)
+    if (sp.to) where.createdAt.lte = new Date(sp.to + 'T23:59:59')
   }
 
   const [logs, total] = await Promise.all([
@@ -50,10 +51,10 @@ export default async function AuditLogsPage({
   function buildQuery(overrides: Record<string, string | undefined>) {
     const params = new URLSearchParams()
     const merged = {
-      q: searchParams.q,
-      userId: searchParams.userId,
-      from: searchParams.from,
-      to: searchParams.to,
+      q: sp.q,
+      userId: sp.userId,
+      from: sp.from,
+      to: sp.to,
       page: String(pageNum),
       ...overrides,
     }
@@ -76,7 +77,7 @@ export default async function AuditLogsPage({
             <input
               type="text"
               name="q"
-              defaultValue={searchParams.q || ''}
+              defaultValue={sp.q || ''}
               placeholder="e.g. leave.approved"
               className="w-full border border-coffee-200 rounded-lg px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-coffee-400"
             />
@@ -85,7 +86,7 @@ export default async function AuditLogsPage({
             <label className="block text-xs font-medium text-coffee-600 mb-1">User</label>
             <select
               name="userId"
-              defaultValue={searchParams.userId || ''}
+              defaultValue={sp.userId || ''}
               className="w-full border border-coffee-200 rounded-lg px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-coffee-400"
             >
               <option value="">All users</option>
@@ -99,7 +100,7 @@ export default async function AuditLogsPage({
             <input
               type="date"
               name="from"
-              defaultValue={searchParams.from || ''}
+              defaultValue={sp.from || ''}
               max={today}
               className="w-full border border-coffee-200 rounded-lg px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-coffee-400"
             />
@@ -109,7 +110,7 @@ export default async function AuditLogsPage({
             <input
               type="date"
               name="to"
-              defaultValue={searchParams.to || ''}
+              defaultValue={sp.to || ''}
               max={today}
               className="w-full border border-coffee-200 rounded-lg px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-coffee-400"
             />

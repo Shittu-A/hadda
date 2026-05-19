@@ -14,16 +14,17 @@ const STATUS_VARIANT: Record<string, 'success' | 'danger' | 'warning' | 'neutral
 export default async function AttendanceHistoryPage({
   searchParams,
 }: {
-  searchParams: { from?: string; to?: string }
+  searchParams: Promise<{ from?: string; to?: string }>
 }) {
   const session = await auth()
   if (!session) redirect('/login')
 
+  const sp = await searchParams
   const today = new Date().toISOString().split('T')[0]
-  const fromDate = searchParams.from
-    ? new Date(searchParams.from)
+  const fromDate = sp.from
+    ? new Date(sp.from)
     : new Date(Date.now() - 14 * 24 * 60 * 60 * 1000) // last 14 days
-  const toDate = searchParams.to ? new Date(searchParams.to) : new Date()
+  const toDate = sp.to ? new Date(sp.to) : new Date()
 
   // Get classes where this teacher is assigned
   const myClasses = await db.classRoom.findMany({

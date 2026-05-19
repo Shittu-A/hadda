@@ -15,12 +15,13 @@ const STATUS_VARIANT: Record<string, 'success' | 'info' | 'warning' | 'danger' |
 export default async function AlumniPage({
   searchParams,
 }: {
-  searchParams: { status?: string; yearId?: string; q?: string; page?: string }
+  searchParams: Promise<{ status?: string; yearId?: string; q?: string; page?: string }>
 }) {
   const session = await auth()
   if (!session) redirect('/login')
 
-  const pageNum = Math.max(1, parseInt(searchParams.page || '1'))
+  const sp = await searchParams
+  const pageNum = Math.max(1, parseInt(sp.page || '1'))
   const pageSize = 50
 
   const academicYears = await db.academicYear.findMany({ orderBy: { startDate: 'desc' } })
@@ -29,16 +30,16 @@ export default async function AlumniPage({
     status: { in: ['graduated', 'withdrawn', 'transferred'] },
   }
 
-  if (searchParams.status && ['graduated', 'withdrawn', 'transferred'].includes(searchParams.status)) {
-    where.status = searchParams.status
+  if (sp.status && ['graduated', 'withdrawn', 'transferred'].includes(sp.status)) {
+    where.status = sp.status
   }
 
-  if (searchParams.yearId) {
-    where.academicYearId = searchParams.yearId
+  if (sp.yearId) {
+    where.academicYearId = sp.yearId
   }
 
-  if (searchParams.q) {
-    const q = searchParams.q.trim()
+  if (sp.q) {
+    const q = sp.q.trim()
     where.OR = [
       { firstName: { contains: q, mode: 'insensitive' } },
       { lastName: { contains: q, mode: 'insensitive' } },
@@ -74,9 +75,9 @@ export default async function AlumniPage({
   function buildQuery(overrides: Record<string, string | undefined>) {
     const params = new URLSearchParams()
     const merged = {
-      status: searchParams.status,
-      yearId: searchParams.yearId,
-      q: searchParams.q,
+      status: sp.status,
+      yearId: sp.yearId,
+      q: sp.q,
       page: String(pageNum),
       ...overrides,
     }
@@ -115,7 +116,7 @@ export default async function AlumniPage({
             <input
               type="text"
               name="q"
-              defaultValue={searchParams.q || ''}
+              defaultValue={sp.q || ''}
               placeholder="Name or admission no."
               className="w-full border border-coffee-200 rounded-lg px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-coffee-400"
             />
@@ -124,7 +125,7 @@ export default async function AlumniPage({
             <label className="block text-xs font-medium text-coffee-600 mb-1">Status</label>
             <select
               name="status"
-              defaultValue={searchParams.status || ''}
+              defaultValue={sp.status || ''}
               className="w-full border border-coffee-200 rounded-lg px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-coffee-400"
             >
               <option value="">All</option>
@@ -137,7 +138,7 @@ export default async function AlumniPage({
             <label className="block text-xs font-medium text-coffee-600 mb-1">Enrolled Year</label>
             <select
               name="yearId"
-              defaultValue={searchParams.yearId || ''}
+              defaultValue={sp.yearId || ''}
               className="w-full border border-coffee-200 rounded-lg px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-coffee-400"
             >
               <option value="">All years</option>

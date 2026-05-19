@@ -3,10 +3,11 @@ import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { updateStudent } from '@/lib/actions/students'
 
-export default async function EditStudentPage({ params }: { params: { id: string } }) {
+export default async function EditStudentPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const [student, classes] = await Promise.all([
     db.student.findFirst({
-      where: { id: params.id, deletedAt: null },
+      where: { id, deletedAt: null },
       include: { currentClass: true, academicYear: true },
     }),
     db.classRoom.findMany({
@@ -19,8 +20,8 @@ export default async function EditStudentPage({ params }: { params: { id: string
 
   async function handleUpdate(formData: FormData) {
     'use server'
-    const result = await updateStudent(params.id, formData)
-    if (result.success) redirect(`/admin/students/${params.id}`)
+    const result = await updateStudent(id, formData)
+    if (result.success) redirect(`/admin/students/${id}`)
   }
 
   const dobValue = student.dateOfBirth

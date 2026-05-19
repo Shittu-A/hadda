@@ -14,22 +14,23 @@ const STATUS_VARIANT: Record<string, 'success' | 'warning' | 'danger' | 'info' |
 export default async function StudentsPage({
   searchParams,
 }: {
-  searchParams: { q?: string; classId?: string; status?: string; page?: string }
+  searchParams: Promise<{ q?: string; classId?: string; status?: string; page?: string }>
 }) {
-  const page = Math.max(1, Number(searchParams.page) || 1)
+  const sp = await searchParams
+  const page = Math.max(1, Number(sp.page) || 1)
   const perPage = 25
 
   const where: any = { deletedAt: null }
-  if (searchParams.q) {
-    const q = searchParams.q.trim()
+  if (sp.q) {
+    const q = sp.q.trim()
     where.OR = [
       { firstName: { contains: q, mode: 'insensitive' } },
       { lastName: { contains: q, mode: 'insensitive' } },
       { admissionNumber: { contains: q, mode: 'insensitive' } },
     ]
   }
-  if (searchParams.classId) where.currentClassId = searchParams.classId
-  if (searchParams.status) where.status = searchParams.status
+  if (sp.classId) where.currentClassId = sp.classId
+  if (sp.status) where.status = sp.status
 
   const [students, total, classes] = await Promise.all([
     db.student.findMany({
@@ -71,13 +72,13 @@ export default async function StudentsPage({
       <form method="GET" className="flex flex-col sm:flex-row flex-wrap gap-3">
         <input
           name="q"
-          defaultValue={searchParams.q}
+          defaultValue={sp.q}
           placeholder="Search name or admission no…"
           className="w-full sm:w-64 border border-coffee-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-coffee-400"
         />
         <select
           name="classId"
-          defaultValue={searchParams.classId}
+          defaultValue={sp.classId}
           className="w-full sm:w-auto border border-coffee-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-coffee-400"
         >
           <option value="">All Classes</option>
@@ -89,7 +90,7 @@ export default async function StudentsPage({
         </select>
         <select
           name="status"
-          defaultValue={searchParams.status}
+          defaultValue={sp.status}
           className="w-full sm:w-auto border border-coffee-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-coffee-400"
         >
           <option value="">All Statuses</option>
@@ -105,7 +106,7 @@ export default async function StudentsPage({
         >
           Filter
         </button>
-        {(searchParams.q || searchParams.classId || searchParams.status) && (
+        {(sp.q || sp.classId || sp.status) && (
           <Link
             href="/admin/students"
             className="text-coffee-500 text-sm flex items-center hover:text-coffee-700"
@@ -182,7 +183,7 @@ export default async function StudentsPage({
           <div className="flex gap-2">
             {page > 1 && (
               <Link
-                href={`?page=${page - 1}${searchParams.q ? `&q=${searchParams.q}` : ''}${searchParams.classId ? `&classId=${searchParams.classId}` : ''}${searchParams.status ? `&status=${searchParams.status}` : ''}`}
+                href={`?page=${page - 1}${sp.q ? `&q=${sp.q}` : ''}${sp.classId ? `&classId=${sp.classId}` : ''}${sp.status ? `&status=${sp.status}` : ''}`}
                 className="border border-coffee-200 rounded-lg px-3 py-1.5 hover:bg-coffee-50"
               >
                 ← Previous
@@ -190,7 +191,7 @@ export default async function StudentsPage({
             )}
             {page < totalPages && (
               <Link
-                href={`?page=${page + 1}${searchParams.q ? `&q=${searchParams.q}` : ''}${searchParams.classId ? `&classId=${searchParams.classId}` : ''}${searchParams.status ? `&status=${searchParams.status}` : ''}`}
+                href={`?page=${page + 1}${sp.q ? `&q=${sp.q}` : ''}${sp.classId ? `&classId=${sp.classId}` : ''}${sp.status ? `&status=${sp.status}` : ''}`}
                 className="border border-coffee-200 rounded-lg px-3 py-1.5 hover:bg-coffee-50"
               >
                 Next →

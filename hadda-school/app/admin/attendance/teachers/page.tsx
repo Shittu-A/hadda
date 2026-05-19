@@ -13,10 +13,11 @@ const STATUS_VARIANT: Record<string, 'success' | 'danger' | 'warning' | 'neutral
 export default async function TeacherAttendancePage({
   searchParams,
 }: {
-  searchParams: { date?: string }
+  searchParams: Promise<{ date?: string }>
 }) {
+  const sp = await searchParams
   const today = new Date().toISOString().split('T')[0]
-  const selectedDate = searchParams.date || today
+  const selectedDate = sp.date || today
   const attendanceDate = new Date(selectedDate)
 
   const teachers = await db.user.findMany({

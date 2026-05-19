@@ -22,10 +22,11 @@ async function handleRemove(formData: FormData): Promise<void> {
   await removeFeeAssignment(formData)
 }
 
-export default async function FeeStructureDetailPage({ params }: { params: { id: string } }) {
+export default async function FeeStructureDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const [fee, classes] = await Promise.all([
     db.feeStructure.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         academicYear: true,
         assignments: {

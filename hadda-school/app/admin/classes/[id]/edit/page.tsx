@@ -3,9 +3,10 @@ import { updateClass, assignTeachers } from '@/lib/actions/classes'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 
-export default async function EditClassPage({ params }: { params: { id: string } }) {
+export default async function EditClassPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const classroom = await db.classRoom.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: { teachers: true },
   })
 
@@ -24,20 +25,20 @@ export default async function EditClassPage({ params }: { params: { id: string }
 
   async function handleUpdate(formData: FormData) {
     'use server'
-    const result = await updateClass(params.id, formData)
+    const result = await updateClass(id, formData)
     if (result.success) redirect('/admin/classes')
   }
 
   async function handleAssign(formData: FormData) {
     'use server'
-    await assignTeachers(params.id, formData)
-    redirect(`/admin/classes/${params.id}`)
+    await assignTeachers(id, formData)
+    redirect(`/admin/classes/${id}`)
   }
 
   return (
     <div className="p-4 sm:p-6 max-w-xl space-y-6">
       <div>
-        <Link href={`/admin/classes/${params.id}`} className="text-coffee-500 text-sm hover:text-coffee-700">
+        <Link href={`/admin/classes/${id}`} className="text-coffee-500 text-sm hover:text-coffee-700">
           ← Back to Class
         </Link>
         <h1 className="text-xl sm:text-2xl font-bold text-coffee-900 mt-2">Edit: {classroom.name}</h1>
@@ -108,7 +109,7 @@ export default async function EditClassPage({ params }: { params: { id: string }
 
         <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-1">
           <Link
-            href={`/admin/classes/${params.id}`}
+            href={`/admin/classes/${id}`}
             className="w-full sm:w-auto text-center border border-coffee-200 text-coffee-700 rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-50"
           >
             Cancel
@@ -164,7 +165,7 @@ export default async function EditClassPage({ params }: { params: { id: string }
 
         <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-1">
           <Link
-            href={`/admin/classes/${params.id}`}
+            href={`/admin/classes/${id}`}
             className="w-full sm:w-auto text-center border border-coffee-200 text-coffee-700 rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-50"
           >
             Cancel

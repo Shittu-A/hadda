@@ -14,9 +14,10 @@ const STATUS_VARIANT: Record<string, 'success' | 'warning' | 'danger' | 'info' |
   transferred: 'neutral',
 }
 
-export default async function StudentDetailPage({ params }: { params: { id: string } }) {
+export default async function StudentDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const student = await db.student.findFirst({
-    where: { id: params.id, deletedAt: null },
+    where: { id, deletedAt: null },
     include: {
       currentClass: true,
       academicYear: true,
@@ -38,7 +39,7 @@ export default async function StudentDetailPage({ params }: { params: { id: stri
 
   async function handleDelete() {
     'use server'
-    await deleteStudent(params.id)
+    await deleteStudent(id)
     redirect('/admin/students')
   }
 

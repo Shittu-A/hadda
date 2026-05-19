@@ -10,9 +10,9 @@ const TYPE_CONFIG: Record<string, { label: string; icon: string }> = {
 }
 
 function getNotificationMessage(type: string, data: unknown): string {
-  const d = data as Record<string, string>
+  const d = (data && typeof data === 'object' ? data : {}) as Record<string, string>
   if (type === 'new_leave_request') {
-    return `A new leave request was submitted for ${d.startDate} – ${d.endDate}.`
+    return `A new leave request was submitted${d.startDate ? ` for ${d.startDate} – ${d.endDate}` : ''}.`
   }
   if (type === 'leave_request_decided') {
     return d.decision === 'approved'
@@ -23,7 +23,7 @@ function getNotificationMessage(type: string, data: unknown): string {
 }
 
 function getNotificationLink(type: string, data: unknown): string {
-  const d = data as Record<string, string>
+  const d = (data && typeof data === 'object' ? data : {}) as Record<string, string>
   if (type === 'new_leave_request') return '/admin/leave-requests'
   if (type === 'leave_request_decided' && d.leaveId) return '/teacher/leave'
   return '#'

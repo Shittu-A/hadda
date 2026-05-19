@@ -28,17 +28,18 @@ async function handleProcess(formData: FormData): Promise<void> {
 export default async function PromotionsPage({
   searchParams,
 }: {
-  searchParams: { fromYearId?: string; toYearId?: string; done?: string }
+  searchParams: Promise<{ fromYearId?: string; toYearId?: string; done?: string }>
 }) {
   const session = await auth()
   if (!session) redirect('/login')
 
+  const sp = await searchParams
   const academicYears = await db.academicYear.findMany({ orderBy: { startDate: 'desc' } })
   const currentYear = academicYears.find((y) => y.isCurrent)
 
-  const fromYearId = searchParams.fromYearId || currentYear?.id || ''
-  const toYearId = searchParams.toYearId || ''
-  const isDone = searchParams.done === '1'
+  const fromYearId = sp.fromYearId || currentYear?.id || ''
+  const toYearId = sp.toYearId || ''
+  const isDone = sp.done === '1'
 
   let students: any[] = []
   let classes: { id: string; name: string }[] = []

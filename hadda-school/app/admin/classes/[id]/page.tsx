@@ -5,9 +5,10 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { formatDate } from '@/lib/utils'
 
-export default async function ClassDetailPage({ params }: { params: { id: string } }) {
+export default async function ClassDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
   const classroom = await db.classRoom.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: {
       academicYear: true,
       teachers: { include: { user: true } },

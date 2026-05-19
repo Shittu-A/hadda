@@ -12,7 +12,7 @@ interface TopnavProps {
 export default function Topnav({ user, notificationCount = 0 }: TopnavProps) {
   return (
     <header className="fixed top-0 left-0 md:left-64 right-0 h-16 bg-white border-b border-coffee-200 flex items-center justify-between md:justify-end px-4 md:px-6 z-20">
-      <span className="md:hidden text-sm font-semibold text-coffee-900">ABMA</span>
+      <Link href={user.role === 'teacher' ? '/teacher/dashboard' : user.role === 'super_admin' ? '/super-admin/dashboard' : '/admin/dashboard'} className="md:hidden text-sm font-semibold text-coffee-900 hover:text-coffee-600">ABMA</Link>
       <div className="flex items-center gap-2 sm:gap-4">
         <Link
           href={user.role === 'teacher' ? '/teacher/notifications' : user.role === 'super_admin' ? '/super-admin/notifications' : '/admin/notifications'}

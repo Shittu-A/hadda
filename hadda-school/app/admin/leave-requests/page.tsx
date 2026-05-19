@@ -12,9 +12,10 @@ const STATUS_VARIANT: Record<string, 'warning' | 'success' | 'danger'> = {
 export default async function LeaveRequestsPage({
   searchParams,
 }: {
-  searchParams: { status?: string }
+  searchParams: Promise<{ status?: string }>
 }) {
-  const filter = searchParams.status || 'pending'
+  const sp = await searchParams
+  const filter = sp.status || 'pending'
 
   const requests = await db.leaveRequest.findMany({
     where: filter === 'all' ? {} : { status: filter as any },

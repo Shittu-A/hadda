@@ -19,21 +19,22 @@ async function handleDelete(formData: FormData): Promise<void> {
 export default async function FeePaymentsPage({
   searchParams,
 }: {
-  searchParams: { studentId?: string; feeId?: string; from?: string; to?: string; page?: string }
+  searchParams: Promise<{ studentId?: string; feeId?: string; from?: string; to?: string; page?: string }>
 }) {
   const session = await auth()
   if (!session) redirect('/login')
 
+  const sp = await searchParams
   const today = new Date().toISOString().split('T')[0]
-  const pageNum = Math.max(1, parseInt(searchParams.page || '1'))
+  const pageNum = Math.max(1, parseInt(sp.page || '1'))
   const pageSize = 50
 
-  const fromDate = searchParams.from ? new Date(searchParams.from) : undefined
-  const toDate = searchParams.to ? new Date(searchParams.to + 'T23:59:59') : undefined
+  const fromDate = sp.from ? new Date(sp.from) : undefined
+  const toDate = sp.to ? new Date(sp.to + 'T23:59:59') : undefined
 
   const where: any = {}
-  if (searchParams.studentId) where.studentId = searchParams.studentId
-  if (searchParams.feeId) where.feeStructureId = searchParams.feeId
+  if (sp.studentId) where.studentId = sp.studentId
+  if (sp.feeId) where.feeStructureId = sp.feeId
   if (fromDate || toDate) {
     where.paymentDate = {}
     if (fromDate) where.paymentDate.gte = fromDate
@@ -77,10 +78,10 @@ export default async function FeePaymentsPage({
   function buildQuery(overrides: Record<string, string | undefined>) {
     const params = new URLSearchParams()
     const merged = {
-      studentId: searchParams.studentId,
-      feeId: searchParams.feeId,
-      from: searchParams.from,
-      to: searchParams.to,
+      studentId: sp.studentId,
+      feeId: sp.feeId,
+      from: sp.from,
+      to: sp.to,
       page: String(pageNum),
       ...overrides,
     }
@@ -113,7 +114,7 @@ export default async function FeePaymentsPage({
               <select
                 name="studentId"
                 required
-                defaultValue={searchParams.studentId || ''}
+                defaultValue={sp.studentId || ''}
                 className="w-full border border-coffee-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-400"
               >
                 <option value="">Select student</option>
@@ -130,7 +131,7 @@ export default async function FeePaymentsPage({
               <select
                 name="feeStructureId"
                 required
-                defaultValue={searchParams.feeId || ''}
+                defaultValue={sp.feeId || ''}
                 className="w-full border border-coffee-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-400"
               >
                 <option value="">Select fee</option>
@@ -230,7 +231,7 @@ export default async function FeePaymentsPage({
             <label className="block text-xs font-medium text-coffee-600 mb-1">Student</label>
             <select
               name="studentId"
-              defaultValue={searchParams.studentId || ''}
+              defaultValue={sp.studentId || ''}
               className="w-full border border-coffee-200 rounded-lg px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-coffee-400"
             >
               <option value="">All students</option>
@@ -246,7 +247,7 @@ export default async function FeePaymentsPage({
             <label className="block text-xs font-medium text-coffee-600 mb-1">Fee</label>
             <select
               name="feeId"
-              defaultValue={searchParams.feeId || ''}
+              defaultValue={sp.feeId || ''}
               className="w-full border border-coffee-200 rounded-lg px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-coffee-400"
             >
               <option value="">All fees</option>
@@ -261,7 +262,7 @@ export default async function FeePaymentsPage({
             <input
               type="date"
               name="from"
-              defaultValue={searchParams.from || ''}
+              defaultValue={sp.from || ''}
               max={today}
               className="w-full border border-coffee-200 rounded-lg px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-coffee-400"
             />
@@ -272,7 +273,7 @@ export default async function FeePaymentsPage({
             <input
               type="date"
               name="to"
-              defaultValue={searchParams.to || ''}
+              defaultValue={sp.to || ''}
               max={today}
               className="w-full border border-coffee-200 rounded-lg px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-coffee-400"
             />

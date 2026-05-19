@@ -19,11 +19,12 @@ async function handleMark(formData: FormData): Promise<void> {
 export default async function StudentAttendancePage({
   searchParams,
 }: {
-  searchParams: { classId?: string; date?: string }
+  searchParams: Promise<{ classId?: string; date?: string }>
 }) {
+  const sp = await searchParams
   const today = new Date().toISOString().split('T')[0]
-  const selectedDate = searchParams.date || today
-  const selectedClassId = searchParams.classId
+  const selectedDate = sp.date || today
+  const selectedClassId = sp.classId
 
   const currentYear = await db.academicYear.findFirst({ where: { isCurrent: true } })
   const classes = await db.classRoom.findMany({

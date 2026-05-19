@@ -3,19 +3,20 @@ import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { updateUser, changeUserPassword } from '@/lib/actions/users'
 
-export default async function EditUserPage({ params }: { params: { id: string } }) {
-  const user = await db.user.findUnique({ where: { id: params.id } })
+export default async function EditUserPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const user = await db.user.findUnique({ where: { id } })
   if (!user) notFound()
 
   async function handleUpdate(formData: FormData) {
     'use server'
-    const result = await updateUser(params.id, formData)
+    const result = await updateUser(id, formData)
     if (result.success) redirect('/super-admin/users')
   }
 
   async function handlePasswordChange(formData: FormData) {
     'use server'
-    await changeUserPassword(params.id, formData)
+    await changeUserPassword(id, formData)
     redirect('/super-admin/users')
   }
 

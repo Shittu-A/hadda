@@ -8,8 +8,9 @@ async function handleUpdate(formData: FormData): Promise<void> {
   await updateEvent(formData)
 }
 
-export default async function EditEventPage({ params }: { params: { id: string } }) {
-  const event = await db.event.findUnique({ where: { id: params.id } })
+export default async function EditEventPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const event = await db.event.findUnique({ where: { id } })
   if (!event) notFound()
 
   const eventDateStr = event.eventDate.toISOString().split('T')[0]

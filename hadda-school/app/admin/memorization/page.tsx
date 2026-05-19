@@ -19,7 +19,7 @@ const QUALITY_VARIANT: Record<string, 'success' | 'info' | 'warning' | 'danger'>
 export default async function AdminMemorizationPage({
   searchParams,
 }: {
-  searchParams: {
+  searchParams: Promise<{
     classId?: string
     studentId?: string
     type?: string
@@ -27,17 +27,18 @@ export default async function AdminMemorizationPage({
     from?: string
     to?: string
     page?: string
-  }
+  }>
 }) {
   const session = await auth()
   if (!session) redirect('/login')
 
+  const sp = await searchParams
   const today = new Date().toISOString().split('T')[0]
-  const pageNum = Math.max(1, parseInt(searchParams.page || '1'))
+  const pageNum = Math.max(1, parseInt(sp.page || '1'))
   const pageSize = 50
 
-  const fromDate = searchParams.from ? new Date(searchParams.from) : undefined
-  const toDate = searchParams.to ? new Date(searchParams.to + 'T23:59:59') : undefined
+  const fromDate = sp.from ? new Date(sp.from) : undefined
+  const toDate = sp.to ? new Date(sp.to + 'T23:59:59') : undefined
 
   const [classes, currentYear] = await Promise.all([
     db.classRoom.findMany({ orderBy: { order: 'asc' }, select: { id: true, name: true } }),
@@ -46,17 +47,17 @@ export default async function AdminMemorizationPage({
 
   // Build where clause
   const where: any = {}
-  if (searchParams.classId) {
-    where.student = { currentClassId: searchParams.classId }
+  if (sp.classId) {
+    where.student = { currentClassId: sp.classId }
   }
-  if (searchParams.studentId) {
-    where.studentId = searchParams.studentId
+  if (sp.studentId) {
+    where.studentId = sp.studentId
   }
-  if (searchParams.type) {
-    where.type = searchParams.type
+  if (sp.type) {
+    where.type = sp.type
   }
-  if (searchParams.quality) {
-    where.quality = searchParams.quality
+  if (sp.quality) {
+    where.quality = sp.quality
   }
   if (fromDate || toDate) {
     where.logDate = {}
@@ -65,9 +66,9 @@ export default async function AdminMemorizationPage({
   }
 
   // Fetch students in selected class for student filter dropdown
-  const classStudents = searchParams.classId
+  const classStudents = sp.classId
     ? await db.student.findMany({
-        where: { currentClassId: searchParams.classId, deletedAt: null, status: 'active' },
+        where: { currentClassId: sp.classId, deletedAt: null, status: 'active' },
         orderBy: [{ firstName: 'asc' }],
         select: { id: true, firstName: true, lastName: true },
       })
@@ -101,12 +102,12 @@ export default async function AdminMemorizationPage({
   function buildQuery(overrides: Record<string, string | undefined>) {
     const params = new URLSearchParams()
     const merged = {
-      classId: searchParams.classId,
-      studentId: searchParams.studentId,
-      type: searchParams.type,
-      quality: searchParams.quality,
-      from: searchParams.from,
-      to: searchParams.to,
+      classId: sp.classId,
+      studentId: sp.studentId,
+      type: sp.type,
+      quality: sp.quality,
+      from: sp.from,
+      to: sp.to,
       page: String(pageNum),
       ...overrides,
     }
@@ -145,7 +146,7 @@ export default async function AdminMemorizationPage({
             <label className="block text-xs font-medium text-coffee-600 mb-1">Class</label>
             <select
               name="classId"
-              defaultValue={searchParams.classId || ''}
+              defaultValue={sp.classId || ''}
               className="w-full border border-coffee-200 rounded-lg px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-coffee-400"
             >
               <option value="">All classes</option>
@@ -159,7 +160,7 @@ export default async function AdminMemorizationPage({
             <label className="block text-xs font-medium text-coffee-600 mb-1">Type</label>
             <select
               name="type"
-              defaultValue={searchParams.type || ''}
+              defaultValue={sp.type || ''}
               className="w-full border border-coffee-200 rounded-lg px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-coffee-400"
             >
               <option value="">All types</option>
@@ -173,7 +174,7 @@ export default async function AdminMemorizationPage({
             <label className="block text-xs font-medium text-coffee-600 mb-1">Quality</label>
             <select
               name="quality"
-              defaultValue={searchParams.quality || ''}
+              defaultValue={sp.quality || ''}
               className="w-full border border-coffee-200 rounded-lg px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-coffee-400"
             >
               <option value="">All quality</option>
@@ -189,7 +190,7 @@ export default async function AdminMemorizationPage({
             <input
               type="date"
               name="from"
-              defaultValue={searchParams.from || ''}
+              defaultValue={sp.from || ''}
               max={today}
               className="w-full border border-coffee-200 rounded-lg px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-coffee-400"
             />
@@ -200,7 +201,7 @@ export default async function AdminMemorizationPage({
             <input
               type="date"
               name="to"
-              defaultValue={searchParams.to || ''}
+              defaultValue={sp.to || ''}
               max={today}
               className="w-full border border-coffee-200 rounded-lg px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-coffee-400"
             />
