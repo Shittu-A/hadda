@@ -4,7 +4,7 @@ import PublicNav from '@/components/layout/PublicNav'
 import PublicFooter from '@/components/layout/PublicFooter'
 import HeroSlider from '@/components/ui/HeroSlider'
 import { db } from '@/lib/db'
-import { youtubeToEmbed, formatDate } from '@/lib/utils'
+import { youtubeVideoId, formatDate } from '@/lib/utils'
 import Link from 'next/link'
 
 export default async function LandingPage() {
@@ -129,25 +129,38 @@ export default async function LandingPage() {
               <h2 className="text-2xl sm:text-4xl font-bold text-coffee-900 mt-2">School Highlights</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
-              {events.map((event) => (
-                <div key={event.id} className="bg-white border border-coffee-200 rounded-2xl overflow-hidden hover:border-coffee-400 hover:shadow-md transition-all">
-                  <div className="aspect-video">
-                    <iframe
-                      src={youtubeToEmbed(event.youtubeUrl)}
-                      className="w-full h-full"
-                      allowFullScreen
-                      title={event.title}
-                    />
-                  </div>
-                  <div className="p-4">
-                    <p className="text-coffee-500 text-xs">{formatDate(event.eventDate)}</p>
-                    <h3 className="font-bold text-coffee-900 mt-1">{event.title}</h3>
-                    {event.description && (
-                      <p className="text-coffee-600 text-sm mt-1 line-clamp-2">{event.description}</p>
-                    )}
-                  </div>
-                </div>
-              ))}
+              {events.map((event) => {
+                const videoId = youtubeVideoId(event.youtubeUrl)
+                return (
+                  <Link key={event.id} href={`/events/${event.id}`} className="bg-white border border-coffee-200 rounded-2xl overflow-hidden hover:border-coffee-400 hover:shadow-md transition-all group block">
+                    <div className="aspect-video bg-coffee-100 relative overflow-hidden">
+                      {videoId ? (
+                        <img
+                          src={`https://img.youtube.com/vi/${videoId}/hqdefault.jpg`}
+                          alt={event.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-coffee-400 text-sm">No preview</div>
+                      )}
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-12 h-12 bg-black/60 rounded-full flex items-center justify-center group-hover:bg-black/80 transition-colors">
+                          <svg className="w-5 h-5 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M8 5v14l11-7z" />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="p-4">
+                      <p className="text-coffee-500 text-xs">{formatDate(event.eventDate)}</p>
+                      <h3 className="font-bold text-coffee-900 mt-1">{event.title}</h3>
+                      {event.description && (
+                        <p className="text-coffee-600 text-sm mt-1 line-clamp-2">{event.description}</p>
+                      )}
+                    </div>
+                  </Link>
+                )
+              })}
             </div>
             <div className="text-center mt-6 sm:mt-8">
               <Link href="/events" className="border-2 border-coffee-300 text-coffee-700 hover:border-coffee-500 rounded-xl px-5 sm:px-6 py-2 sm:py-3 font-medium text-sm sm:text-base transition-colors inline-block">
