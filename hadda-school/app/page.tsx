@@ -8,11 +8,16 @@ import { youtubeVideoId, formatDate } from '@/lib/utils'
 import Link from 'next/link'
 
 export default async function LandingPage() {
-  const events = await db.event.findMany({
-    where: { isPublished: true },
-    orderBy: { eventDate: 'desc' },
-    take: 3,
-  })
+  const [events, studentCount, graduateCount, teacherCount] = await Promise.all([
+    db.event.findMany({
+      where: { isPublished: true },
+      orderBy: { eventDate: 'desc' },
+      take: 3,
+    }),
+    db.student.count({ where: { status: 'active', deletedAt: null } }),
+    db.student.count({ where: { status: 'graduated' } }),
+    db.user.count({ where: { role: 'teacher', isActive: true } }),
+  ])
 
   return (
     <div className="min-h-screen bg-coffee-50">
@@ -44,9 +49,9 @@ export default async function LandingPage() {
       <section className="bg-coffee-900 py-8 sm:py-10">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-8 text-center">
           {[
-            { value: '500+', label: 'Students' },
-            { value: '120+', label: 'Graduates' },
-            { value: '30+', label: 'Teachers' },
+            { value: studentCount, label: 'Students' },
+            { value: graduateCount, label: 'Graduates' },
+            { value: teacherCount, label: 'Teachers' },
             { value: '10+', label: 'Years' },
           ].map((s) => (
             <div key={s.label}>
