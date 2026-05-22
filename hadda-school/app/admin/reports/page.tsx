@@ -67,11 +67,16 @@ export default async function ReportsPage() {
             <div className="flex flex-col sm:flex-row gap-2 pt-1">
               <button
                 type="submit"
-                name="format"
-                value="xlsx"
                 className="flex-1 bg-coffee-900 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
               >
                 Download Excel
+              </button>
+              <button
+                type="submit"
+                formAction="/api/reports/attendance/pdf"
+                className="flex-1 border border-coffee-200 text-coffee-700 rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-50 transition-colors"
+              >
+                Download PDF
               </button>
             </div>
           </form>
@@ -177,11 +182,16 @@ export default async function ReportsPage() {
             <div className="flex flex-col sm:flex-row gap-2 pt-1">
               <button
                 type="submit"
-                name="format"
-                value="xlsx"
                 className="flex-1 bg-coffee-900 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
               >
                 Download Excel
+              </button>
+              <button
+                type="submit"
+                formAction="/api/reports/memorization/pdf"
+                className="flex-1 border border-coffee-200 text-coffee-700 rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-50 transition-colors"
+              >
+                Download PDF
               </button>
             </div>
           </form>
@@ -219,11 +229,16 @@ export default async function ReportsPage() {
             <div className="flex flex-col sm:flex-row gap-2 pt-1">
               <button
                 type="submit"
-                name="format"
-                value="xlsx"
                 className="flex-1 bg-coffee-900 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
               >
                 Download Excel
+              </button>
+              <button
+                type="submit"
+                formAction="/api/reports/teacher-attendance/pdf"
+                className="flex-1 border border-coffee-200 text-coffee-700 rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-50 transition-colors"
+              >
+                Download PDF
               </button>
             </div>
           </form>

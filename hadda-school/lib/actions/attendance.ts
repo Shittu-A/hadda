@@ -71,7 +71,7 @@ export async function markTeacherAttendance(formData: FormData): Promise<void> {
 
       return db.teacherAttendance.upsert({
         where: { userId_date: { userId, date: attendanceDate } },
-        update: { status: status as any, note },
+        update: { status: status as any, note, recordedById: session.user.id },
         create: { userId, recordedById: session.user.id, date: attendanceDate, status: status as any, note },
       })
     })
@@ -81,6 +81,41 @@ export async function markTeacherAttendance(formData: FormData): Promise<void> {
     userId: session.user.id,
     action: 'attendance.teacher.marked',
     description: `Marked teacher attendance for ${teacherIds.length} teachers on ${date}`,
+  })
+
+  revalidatePath('/admin/attendance/teachers')
+}
+
+export async function markTeacherArrival(formData: FormData): Promise<void> {
+  const session = await auth()
+  if (!session) return
+
+  const userId = formData.get('teacherId') as string
+  const date = formData.get('date') as string
+  if (!userId || !date) return
+
+  const attendanceDate = new Date(date)
+  const now = new Date()
+
+  const thresholdSetting = await db.setting.findUnique({ where: { key: 'teacher_late_threshold' } })
+  const threshold = thresholdSetting?.value ?? '08:00'
+  const [thresholdHour, thresholdMin] = threshold.split(':').map(Number)
+
+  const nowHour = now.getHours()
+  const nowMin = now.getMinutes()
+  const isLate = nowHour > thresholdHour || (nowHour === thresholdHour && nowMin > thresholdMin)
+  const status = isLate ? 'late' : 'present'
+
+  await db.teacherAttendance.upsert({
+    where: { userId_date: { userId, date: attendanceDate } },
+    update: { status, arrivalTime: now, recordedById: session.user.id },
+    create: { userId, recordedById: session.user.id, date: attendanceDate, status, arrivalTime: now },
+  })
+
+  await logAudit({
+    userId: session.user.id,
+    action: 'attendance.teacher.arrived',
+    description: `Teacher ${userId} marked arrived at ${now.toTimeString().slice(0, 5)} — status: ${status}`,
   })
 
   revalidatePath('/admin/attendance/teachers')

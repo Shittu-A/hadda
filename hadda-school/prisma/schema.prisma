@@ -133,6 +133,7 @@ model User {
   recordedAttendances StudentAttendance[]
   feePayments         FeePayment[]
   promotionsProcessed Promotion[]
+  profile             TeacherProfile?
 }
 
 model AcademicYear {
@@ -241,12 +242,28 @@ model TeacherAttendance {
   userId       String
   recordedById String
   date         DateTime            @db.Date
+  arrivalTime  DateTime?
   status       TeacherAttendStatus
   note         String?
 
   user         User @relation(fields: [userId], references: [id])
 
   @@unique([userId, date])
+}
+
+model TeacherProfile {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  bio            String?
+  photoUrl       String?
+  specialization String?
+  awardTitle     String?
+  awardDesc      String?
+  videoUrl       String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model LeaveRequest {

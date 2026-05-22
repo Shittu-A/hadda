@@ -7,69 +7,46 @@ export async function POST(req: NextRequest) {
 
   const trimmed = query.trim()
 
-  // Look up by admission number or guardian phone
-  const student = await db.student.findFirst({
-    where: {
-      deletedAt: null,
-      status: 'active',
-      OR: [
-        { admissionNumber: { equals: trimmed, mode: 'insensitive' } },
-        { guardians: { some: { phone: trimmed } } },
-      ],
-    },
-    include: {
-      currentClass: { include: { feeAssignments: { include: { feeStructure: true } } } },
-      feeAssignments: { include: { feeStructure: true } },
-      feeDiscounts: true,
-      feePayments: true,
-    },
-  })
+  const commonInclude = {
+    currentClass: { include: { feeAssignments: { include: { feeStructure: true } } } },
+    feeAssignments: { include: { feeStructure: true } },
+    feeDiscounts: true,
+    feePayments: true,
+  } as const
 
-  if (!student) return NextResponse.json({ error: 'No student found' }, { status: 404 })
+  function buildPayload(student: Awaited<ReturnType<typeof db.student.findFirst>> & { currentClass?: any; feeAssignments: any[]; feeDiscounts: any[]; feePayments: any[] }) {
+    if (!student) return null
+    const feeMap = new Map<string, any>()
 
-  // Collect all applicable fee structures (student-level + class-level, deduplicated)
-  const feeMap = new Map<string, typeof student.feeAssignments[0]['feeStructure']>()
+    for (const fa of student.feeAssignments) {
+      if (fa.feeStructure.isActive) feeMap.set(fa.feeStructureId, fa.feeStructure)
+    }
 
-  for (const fa of student.feeAssignments) {
-    if (fa.feeStructure.isActive) feeMap.set(fa.feeStructureId, fa.feeStructure)
-  }
-
-  if (student.currentClass) {
-    for (const fa of student.currentClass.feeAssignments) {
-      if (fa.feeStructure.isActive && !feeMap.has(fa.feeStructureId)) {
-        feeMap.set(fa.feeStructureId, fa.feeStructure)
+    if (student.currentClass) {
+      for (const fa of student.currentClass.feeAssignments) {
+        if (fa.feeStructure.isActive && !feeMap.has(fa.feeStructureId)) {
+          feeMap.set(fa.feeStructureId, fa.feeStructure)
+        }
       }
     }
-  }
 
-  const fees = Array.from(feeMap.values()).map((fee) => {
-    const discount = student.feeDiscounts.find((d) => d.feeStructureId === fee.id)
-    const grossAmount = Number(fee.amount)
-    const discountAmt = discount
-      ? discount.discountType === 'percent'
-        ? (grossAmount * Number(discount.value)) / 100
-        : Number(discount.value)
-      : 0
-    const netAmount = Math.max(0, grossAmount - discountAmt)
-    const paid = student.feePayments
-      .filter((p) => p.feeStructureId === fee.id)
-      .reduce((sum, p) => sum + Number(p.amountPaid), 0)
-    const outstanding = Math.max(0, netAmount - paid)
+    const fees = Array.from(feeMap.values()).map((fee) => {
+      const discount = student.feeDiscounts.find((d: any) => d.feeStructureId === fee.id)
+      const grossAmount = Number(fee.amount)
+      const discountAmt = discount
+        ? discount.discountType === 'percent'
+          ? (grossAmount * Number(discount.value)) / 100
+          : Number(discount.value)
+        : 0
+      const netAmount = Math.max(0, grossAmount - discountAmt)
+      const paid = student.feePayments
+        .filter((p: any) => p.feeStructureId === fee.id)
+        .reduce((sum: number, p: any) => sum + Number(p.amountPaid), 0)
+      const outstanding = Math.max(0, netAmount - paid)
+      return { feeStructureId: fee.id, name: fee.name, frequency: fee.frequency, grossAmount, discount: discountAmt, netAmount, paid, outstanding }
+    }).filter((f) => f.outstanding > 0)
 
     return {
-      feeStructureId: fee.id,
-      name: fee.name,
-      frequency: fee.frequency,
-      grossAmount,
-      discount: discountAmt,
-      netAmount,
-      paid,
-      outstanding,
-    }
-  }).filter((f) => f.outstanding > 0)
-
-  return NextResponse.json({
-    student: {
       id: student.id,
       admissionNumber: student.admissionNumber,
       firstName: student.firstName,
@@ -77,6 +54,33 @@ export async function POST(req: NextRequest) {
       className: student.currentClass?.name ?? 'Unassigned',
       fees,
       total: fees.reduce((s, f) => s + f.outstanding, 0),
-    },
+    }
+  }
+
+  // First: try exact admission number match
+  const byAdmission = await db.student.findFirst({
+    where: { admissionNumber: { equals: trimmed, mode: 'insensitive' }, deletedAt: null, status: 'active' },
+    include: commonInclude,
   })
+
+  if (byAdmission) {
+    return NextResponse.json({ student: buildPayload(byAdmission as any) })
+  }
+
+  // Fall back: phone number — may match multiple students
+  const byPhone = await db.student.findMany({
+    where: { deletedAt: null, status: 'active', guardians: { some: { phone: trimmed } } },
+    include: commonInclude,
+    orderBy: [{ firstName: 'asc' }],
+  })
+
+  if (byPhone.length === 0) {
+    return NextResponse.json({ error: 'No student found with that admission number or phone number.' }, { status: 404 })
+  }
+
+  if (byPhone.length === 1) {
+    return NextResponse.json({ student: buildPayload(byPhone[0] as any) })
+  }
+
+  return NextResponse.json({ students: byPhone.map((s) => buildPayload(s as any)) })
 }

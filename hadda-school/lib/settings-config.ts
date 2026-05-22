@@ -14,6 +14,8 @@ export const SETTINGS_CONFIG: SettingDef[] = [
   { key: 'school_address', label: 'Address', group: 'school', type: 'textarea', placeholder: '123 School Road, City' },
   { key: 'school_phone', label: 'Phone', group: 'school', type: 'text', placeholder: '+234...' },
   { key: 'school_email', label: 'Email', group: 'school', type: 'text', placeholder: 'info@hadda.school' },
+  { key: 'school_logo_url', label: 'School Logo URL', group: 'school', type: 'text', placeholder: 'https://...' },
+  { key: 'director_signature_url', label: 'Director Signature Image URL', group: 'school', type: 'text', placeholder: 'https://...' },
   // Finance
   { key: 'currency_symbol', label: 'Currency Symbol', group: 'finance', type: 'text', placeholder: '₦' },
   { key: 'currency_code', label: 'Currency Code', group: 'finance', type: 'text', placeholder: 'NGN' },
@@ -34,6 +36,7 @@ export const SETTINGS_CONFIG: SettingDef[] = [
   // General
   { key: 'date_format', label: 'Date Format', group: 'general', type: 'select', options: ['DD/MM/YYYY', 'MM/DD/YYYY', 'YYYY-MM-DD'] },
   { key: 'timezone', label: 'Timezone', group: 'general', type: 'text', placeholder: 'Africa/Lagos' },
+  { key: 'teacher_late_threshold', label: 'Teacher Late Threshold (HH:MM)', group: 'general', type: 'text', placeholder: '08:00' },
 ]
 
 export const SETTING_GROUP_LABELS: Record<string, string> = {

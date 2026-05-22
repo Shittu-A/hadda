@@ -70,6 +70,19 @@ export default async function EditStudentPage({ params }: { params: Promise<{ id
             />
           </div>
           <div>
+            <label className="block text-sm font-medium text-coffee-700 mb-1">Gender</label>
+            <div className="flex gap-4 mt-1">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="gender" value="M" defaultChecked={student.gender === 'M'} className="accent-coffee-700" />
+                <span className="text-sm text-coffee-700">Male (M)</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="radio" name="gender" value="F" defaultChecked={student.gender === 'F'} className="accent-coffee-700" />
+                <span className="text-sm text-coffee-700">Female (F)</span>
+              </label>
+            </div>
+          </div>
+          <div>
             <label className="block text-sm font-medium text-coffee-700 mb-1">Status *</label>
             <select
               name="status"

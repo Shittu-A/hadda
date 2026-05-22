@@ -5,7 +5,7 @@ import Topnav from '@/components/layout/Topnav'
 import { db } from '@/lib/db'
 import {
   Users, GraduationCap, CalendarCheck, UserCheck, Banknote,
-  BookOpen, ArrowUpCircle, Archive, BarChart3, LayoutDashboard,
+  BookOpen, ArrowUpCircle, Archive, BarChart3, LayoutDashboard, IdCard,
 } from 'lucide-react'
 
 const adminLinks = [
@@ -20,6 +20,7 @@ const adminLinks = [
   { href: '/admin/promotions', label: 'Promotions', icon: <ArrowUpCircle size={18} /> },
   { href: '/admin/alumni', label: 'Alumni', icon: <Archive size={18} /> },
   { href: '/admin/reports', label: 'Reports', icon: <BarChart3 size={18} /> },
+  { href: '/admin/teacher-profiles', label: 'Teacher Profiles', icon: <IdCard size={18} /> },
 ]
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

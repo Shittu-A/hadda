@@ -1,0 +1,120 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@/lib/auth'
+import { db } from '@/lib/db'
+import { renderToBuffer, Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer'
+import { createElement } from 'react'
+
+export const dynamic = 'force-dynamic'
+
+const styles = StyleSheet.create({
+  page: { padding: 40, fontSize: 9, fontFamily: 'Helvetica' },
+  title: { fontSize: 18, fontFamily: 'Helvetica-Bold', marginBottom: 4 },
+  subtitle: { fontSize: 10, color: '#6b7280', marginBottom: 20 },
+  tableHeader: {
+    flexDirection: 'row', backgroundColor: '#f3ede6',
+    paddingVertical: 6, paddingHorizontal: 4,
+    borderBottomWidth: 1, borderBottomColor: '#d6c5b0',
+  },
+  tableRow: {
+    flexDirection: 'row', paddingVertical: 5, paddingHorizontal: 4,
+    borderBottomWidth: 0.5, borderBottomColor: '#ede8e1',
+  },
+  tableRowAlt: { backgroundColor: '#faf7f4' },
+  headerCell: { fontFamily: 'Helvetica-Bold', color: '#4a3728' },
+  cell: { color: '#3d2b1f' },
+  colName: { width: '28%' },
+  colP: { width: '10%', textAlign: 'center' },
+  colA: { width: '10%', textAlign: 'center' },
+  colL: { width: '10%', textAlign: 'center' },
+  colOL: { width: '12%', textAlign: 'center' },
+  colTotal: { width: '10%', textAlign: 'center' },
+  colRate: { width: '10%', textAlign: 'right' },
+  footer: { marginTop: 20, fontSize: 8, color: '#9ca3af', textAlign: 'center' },
+})
+
+export async function GET(req: NextRequest) {
+  const session = await auth()
+  if (!session || (session.user.role !== 'admin' && session.user.role !== 'super_admin')) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { searchParams } = req.nextUrl
+  const from = searchParams.get('from')
+  const to = searchParams.get('to')
+
+  const where: any = {}
+  if (from || to) {
+    where.date = {}
+    if (from) where.date.gte = new Date(from)
+    if (to) where.date.lte = new Date(to + 'T23:59:59')
+  }
+
+  const records = await db.teacherAttendance.findMany({
+    where,
+    include: { user: { select: { name: true, email: true } } },
+    orderBy: [{ user: { name: 'asc' } }, { date: 'asc' }],
+  })
+
+  const teacherMap = new Map<string, { name: string; present: number; absent: number; late: number; onLeave: number; total: number }>()
+
+  for (const r of records) {
+    if (!teacherMap.has(r.userId)) {
+      teacherMap.set(r.userId, { name: r.user.name ?? '', present: 0, absent: 0, late: 0, onLeave: 0, total: 0 })
+    }
+    const row = teacherMap.get(r.userId)!
+    row.total++
+    if (r.status === 'present') row.present++
+    else if (r.status === 'absent') row.absent++
+    else if (r.status === 'late') row.late++
+    else if (r.status === 'on_leave') row.onLeave++
+  }
+
+  const rows = Array.from(teacherMap.values()).map((r) => {
+    const attended = r.present + r.late + r.onLeave
+    return { ...r, attendanceRate: r.total > 0 ? `${Math.round((attended / r.total) * 100)}%` : '—' }
+  })
+
+  const generatedAt = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+  const subtitle = `${from && to ? `${from} to ${to}` : 'All Dates'} · Generated ${generatedAt}`
+
+  const buffer = await renderToBuffer(
+    createElement(
+      Document, null,
+      createElement(Page, { size: 'A4', style: styles.page },
+        createElement(Text, { style: styles.title }, 'Teacher Attendance Report'),
+        createElement(Text, { style: styles.subtitle }, subtitle),
+
+        createElement(View, { style: styles.tableHeader },
+          createElement(Text, { style: [styles.headerCell, styles.colName] }, 'Teacher'),
+          createElement(Text, { style: [styles.headerCell, styles.colP] }, 'Present'),
+          createElement(Text, { style: [styles.headerCell, styles.colA] }, 'Absent'),
+          createElement(Text, { style: [styles.headerCell, styles.colL] }, 'Late'),
+          createElement(Text, { style: [styles.headerCell, styles.colOL] }, 'On Leave'),
+          createElement(Text, { style: [styles.headerCell, styles.colTotal] }, 'Total'),
+          createElement(Text, { style: [styles.headerCell, styles.colRate] }, 'Rate'),
+        ),
+
+        ...rows.map((r, i) =>
+          createElement(View, { key: r.name, style: i % 2 === 1 ? [styles.tableRow, styles.tableRowAlt] : styles.tableRow },
+            createElement(Text, { style: [styles.cell, styles.colName] }, r.name),
+            createElement(Text, { style: [styles.cell, styles.colP] }, String(r.present)),
+            createElement(Text, { style: [styles.cell, styles.colA] }, String(r.absent)),
+            createElement(Text, { style: [styles.cell, styles.colL] }, String(r.late)),
+            createElement(Text, { style: [styles.cell, styles.colOL] }, String(r.onLeave)),
+            createElement(Text, { style: [styles.cell, styles.colTotal] }, String(r.total)),
+            createElement(Text, { style: [styles.cell, styles.colRate] }, r.attendanceRate),
+          )
+        ),
+
+        createElement(Text, { style: styles.footer }, 'Abdullahi Bin Masuud Academy — Teacher Attendance Report'),
+      )
+    ) as any
+  )
+
+  return new Response(new Uint8Array(buffer), {
+    headers: {
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': 'attachment; filename="teacher-attendance-report.pdf"',
+    },
+  })
+}

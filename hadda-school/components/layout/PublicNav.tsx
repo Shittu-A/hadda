@@ -13,6 +13,9 @@ export default function PublicNav() {
           <Link href="/events" className="text-coffee-700 hover:text-coffee-900 font-medium transition-colors text-xs sm:text-sm">
             Events
           </Link>
+          <Link href="/teachers" className="text-coffee-700 hover:text-coffee-900 font-medium transition-colors text-xs sm:text-sm">
+            Teachers
+          </Link>
           <Link
             href="/login"
             className="bg-coffee-900 text-coffee-100 hover:bg-coffee-800 rounded-xl px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap"

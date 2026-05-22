@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
-import { markTeacherAttendance } from '@/lib/actions/attendance'
+import { markTeacherAttendance, markTeacherArrival } from '@/lib/actions/attendance'
 import Badge from '@/components/ui/Badge'
+import LiveClock from '@/components/attendance/LiveClock'
 
 const STATUS_OPTIONS = ['present', 'absent', 'late', 'on_leave'] as const
 const STATUS_VARIANT: Record<string, 'success' | 'danger' | 'warning' | 'neutral'> = {
@@ -19,28 +20,41 @@ export default async function TeacherAttendancePage({
   const today = new Date().toISOString().split('T')[0]
   const selectedDate = sp.date || today
   const attendanceDate = new Date(selectedDate)
+  const isToday = selectedDate === today
 
   const teachers = await db.user.findMany({
     where: { role: { in: ['teacher', 'admin'] }, isActive: true },
     orderBy: { name: 'asc' },
   })
 
-  const records = await db.teacherAttendance.findMany({
-    where: {
-      date: attendanceDate,
-      userId: { in: teachers.map((t) => t.id) },
-    },
-  })
+  const teacherIds = teachers.map((t) => t.id)
+
+  const [records, thresholdSetting] = await Promise.all([
+    db.teacherAttendance.findMany({
+      where: { date: attendanceDate, userId: { in: teacherIds } },
+    }),
+    db.setting.findUnique({ where: { key: 'teacher_late_threshold' } }),
+  ])
 
   const existing = Object.fromEntries(records.map((r) => [r.userId, r]))
   const alreadySaved = records.length > 0
+  const lateThreshold = thresholdSetting?.value ?? '08:00'
 
   return (
     <div className="p-4 sm:p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-coffee-900">Teacher Attendance</h1>
-        <p className="text-coffee-600 text-sm mt-0.5">Mark daily staff attendance</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold text-coffee-900">Teacher Attendance</h1>
+          <p className="text-coffee-600 text-sm mt-0.5">Mark daily staff attendance</p>
+        </div>
+        {isToday && <LiveClock lateThreshold={lateThreshold} />}
       </div>
+
+      {isToday && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-800">
+          <strong>Auto Late Detection:</strong> Arrivals after <strong>{lateThreshold}</strong> will be automatically marked as <em>Late</em>. Use &ldquo;Mark Arrived&rdquo; buttons for real-time clock-in.
+        </div>
+      )}
 
       {/* Date selector */}
       <form method="GET" className="flex flex-col sm:flex-row sm:items-end gap-3">
@@ -62,40 +76,87 @@ export default async function TeacherAttendancePage({
         </button>
       </form>
 
-      <form action={markTeacherAttendance} className="space-y-4">
-        <input type="hidden" name="date" value={selectedDate} />
+      {/* Per-teacher arrival rows */}
+      <div className="bg-white border border-coffee-200 rounded-xl overflow-hidden">
+        <div className="px-4 sm:px-5 py-3 bg-coffee-50 border-b border-coffee-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <span className="text-sm font-semibold text-coffee-700">
+            {teachers.length} staff member{teachers.length !== 1 ? 's' : ''}
+          </span>
+          <span className="text-xs text-coffee-500">{selectedDate}</span>
+        </div>
 
-        {alreadySaved && (
-          <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-sm text-blue-800">
-            Attendance already recorded for this date. Submitting will update existing records.
-          </div>
-        )}
+        <div className="divide-y divide-coffee-100">
+          {teachers.map((teacher) => {
+            const rec = existing[teacher.id]
+            const arrivalStr = rec?.arrivalTime
+              ? new Date(rec.arrivalTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+              : null
 
-        <div className="bg-white border border-coffee-200 rounded-xl overflow-x-auto">
-          <div className="px-4 sm:px-5 py-3 bg-coffee-50 border-b border-coffee-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <span className="text-sm font-semibold text-coffee-700">
-              {teachers.length} staff member{teachers.length !== 1 ? 's' : ''}
-            </span>
-            <span className="text-xs text-coffee-500">{selectedDate}</span>
-          </div>
+            return (
+              <div key={teacher.id} className="px-4 sm:px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-coffee-900">{teacher.name}</p>
+                  <p className="text-xs text-coffee-400 capitalize">{teacher.role.replace('_', ' ')}</p>
+                </div>
 
-          <div className="divide-y divide-coffee-100">
+                <div className="flex flex-wrap items-center gap-2">
+                  {rec ? (
+                    <>
+                      <Badge variant={STATUS_VARIANT[rec.status]}>
+                        {rec.status.replace('_', ' ')}
+                      </Badge>
+                      {arrivalStr && (
+                        <span className="text-xs text-coffee-500">arrived {arrivalStr}</span>
+                      )}
+                    </>
+                  ) : (
+                    <span className="text-xs text-coffee-400 italic">Not marked</span>
+                  )}
+                </div>
+
+                {/* Mark Arrived (auto late detection) */}
+                {isToday && (
+                  <form action={markTeacherArrival}>
+                    <input type="hidden" name="teacherId" value={teacher.id} />
+                    <input type="hidden" name="date" value={selectedDate} />
+                    <button
+                      type="submit"
+                      className="w-full sm:w-auto bg-green-700 text-white rounded-lg px-3 py-1.5 text-xs font-medium hover:bg-green-800 transition-colors"
+                    >
+                      {rec?.status === 'present' || rec?.status === 'late' ? 'Re-clock In' : 'Mark Arrived'}
+                    </button>
+                  </form>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Manual bulk override form */}
+      <details className="bg-white border border-coffee-200 rounded-xl overflow-hidden">
+        <summary className="px-4 sm:px-5 py-3 bg-coffee-50 border-b border-coffee-200 text-sm font-semibold text-coffee-700 cursor-pointer select-none">
+          Manual Override (Absent / On Leave / Bulk Edit)
+        </summary>
+        <form action={markTeacherAttendance} className="p-4 sm:p-5 space-y-4">
+          <input type="hidden" name="date" value={selectedDate} />
+
+          {alreadySaved && (
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-sm text-blue-800">
+              Attendance already recorded for this date. Submitting will update existing records.
+            </div>
+          )}
+
+          <div className="divide-y divide-coffee-100 border border-coffee-100 rounded-xl overflow-hidden">
             {teachers.map((teacher) => {
               const rec = existing[teacher.id]
               return (
-                <div key={teacher.id} className="px-4 sm:px-5 py-3 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                <div key={teacher.id} className="px-4 py-3 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                   <input type="hidden" name="teacherId" value={teacher.id} />
 
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-coffee-900">{teacher.name}</p>
-                    <p className="text-xs text-coffee-400 capitalize">{teacher.role.replace('_', ' ')}</p>
                   </div>
-
-                  {rec && (
-                    <Badge variant={STATUS_VARIANT[rec.status]}>
-                      {rec.status.replace('_', ' ')}
-                    </Badge>
-                  )}
 
                   <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                     {STATUS_OPTIONS.map((status) => (
@@ -125,17 +186,17 @@ export default async function TeacherAttendancePage({
               )
             })}
           </div>
-        </div>
 
-        <div className="flex justify-end">
-          <button
-            type="submit"
-            className="w-full sm:w-auto bg-coffee-900 text-white rounded-lg px-6 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
-          >
-            {alreadySaved ? 'Update Attendance' : 'Save Attendance'}
-          </button>
-        </div>
-      </form>
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              className="w-full sm:w-auto bg-coffee-900 text-white rounded-lg px-6 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
+            >
+              {alreadySaved ? 'Update Attendance' : 'Save Attendance'}
+            </button>
+          </div>
+        </form>
+      </details>
     </div>
   )
 }

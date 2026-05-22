@@ -28,17 +28,69 @@ interface StudentResult {
   total: number
 }
 
+function StudentFees({ student }: { student: StudentResult }) {
+  return (
+    <div className="mt-6 bg-white border border-coffee-200 rounded-2xl p-6 sm:p-8">
+      <div className="mb-6">
+        <h2 className="text-lg sm:text-xl font-bold text-coffee-900">{student.firstName} {student.lastName}</h2>
+        <p className="text-coffee-500 text-xs sm:text-sm">{student.admissionNumber} · {student.className}</p>
+      </div>
+
+      {student.fees.length === 0 ? (
+        <div className="text-center py-6">
+          <p className="text-2xl mb-2">✅</p>
+          <p className="font-bold text-coffee-900">All fees paid!</p>
+          <p className="text-coffee-600 text-sm mt-1">No outstanding balance for this student.</p>
+        </div>
+      ) : (
+        <>
+          <div className="space-y-2 sm:space-y-3 mb-6">
+            {student.fees.map((fee) => (
+              <div key={fee.feeStructureId} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 bg-coffee-50 rounded-xl gap-2">
+                <div>
+                  <p className="font-medium text-coffee-900 text-sm sm:text-base">{fee.name}</p>
+                  <p className="text-coffee-500 text-xs capitalize">{fee.frequency}</p>
+                  {fee.discount > 0 && (
+                    <p className="text-green-600 text-xs">Discount applied: {formatCurrency(fee.discount)}</p>
+                  )}
+                </div>
+                <div className="text-right">
+                  <p className="font-bold text-coffee-900 text-sm sm:text-base">{formatCurrency(fee.outstanding)}</p>
+                  <p className="text-coffee-500 text-xs">outstanding</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="border-t border-coffee-200 pt-4 flex flex-col sm:flex-row items-start sm:items-center sm:justify-between mb-6 gap-2">
+            <span className="font-bold text-coffee-900">Total Outstanding</span>
+            <span className="text-xl sm:text-2xl font-extrabold text-coffee-900">{formatCurrency(student.total)}</span>
+          </div>
+
+          <p className="text-coffee-500 text-xs sm:text-sm text-center mb-4 px-2">
+            Online payment integration coming soon. Please pay at school and bring your receipt.
+          </p>
+        </>
+      )}
+    </div>
+  )
+}
+
 export default function PayPage() {
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [student, setStudent] = useState<StudentResult | null>(null)
+  const [students, setStudents] = useState<StudentResult[] | null>(null)
+  const [selectedStudent, setSelectedStudent] = useState<StudentResult | null>(null)
 
   async function handleLookup(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     setError('')
     setStudent(null)
+    setStudents(null)
+    setSelectedStudent(null)
 
     const res = await fetch('/api/pay/lookup', {
       method: 'POST',
@@ -48,10 +100,14 @@ export default function PayPage() {
 
     const data = await res.json()
 
-    if (!res.ok || !data.student) {
+    if (!res.ok) {
       setError(data.error ?? 'No student found with that admission number or phone number.')
-    } else {
+    } else if (data.student) {
       setStudent(data.student)
+    } else if (data.students) {
+      setStudents(data.students)
+    } else {
+      setError('No student found.')
     }
 
     setLoading(false)
@@ -89,51 +145,49 @@ export default function PayPage() {
             </form>
           </div>
 
-          {student && (
+          {/* Multiple students found — pick one */}
+          {students && !selectedStudent && (
             <div className="mt-6 bg-white border border-coffee-200 rounded-2xl p-6 sm:p-8">
-              <div className="mb-6">
-                <h2 className="text-lg sm:text-xl font-bold text-coffee-900">{student.firstName} {student.lastName}</h2>
-                <p className="text-coffee-500 text-xs sm:text-sm">{student.admissionNumber} · {student.className}</p>
+              <h2 className="text-base font-bold text-coffee-900 mb-1">Multiple students found</h2>
+              <p className="text-coffee-500 text-sm mb-4">Select your child to view their fees:</p>
+              <div className="space-y-2">
+                {students.map((s) => (
+                  <button
+                    key={s.id}
+                    onClick={() => setSelectedStudent(s)}
+                    className="w-full flex items-center justify-between p-4 border border-coffee-200 rounded-xl hover:bg-coffee-50 hover:border-coffee-400 transition-colors text-left"
+                  >
+                    <div>
+                      <p className="font-semibold text-coffee-900">{s.firstName} {s.lastName}</p>
+                      <p className="text-coffee-500 text-xs">{s.admissionNumber} · {s.className}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className={`font-bold text-sm ${s.total > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                        {s.total > 0 ? formatCurrency(s.total) : 'Paid ✓'}
+                      </p>
+                      {s.total > 0 && <p className="text-coffee-400 text-xs">outstanding</p>}
+                    </div>
+                  </button>
+                ))}
               </div>
-
-              {student.fees.length === 0 ? (
-                <div className="text-center py-6">
-                  <p className="text-2xl mb-2">✅</p>
-                  <p className="font-bold text-coffee-900">All fees paid!</p>
-                  <p className="text-coffee-600 text-sm mt-1">No outstanding balance for this student.</p>
-                </div>
-              ) : (
-                <>
-                  <div className="space-y-2 sm:space-y-3 mb-6">
-                    {student.fees.map((fee) => (
-                      <div key={fee.feeStructureId} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 bg-coffee-50 rounded-xl gap-2">
-                        <div>
-                          <p className="font-medium text-coffee-900 text-sm sm:text-base">{fee.name}</p>
-                          <p className="text-coffee-500 text-xs capitalize">{fee.frequency}</p>
-                          {fee.discount > 0 && (
-                            <p className="text-green-600 text-xs">Discount applied: {formatCurrency(fee.discount)}</p>
-                          )}
-                        </div>
-                        <div className="text-right">
-                          <p className="font-bold text-coffee-900 text-sm sm:text-base">{formatCurrency(fee.outstanding)}</p>
-                          <p className="text-coffee-500 text-xs">outstanding</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="border-t border-coffee-200 pt-4 flex flex-col sm:flex-row items-start sm:items-center sm:justify-between mb-6 gap-2">
-                    <span className="font-bold text-coffee-900">Total Outstanding</span>
-                    <span className="text-xl sm:text-2xl font-extrabold text-coffee-900">{formatCurrency(student.total)}</span>
-                  </div>
-
-                  <p className="text-coffee-500 text-xs sm:text-sm text-center mb-4 px-2">
-                    Online payment integration coming soon. Please pay at school and bring your receipt.
-                  </p>
-                </>
-              )}
             </div>
           )}
+
+          {/* Selected student from multi-student list */}
+          {selectedStudent && (
+            <>
+              <button
+                onClick={() => setSelectedStudent(null)}
+                className="mt-4 text-coffee-500 text-sm hover:text-coffee-700"
+              >
+                ← Back to student list
+              </button>
+              <StudentFees student={selectedStudent} />
+            </>
+          )}
+
+          {/* Single student result */}
+          {student && <StudentFees student={student} />}
         </div>
       </section>
 

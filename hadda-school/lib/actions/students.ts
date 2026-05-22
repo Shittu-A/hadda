@@ -10,11 +10,12 @@ import { z } from 'zod'
 const EnrollSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
+  gender: z.enum(['M', 'F'], { error: 'Gender is required' }),
   dateOfBirth: z.string().optional(),
   enrollmentDate: z.string().min(1, 'Enrollment date is required'),
   address: z.string().optional(),
   academicYearId: z.string().min(1, 'Academic year is required'),
-  currentClassId: z.string().optional(),
+  photoUrl: z.string().optional(),
   guardianName: z.string().min(1, 'Guardian name is required'),
   guardianPhone: z.string().min(1, 'Guardian phone is required'),
   guardianEmail: z.string().email('Invalid email').optional().or(z.literal('')),
@@ -24,6 +25,7 @@ const EnrollSchema = z.object({
 const UpdateStudentSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
+  gender: z.enum(['M', 'F']).optional(),
   dateOfBirth: z.string().optional(),
   address: z.string().optional(),
   currentClassId: z.string().optional(),
@@ -38,11 +40,12 @@ export async function enrollStudent(formData: FormData) {
     const raw = {
       firstName: formData.get('firstName'),
       lastName: formData.get('lastName'),
+      gender: formData.get('gender'),
       dateOfBirth: formData.get('dateOfBirth') || undefined,
       enrollmentDate: formData.get('enrollmentDate'),
       address: formData.get('address') || undefined,
       academicYearId: formData.get('academicYearId'),
-      currentClassId: formData.get('currentClassId') || undefined,
+      photoUrl: formData.get('photoUrl') || undefined,
       guardianName: formData.get('guardianName'),
       guardianPhone: formData.get('guardianPhone'),
       guardianEmail: formData.get('guardianEmail') || undefined,
@@ -60,11 +63,12 @@ export async function enrollStudent(formData: FormData) {
         admissionNumber,
         firstName: data.firstName,
         lastName: data.lastName,
+        gender: data.gender,
         dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
         enrollmentDate: new Date(data.enrollmentDate),
         address: data.address || null,
         academicYearId: data.academicYearId,
-        currentClassId: data.currentClassId || null,
+        photoUrl: data.photoUrl || null,
         guardians: {
           create: {
             name: data.guardianName,
@@ -103,6 +107,7 @@ export async function updateStudent(id: string, formData: FormData) {
     const raw = {
       firstName: formData.get('firstName'),
       lastName: formData.get('lastName'),
+      gender: formData.get('gender') || undefined,
       dateOfBirth: formData.get('dateOfBirth') || undefined,
       address: formData.get('address') || undefined,
       currentClassId: formData.get('currentClassId') || undefined,
@@ -116,6 +121,7 @@ export async function updateStudent(id: string, formData: FormData) {
       data: {
         firstName: data.firstName,
         lastName: data.lastName,
+        gender: data.gender ?? null,
         dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
         address: data.address || null,
         currentClassId: data.currentClassId || null,

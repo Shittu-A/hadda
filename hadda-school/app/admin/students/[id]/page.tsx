@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import Badge from '@/components/ui/Badge'
 import { formatDate, formatCurrency } from '@/lib/utils'
 import { deleteStudent } from '@/lib/actions/students'
@@ -47,14 +48,35 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
     <div className="p-4 sm:p-6 space-y-6 max-w-4xl">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-        <div>
-          <Link href="/admin/students" className="text-coffee-500 text-sm hover:text-coffee-700">
-            ← Back to Students
-          </Link>
-          <h1 className="text-xl sm:text-2xl font-bold text-coffee-900 mt-2">
-            {student.firstName} {student.lastName}
-          </h1>
-          <p className="text-coffee-500 font-mono text-sm mt-0.5">{student.admissionNumber}</p>
+        <div className="flex items-start gap-4">
+          {student.photoUrl ? (
+            <Image
+              src={student.photoUrl}
+              alt={`${student.firstName} ${student.lastName}`}
+              width={72}
+              height={88}
+              className="rounded-lg object-cover shrink-0 border border-coffee-200"
+              unoptimized
+            />
+          ) : (
+            <div className="w-16 h-20 rounded-lg bg-coffee-100 border border-coffee-200 flex items-center justify-center shrink-0">
+              <span className="text-coffee-400 text-2xl font-bold">{student.firstName[0]}</span>
+            </div>
+          )}
+          <div>
+            <Link href="/admin/students" className="text-coffee-500 text-sm hover:text-coffee-700">
+              ← Back to Students
+            </Link>
+            <h1 className="text-xl sm:text-2xl font-bold text-coffee-900 mt-2">
+              {student.firstName} {student.lastName}
+            </h1>
+            <p className="text-coffee-500 font-mono text-sm mt-0.5">{student.admissionNumber}</p>
+            {student.gender && (
+              <span className="inline-block mt-1 text-xs px-2 py-0.5 rounded-full bg-coffee-100 text-coffee-700">
+                {student.gender === 'M' ? 'Male' : 'Female'}
+              </span>
+            )}
+          </div>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <Badge variant={STATUS_VARIANT[student.status] ?? 'neutral'}>{student.status}</Badge>
@@ -74,6 +96,12 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
           <div className="bg-white border border-coffee-200 rounded-xl p-4 sm:p-5">
             <h2 className="font-semibold text-coffee-800 mb-4">Student Information</h2>
             <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
+              <div>
+                <dt className="text-coffee-500">Gender</dt>
+                <dd className="text-coffee-900 font-medium">
+                  {student.gender === 'M' ? 'Male' : student.gender === 'F' ? 'Female' : '—'}
+                </dd>
+              </div>
               <div>
                 <dt className="text-coffee-500">Date of Birth</dt>
                 <dd className="text-coffee-900 font-medium">
@@ -199,6 +227,14 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
               >
                 Record Payment
               </Link>
+              <a
+                href={`/api/students/${student.id}/admission-letter`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block w-full text-center bg-amber-700 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-amber-800 transition-colors"
+              >
+                Print Admission Letter
+              </a>
             </div>
           </div>
 
