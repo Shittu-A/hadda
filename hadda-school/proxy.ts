@@ -11,6 +11,7 @@ export default auth((req) => {
   const isPublic =
     pathname === '/' ||
     pathname === '/events' ||
+    pathname.startsWith('/events/') ||
     pathname === '/pay' ||
     pathname.startsWith('/pay/') ||
     pathname.startsWith('/api/pay/') ||
@@ -55,5 +56,5 @@ export default auth((req) => {
 })
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|api/webhooks|.*\\.(?:png|jpg|jpeg|gif|svg|webp|ico|woff|woff2)).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|api/webhooks|.*\\.(?:png|jpg|jpeg|gif|svg|webp|ico|woff|woff2|pdf)).*)'],
 }
