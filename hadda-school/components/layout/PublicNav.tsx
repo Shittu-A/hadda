@@ -13,9 +13,6 @@ export default function PublicNav() {
           <Link href="/events" className="text-coffee-700 hover:text-coffee-900 font-medium transition-colors text-xs sm:text-sm">
             Events
           </Link>
-          <Link href="/teachers" className="text-coffee-700 hover:text-coffee-900 font-medium transition-colors text-xs sm:text-sm">
-            Teachers
-          </Link>
           <a
             href="/calendar-2026.pdf"
             target="_blank"
