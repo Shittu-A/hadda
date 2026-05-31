@@ -4,7 +4,7 @@ import { useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 
-type Guardian = { id: string; name: string; phone: string; email: string | null; relationship: string; isPrimary: boolean }
+type Guardian = { id: string; name: string; phone: string | null; email: string | null; relationship: string; isPrimary: boolean }
 type ClassRoom = { id: string; name: string; academicYear: { name: string } }
 type Student = {
   id: string
