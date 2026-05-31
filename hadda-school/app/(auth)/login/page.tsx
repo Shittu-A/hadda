@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { signIn } from 'next-auth/react'
+import { signIn, getSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Input from '@/components/ui/Input'
@@ -27,8 +27,11 @@ export default function LoginPage() {
       return
     }
 
-    // Redirect based on role — middleware will handle role-based routing
-    router.push('/admin')
+    const session = await getSession()
+    const role = (session?.user as any)?.role
+    if (role === 'super_admin') router.push('/super-admin')
+    else if (role === 'teacher') router.push('/teacher')
+    else router.push('/admin')
     router.refresh()
   }
 
