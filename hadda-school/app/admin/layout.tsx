@@ -5,7 +5,7 @@ import Topnav from '@/components/layout/Topnav'
 import { db } from '@/lib/db'
 import {
   Users, GraduationCap, CalendarCheck, UserCheck, Banknote,
-  BookOpen, ArrowUpCircle, Archive, BarChart3, LayoutDashboard, IdCard,
+  BookOpen, ArrowUpCircle, Archive, BarChart3, LayoutDashboard, IdCard, CalendarDays,
 } from 'lucide-react'
 
 const adminLinks = [
@@ -21,6 +21,7 @@ const adminLinks = [
   { href: '/admin/alumni', label: 'Alumni', icon: <Archive size={18} /> },
   { href: '/admin/reports', label: 'Reports', icon: <BarChart3 size={18} /> },
   { href: '/admin/teacher-profiles', label: 'Teacher Profiles', icon: <IdCard size={18} /> },
+  { href: '/calendar-2026.pdf', label: 'School Calendar', icon: <CalendarDays size={18} /> },
 ]
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -35,7 +36,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <div className="min-h-screen bg-coffee-100">
       <Sidebar links={adminLinks} role="admin" />
-      <Topnav user={{ name: session.user.name!, role: session.user.role }} notificationCount={notificationCount} />
+      <Topnav user={{ name: session.user.name!, role: session.user.role }} notificationCount={notificationCount} links={adminLinks} role="admin" />
       <main className="ml-0 md:ml-64 pt-16 p-4 md:p-8">
         {children}
       </main>

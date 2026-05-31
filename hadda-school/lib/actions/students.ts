@@ -30,6 +30,11 @@ const UpdateStudentSchema = z.object({
   address: z.string().optional(),
   currentClassId: z.string().optional(),
   status: z.enum(['active', 'promoted', 'graduated', 'withdrawn', 'transferred']),
+  photoUrl: z.string().optional(),
+  guardianName: z.string().optional(),
+  guardianPhone: z.string().optional(),
+  guardianEmail: z.string().email('Invalid email').optional().or(z.literal('')),
+  guardianRelationship: z.enum(['Father', 'Mother', 'Guardian']).optional(),
 })
 
 export async function enrollStudent(formData: FormData) {
@@ -112,6 +117,11 @@ export async function updateStudent(id: string, formData: FormData) {
       address: formData.get('address') || undefined,
       currentClassId: formData.get('currentClassId') || undefined,
       status: formData.get('status'),
+      photoUrl: formData.get('photoUrl') || undefined,
+      guardianName: formData.get('guardianName') || undefined,
+      guardianPhone: formData.get('guardianPhone') || undefined,
+      guardianEmail: formData.get('guardianEmail') || undefined,
+      guardianRelationship: formData.get('guardianRelationship') || undefined,
     }
 
     const data = UpdateStudentSchema.parse(raw)
@@ -126,8 +136,35 @@ export async function updateStudent(id: string, formData: FormData) {
         address: data.address || null,
         currentClassId: data.currentClassId || null,
         status: data.status,
+        ...(data.photoUrl ? { photoUrl: data.photoUrl } : {}),
       },
     })
+
+    if (data.guardianName) {
+      const primary = await db.guardian.findFirst({ where: { studentId: id, isPrimary: true } })
+      if (primary) {
+        await db.guardian.update({
+          where: { id: primary.id },
+          data: {
+            name: data.guardianName,
+            phone: data.guardianPhone ?? primary.phone,
+            email: data.guardianEmail || null,
+            relationship: data.guardianRelationship ?? primary.relationship,
+          },
+        })
+      } else {
+        await db.guardian.create({
+          data: {
+            studentId: id,
+            name: data.guardianName,
+            phone: data.guardianPhone ?? '',
+            email: data.guardianEmail || null,
+            relationship: data.guardianRelationship ?? 'Guardian',
+            isPrimary: true,
+          },
+        })
+      }
+    }
 
     await logAudit({
       userId: session.user.id,

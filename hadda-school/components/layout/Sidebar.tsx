@@ -9,6 +9,7 @@ interface NavLink {
   href: string
   label: string
   icon?: React.ReactNode
+  external?: boolean
 }
 
 interface SidebarProps {
@@ -36,16 +37,22 @@ export default function Sidebar({ links, role }: SidebarProps) {
 
       <nav className="flex-1 py-4 space-y-0.5">
         {links.map((link) => {
-          const isActive = pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href))
+          const isExternal = link.external || link.href.endsWith('.pdf')
+          const isActive = !isExternal && (pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href)))
+          const className = cn(
+            'flex items-center gap-3 mx-2 px-4 py-2.5 rounded-lg transition-colors text-sm font-medium',
+            isActive ? 'bg-coffee-700 text-white' : 'text-coffee-300 hover:bg-coffee-800 hover:text-white'
+          )
+          if (isExternal) {
+            return (
+              <a key={link.href} href={link.href} target="_blank" rel="noopener noreferrer" className={className}>
+                {link.icon && <span>{link.icon}</span>}
+                {link.label}
+              </a>
+            )
+          }
           return (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={cn(
-                'flex items-center gap-3 mx-2 px-4 py-2.5 rounded-lg transition-colors text-sm font-medium',
-                isActive ? 'bg-coffee-700 text-white' : 'text-coffee-300 hover:bg-coffee-800 hover:text-white'
-              )}
-            >
+            <Link key={link.href} href={link.href} className={className}>
               {link.icon && <span>{link.icon}</span>}
               {link.label}
             </Link>

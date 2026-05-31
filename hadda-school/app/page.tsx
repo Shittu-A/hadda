@@ -27,7 +27,7 @@ export default async function LandingPage() {
       <section className="relative min-h-[calc(100vh-4rem)] flex items-center overflow-hidden mt-16">
         <HeroSlider />
         <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 text-center w-full py-12 sm:py-16">
-          <p className="text-xs font-semibold uppercase tracking-widest text-white mb-4" style={{textShadow:'0 2px 8px rgba(0,0,0,0.8)'}}>Hafiz Academy</p>
+          <p className="text-xs font-semibold uppercase tracking-widest text-white mb-4" style={{textShadow:'0 2px 8px rgba(0,0,0,0.8)'}}>Abdullahi Bin Masuud Academy</p>
           <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold text-white leading-tight" style={{textShadow:'0 2px 16px rgba(0,0,0,0.9)'}}>
             Where Every Heart<br />Finds Its Verse
           </h1>
