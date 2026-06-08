@@ -196,7 +196,25 @@ If you use the photo upload feature:
 4. Set file size limit: 5MB
 5. Allowed MIME types: `image/jpeg, image/png, image/webp`
 
-### 5.3 Connection limits
+### 5.3 Storage bucket (for teacher class-photo attendance)
+
+The class-photo clock-in feature needs its own bucket:
+
+1. Supabase Dashboard → Storage → New Bucket
+2. Name it `attendance-photos`
+3. Set to **Public** (admins view photos by URL during verification)
+4. Set file size limit: 5MB (the app compresses uploads to ≤4MB client-side)
+5. Allowed MIME types: `image/jpeg`
+
+> Photos are deleted automatically: rejected photos immediately, and verified photos
+> 72 hours after verification (purged when an admin opens the Class Photos page). No
+> external cron is required.
+
+The feature also adds two npm dependencies (already in `package.json`): `exifr`
+(reads the photo's EXIF capture time) and `browser-image-compression` (client-side
+compression). `npm install` picks these up automatically.
+
+### 5.4 Connection limits
 
 Supabase free tier allows 60 simultaneous connections. The pooler (pgBouncer) multiplexes connections, so the app will work fine on free tier with typical school usage.
 

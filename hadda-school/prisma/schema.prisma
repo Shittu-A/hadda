@@ -40,6 +40,12 @@ enum TeacherAttendStatus {
   on_leave
 }
 
+enum PhotoAttendanceStatus {
+  pending
+  verified
+  rejected
+}
+
 enum LeaveStatus {
   pending
   approved
@@ -134,6 +140,7 @@ model User {
   feePayments         FeePayment[]
   promotionsProcessed Promotion[]
   profile             TeacherProfile?
+  attendancePhotos    ClassAttendancePhoto[]
 }
 
 model AcademicYear {
@@ -168,6 +175,7 @@ model ClassRoom {
   feeAssignments FeeAssignment[]
   promotionsFrom Promotion[]     @relation("FromClass")
   promotionsTo   Promotion[]     @relation("ToClass")
+  attendancePhotos ClassAttendancePhoto[]
 }
 
 model ClassTeacher {
@@ -249,6 +257,28 @@ model TeacherAttendance {
   user         User @relation(fields: [userId], references: [id])
 
   @@unique([userId, date])
+}
+
+model ClassAttendancePhoto {
+  id             String                @id @default(cuid())
+  userId         String                // teacher who uploaded
+  classId        String
+  photoUrl       String?               // public URL; nulled after purge
+  photoPath      String?               // storage path for deletion; nulled after purge
+  capturedAt     DateTime              // authoritative EXIF capture time
+  attendanceDate DateTime              @db.Date
+  status         PhotoAttendanceStatus @default(pending)
+  verifiedById   String?               // scalar, like TeacherAttendance.recordedById
+  verifiedAt     DateTime?
+  reviewNote     String?
+  photoDeletedAt DateTime?             // set when storage object purged
+  createdAt      DateTime              @default(now())
+
+  user  User      @relation(fields: [userId], references: [id])
+  class ClassRoom @relation(fields: [classId], references: [id])
+
+  @@index([status, attendanceDate])
+  @@index([userId])
 }
 
 model TeacherProfile {

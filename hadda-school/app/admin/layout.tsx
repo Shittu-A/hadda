@@ -5,7 +5,7 @@ import Topnav from '@/components/layout/Topnav'
 import { db } from '@/lib/db'
 import {
   Users, GraduationCap, CalendarCheck, UserCheck, Banknote,
-  BookOpen, ArrowUpCircle, Archive, BarChart3, LayoutDashboard, IdCard, CalendarDays,
+  BookOpen, ArrowUpCircle, Archive, BarChart3, LayoutDashboard, IdCard, CalendarDays, Camera,
 } from 'lucide-react'
 
 const adminLinks = [
@@ -14,6 +14,7 @@ const adminLinks = [
   { href: '/admin/classes', label: 'Classes', icon: <Users size={18} /> },
   { href: '/admin/attendance/students', label: 'Student Attendance', icon: <CalendarCheck size={18} /> },
   { href: '/admin/attendance/teachers', label: 'Teacher Attendance', icon: <UserCheck size={18} /> },
+  { href: '/admin/attendance/class-photos', label: 'Class Photos', icon: <Camera size={18} /> },
   { href: '/admin/leave-requests', label: 'Leave Requests', icon: <CalendarCheck size={18} /> },
   { href: '/admin/fees', label: 'Fees', icon: <Banknote size={18} /> },
   { href: '/admin/memorization', label: 'Memorization', icon: <BookOpen size={18} /> },
