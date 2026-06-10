@@ -18,108 +18,120 @@ function toValidDate(value: unknown): Date | null {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth()
-  if (
-    !session ||
-    !['teacher', 'admin', 'super_admin'].includes(session.user.role)
-  ) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-
-  const formData = await req.formData()
-  const file = formData.get('file') as File | null
-  const classId = formData.get('classId') as string | null
-  const clientCapturedAt = formData.get('capturedAt') as string | null
-
-  if (!file || file.size === 0) {
-    return NextResponse.json({ error: 'No photo provided' }, { status: 400 })
-  }
-  if (file.size > MAX_BYTES) {
-    return NextResponse.json(
-      { error: 'Photo exceeds 4 MB after compression. Please try again.' },
-      { status: 400 },
-    )
-  }
-  if (!classId) {
-    return NextResponse.json({ error: 'No class selected' }, { status: 400 })
-  }
-
-  // Authorize: the class must exist, and teachers may only upload for a class
-  // they are assigned to. Admins / super admins may upload for any class.
-  const cls = await db.classRoom.findUnique({
-    where: { id: classId },
-    include: { teachers: { where: { userId: session.user.id } } },
-  })
-  if (!cls) {
-    return NextResponse.json({ error: 'Class not found' }, { status: 404 })
-  }
-  const isStaff = session.user.role === 'admin' || session.user.role === 'super_admin'
-  if (!isStaff && cls.teachers.length === 0) {
-    return NextResponse.json(
-      { error: 'You are not assigned to this class' },
-      { status: 403 },
-    )
-  }
-
-  const bytes = Buffer.from(await file.arrayBuffer())
-
-  // Authoritative capture time: re-read EXIF server-side from the uploaded file.
-  // Fall back to the client-extracted value only if compression dropped the EXIF.
-  let capturedAt: Date | null = null
   try {
-    const exif = await exifr.parse(bytes, ['DateTimeOriginal', 'CreateDate'])
-    capturedAt = toValidDate(exif?.DateTimeOriginal) ?? toValidDate(exif?.CreateDate)
-  } catch {
-    capturedAt = null
-  }
-  if (!capturedAt) capturedAt = toValidDate(clientCapturedAt)
+    const session = await auth()
+    if (
+      !session ||
+      !['teacher', 'admin', 'super_admin'].includes(session.user.role)
+    ) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
-  if (!capturedAt) {
-    return NextResponse.json(
-      {
-        error:
-          'This image has no capture date in its metadata. Take a fresh photo with your camera — screenshots and forwarded images cannot be used for attendance.',
-      },
-      { status: 400 },
+    let formData: FormData
+    try {
+      formData = await req.formData()
+    } catch {
+      return NextResponse.json({ error: 'Could not parse the uploaded data. The file may be too large or corrupted.' }, { status: 400 })
+    }
+
+    const file = formData.get('file') as File | null
+    const classId = formData.get('classId') as string | null
+    const clientCapturedAt = formData.get('capturedAt') as string | null
+
+    if (!file || file.size === 0) {
+      return NextResponse.json({ error: 'No photo provided' }, { status: 400 })
+    }
+    if (file.size > MAX_BYTES) {
+      return NextResponse.json(
+        { error: 'Photo exceeds 4 MB after compression. Please try again.' },
+        { status: 400 },
+      )
+    }
+    if (!classId) {
+      return NextResponse.json({ error: 'No class selected' }, { status: 400 })
+    }
+
+    // Authorize: the class must exist, and teachers may only upload for a class
+    // they are assigned to. Admins / super admins may upload for any class.
+    const cls = await db.classRoom.findUnique({
+      where: { id: classId },
+      include: { teachers: { where: { userId: session.user.id } } },
+    })
+    if (!cls) {
+      return NextResponse.json({ error: 'Class not found' }, { status: 404 })
+    }
+    const isStaff = session.user.role === 'admin' || session.user.role === 'super_admin'
+    if (!isStaff && cls.teachers.length === 0) {
+      return NextResponse.json(
+        { error: 'You are not assigned to this class' },
+        { status: 403 },
+      )
+    }
+
+    const bytes = Buffer.from(await file.arrayBuffer())
+
+    // Authoritative capture time: re-read EXIF server-side from the uploaded file.
+    // Fall back to the client-extracted value only if compression dropped the EXIF.
+    let capturedAt: Date | null = null
+    try {
+      const exif = await exifr.parse(bytes, ['DateTimeOriginal', 'CreateDate'])
+      capturedAt = toValidDate(exif?.DateTimeOriginal) ?? toValidDate(exif?.CreateDate)
+    } catch {
+      capturedAt = null
+    }
+    if (!capturedAt) capturedAt = toValidDate(clientCapturedAt)
+
+    if (!capturedAt) {
+      return NextResponse.json(
+        {
+          error:
+            'This image has no capture date in its metadata. Take a fresh photo with your camera — screenshots and forwarded images cannot be used for attendance.',
+        },
+        { status: 400 },
+      )
+    }
+
+    // Date portion (local) used to match the attendance day.
+    const attendanceDate = new Date(
+      Date.UTC(capturedAt.getFullYear(), capturedAt.getMonth(), capturedAt.getDate()),
     )
-  }
 
-  // Date portion (local) used to match the attendance day.
-  const attendanceDate = new Date(
-    Date.UTC(capturedAt.getFullYear(), capturedAt.getMonth(), capturedAt.getDate()),
-  )
+    const path = `${session.user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`
+    const supabase = getSupabase()
+    const { error: uploadError } = await supabase.storage.from(BUCKET).upload(path, bytes, {
+      contentType: 'image/jpeg',
+      upsert: false,
+    })
+    if (uploadError) {
+      return NextResponse.json({ error: uploadError.message }, { status: 500 })
+    }
 
-  const path = `${session.user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`
-  const supabase = getSupabase()
-  const { error: uploadError } = await supabase.storage.from(BUCKET).upload(path, bytes, {
-    contentType: 'image/jpeg',
-    upsert: false,
-  })
-  if (uploadError) {
-    return NextResponse.json({ error: uploadError.message }, { status: 500 })
-  }
+    const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(path)
 
-  const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(path)
+    const record = await db.classAttendancePhoto.create({
+      data: {
+        userId: session.user.id,
+        classId,
+        photoUrl: pub.publicUrl,
+        photoPath: path,
+        capturedAt,
+        attendanceDate,
+        status: 'pending',
+      },
+    })
 
-  const record = await db.classAttendancePhoto.create({
-    data: {
+    await logAudit({
       userId: session.user.id,
-      classId,
-      photoUrl: pub.publicUrl,
-      photoPath: path,
-      capturedAt,
-      attendanceDate,
-      status: 'pending',
-    },
-  })
+      action: 'attendance.photo.uploaded',
+      auditableType: 'ClassAttendancePhoto',
+      auditableId: record.id,
+      description: `Uploaded class photo for ${cls.name}, captured ${capturedAt.toISOString()}`,
+    })
 
-  await logAudit({
-    userId: session.user.id,
-    action: 'attendance.photo.uploaded',
-    auditableType: 'ClassAttendancePhoto',
-    auditableId: record.id,
-    description: `Uploaded class photo for ${cls.name}, captured ${capturedAt.toISOString()}`,
-  })
-
-  return NextResponse.json({ ok: true, id: record.id, status: record.status })
+    return NextResponse.json({ ok: true, id: record.id, status: record.status })
+  } catch (err: unknown) {
+    console.error('[attendance-photo] unhandled error:', err)
+    const message = err instanceof Error ? err.message : 'An unexpected error occurred'
+    return NextResponse.json({ error: message }, { status: 500 })
+  }
 }

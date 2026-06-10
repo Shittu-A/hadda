@@ -88,7 +88,13 @@ export default function PhotoAttendanceUploader({ classes }: { classes: ClassOpt
         method: 'POST',
         body: fd,
       })
-      const json = await res.json()
+      const text = await res.text()
+      let json: { ok?: boolean; id?: string; status?: string; error?: string } = {}
+      try {
+        json = JSON.parse(text)
+      } catch {
+        throw new Error(`Server error (${res.status}). Please try again.`)
+      }
       if (!res.ok) throw new Error(json.error ?? 'Upload failed')
 
       setSuccess('Photo submitted. Awaiting admin verification.')
