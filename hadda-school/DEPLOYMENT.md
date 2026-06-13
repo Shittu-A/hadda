@@ -186,25 +186,20 @@ DATABASE_URL="<direct-url>" npm run db:seed
 
 The app uses Prisma (server-side) for all DB access — RLS is not required for the management system. However, if you expose any tables directly via the Supabase client, enable RLS.
 
-### 5.2 Storage bucket (for student photos)
+### 5.2 Storage buckets (auto-created)
 
-If you use the photo upload feature:
+The app creates its storage buckets automatically on first upload, using the
+service-role key. **No manual setup is required.** The buckets are:
 
-1. Supabase Dashboard → Storage → New Bucket
-2. Name it `student-photos`
-3. Set to **Public** (photos are referenced by URL in the app)
-4. Set file size limit: 5MB
-5. Allowed MIME types: `image/jpeg, image/png, image/webp`
+- `uploads` — student photos and teacher profile photos (public, 5MB,
+  `image/jpeg, image/png, image/webp`)
+- `attendance-photos` — teacher class-photo clock-in (public, 5MB,
+  `image/jpeg`; the app compresses uploads to ≤4MB client-side)
 
-### 5.3 Storage bucket (for teacher class-photo attendance)
-
-The class-photo clock-in feature needs its own bucket:
-
-1. Supabase Dashboard → Storage → New Bucket
-2. Name it `attendance-photos`
-3. Set to **Public** (admins view photos by URL during verification)
-4. Set file size limit: 5MB (the app compresses uploads to ≤4MB client-side)
-5. Allowed MIME types: `image/jpeg`
+Both are created as **Public** because photos are referenced by URL in the app.
+If you prefer to create them manually beforehand (Supabase Dashboard → Storage →
+New Bucket), use the exact names above and mark them Public — the app will then
+detect they already exist and skip creation.
 
 > Photos are deleted automatically: rejected photos immediately, and verified photos
 > 72 hours after verification (purged when an admin opens the Class Photos page). No

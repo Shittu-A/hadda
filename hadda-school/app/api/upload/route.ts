@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { getSupabase } from '@/lib/supabase'
+import { getSupabase, ensureBucket } from '@/lib/supabase'
 
 export const dynamic = 'force-dynamic'
 
@@ -23,6 +23,17 @@ export async function POST(req: NextRequest) {
 
   const bytes = await file.arrayBuffer()
   const supabase = getSupabase()
+  try {
+    await ensureBucket(bucket, {
+      allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
+      fileSizeLimit: '5MB',
+    })
+  } catch (e) {
+    return NextResponse.json(
+      { error: e instanceof Error ? e.message : 'Could not prepare storage bucket' },
+      { status: 500 },
+    )
+  }
   const { error } = await supabase.storage.from(bucket).upload(path, bytes, {
     contentType: file.type,
     upsert: false,

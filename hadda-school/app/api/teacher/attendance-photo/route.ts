@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import exifr from 'exifr'
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
-import { getSupabase } from '@/lib/supabase'
+import { getSupabase, ensureBucket } from '@/lib/supabase'
 import { logAudit } from '@/lib/audit'
 
 export const dynamic = 'force-dynamic'
@@ -98,6 +98,10 @@ export async function POST(req: NextRequest) {
 
     const path = `${session.user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`
     const supabase = getSupabase()
+    await ensureBucket(BUCKET, {
+      allowedMimeTypes: ['image/jpeg'],
+      fileSizeLimit: '5MB',
+    })
     const { error: uploadError } = await supabase.storage.from(BUCKET).upload(path, bytes, {
       contentType: 'image/jpeg',
       upsert: false,
