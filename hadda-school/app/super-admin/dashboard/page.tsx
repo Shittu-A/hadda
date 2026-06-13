@@ -71,9 +71,9 @@ export default async function SuperAdminDashboardPage() {
             <div className={`p-2.5 rounded-xl ${s.bg} ${s.color} shrink-0`}>
               <s.icon size={20} />
             </div>
-            <div>
-              <p className="text-xl font-bold text-coffee-900 leading-tight">{s.value}</p>
-              <p className="text-xs text-coffee-500 mt-0.5">{s.label}</p>
+            <div className="min-w-0 overflow-hidden">
+              <p className="text-xl font-bold text-coffee-900 leading-tight truncate">{s.value}</p>
+              <p className="text-xs text-coffee-500 mt-0.5 truncate">{s.label}</p>
             </div>
           </Link>
         ))}
