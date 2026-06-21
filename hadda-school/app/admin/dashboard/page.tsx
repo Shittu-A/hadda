@@ -4,7 +4,7 @@ import { db } from '@/lib/db'
 import Link from 'next/link'
 import Badge from '@/components/ui/Badge'
 import { formatDate, formatCurrency } from '@/lib/utils'
-import { GraduationCap, Users, Banknote, UserX, Clock, BookOpen, CalendarCheck } from 'lucide-react'
+import { GraduationCap, Users, Banknote, UserX, Clock, BookOpen, CalendarCheck, Coins, PiggyBank } from 'lucide-react'
 
 export default async function AdminDashboardPage() {
   const session = await auth()
@@ -20,6 +20,9 @@ export default async function AdminDashboardPage() {
     presentToday,
     teachersAbsent,
     feesThisMonth,
+    feesAllTime,
+    otherIncomeAllTime,
+    expensesAllTime,
     pendingLeaves,
     recentPayments,
     recentMemo,
@@ -32,6 +35,9 @@ export default async function AdminDashboardPage() {
       where: { paymentDate: { gte: monthStart, lte: monthEnd } },
       _sum: { amountPaid: true },
     }),
+    db.feePayment.aggregate({ _sum: { amountPaid: true } }),
+    db.incomeEntry.aggregate({ _sum: { amount: true } }),
+    db.expense.aggregate({ _sum: { amount: true } }),
     db.leaveRequest.count({ where: { status: 'pending' } }),
     db.feePayment.findMany({
       take: 5,
@@ -57,11 +63,18 @@ export default async function AdminDashboardPage() {
     }),
   ])
 
+  const totalIncome =
+    Number(feesAllTime._sum.amountPaid ?? 0) + Number(otherIncomeAllTime._sum.amount ?? 0)
+  const totalExpenses = Number(expensesAllTime._sum.amount ?? 0)
+  const balance = totalIncome - totalExpenses
+
   const stats = [
     { label: 'Active Students', value: activeStudents, icon: GraduationCap, color: 'text-coffee-700', bg: 'bg-coffee-50', href: '/admin/students' },
     { label: 'Present Today', value: presentToday, icon: Users, color: 'text-green-600', bg: 'bg-green-50', href: '/admin/attendance/students' },
     { label: 'Teachers Absent', value: teachersAbsent, icon: UserX, color: 'text-red-500', bg: 'bg-red-50', href: '/admin/attendance/teachers' },
     { label: 'Fees This Month', value: formatCurrency(Number(feesThisMonth._sum.amountPaid ?? 0)), icon: Banknote, color: 'text-coffee-600', bg: 'bg-coffee-50', href: '/admin/fees/payments' },
+    { label: 'Total Income', value: formatCurrency(totalIncome), icon: Coins, color: 'text-green-700', bg: 'bg-green-50', href: '/admin/finance' },
+    { label: 'Available Balance', value: formatCurrency(balance), icon: PiggyBank, color: balance >= 0 ? 'text-coffee-700' : 'text-red-600', bg: balance >= 0 ? 'bg-coffee-50' : 'bg-red-50', href: '/admin/finance' },
   ]
 
   return (

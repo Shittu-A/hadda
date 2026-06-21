@@ -1,7 +1,7 @@
 import {
   LayoutDashboard, Users, CalendarRange, Calendar, Settings, ClipboardList,
   GraduationCap, UserCheck, CalendarCheck, Banknote, BookOpen, ArrowUpCircle,
-  Archive, BarChart3, FileText, IdCard, CalendarDays, Camera,
+  Archive, BarChart3, FileText, IdCard, CalendarDays, Camera, Coins,
 } from 'lucide-react'
 
 export const adminLinks = [
@@ -13,6 +13,7 @@ export const adminLinks = [
   { href: '/admin/attendance/class-photos', label: 'Class Photos', icon: <Camera size={18} /> },
   { href: '/admin/leave-requests', label: 'Leave Requests', icon: <CalendarCheck size={18} /> },
   { href: '/admin/fees', label: 'Fees', icon: <Banknote size={18} /> },
+  { href: '/admin/finance', label: 'Finance', icon: <Coins size={18} /> },
   { href: '/admin/memorization', label: 'Memorization', icon: <BookOpen size={18} /> },
   { href: '/admin/promotions', label: 'Promotions', icon: <ArrowUpCircle size={18} /> },
   { href: '/admin/alumni', label: 'Alumni', icon: <Archive size={18} /> },
@@ -35,6 +36,7 @@ export const superAdminLinks = [
   { href: '/admin/attendance/teachers', label: 'Teacher Attendance', icon: <UserCheck size={18} /> },
   { href: '/admin/leave-requests', label: 'Leave Requests', icon: <FileText size={18} /> },
   { href: '/admin/fees', label: 'Fees', icon: <Banknote size={18} /> },
+  { href: '/admin/finance', label: 'Finance', icon: <Coins size={18} /> },
   { href: '/admin/memorization', label: 'Memorization', icon: <BookOpen size={18} /> },
   { href: '/admin/promotions', label: 'Promotions', icon: <ArrowUpCircle size={18} /> },
   { href: '/admin/alumni', label: 'Alumni', icon: <Archive size={18} /> },

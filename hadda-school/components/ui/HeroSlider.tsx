@@ -4,10 +4,15 @@ import { useState, useEffect } from 'react'
 import Image from 'next/image'
 
 const slides = [
-  { src: '/slider%20images.jpeg', alt: 'School activity' },
-  { src: '/slider%202.jpeg', alt: 'School activity' },
-  { src: '/slider%203.jpeg', alt: 'School activity' },
-  { src: '/slider%204.jpeg', alt: 'School activity' },
+  { src: '/slide-1.jpg', alt: 'Students in class' },
+  { src: '/slide-2.jpg', alt: 'Students in class' },
+  { src: '/slide-3.jpg', alt: 'Students in class' },
+  { src: '/slide-4.jpg', alt: 'Students in class' },
+  { src: '/slide-5.jpg', alt: 'Students in class' },
+  { src: '/slide-6.jpg', alt: 'Students in class' },
+  { src: '/slide-7.jpg', alt: 'Students in class' },
+  { src: '/slide-8.jpg', alt: 'Students in class' },
+  { src: '/slide-9.jpg', alt: 'Students in class' },
 ]
 
 export default function HeroSlider() {

@@ -104,6 +104,26 @@ enum PaymentIntentStatus {
   abandoned
 }
 
+enum ExpenseCategory {
+  refreshment
+  salary
+  utilities
+  maintenance
+  supplies
+  transport
+  rent
+  events
+  other
+}
+
+enum IncomeCategory {
+  donation
+  grant
+  fundraising
+  rental
+  other
+}
+
 enum SettingGroup {
   general
   school
@@ -141,6 +161,8 @@ model User {
   promotionsProcessed Promotion[]
   profile             TeacherProfile?
   attendancePhotos    ClassAttendancePhoto[]
+  expenses            Expense[]
+  incomeEntries       IncomeEntry[]
 }
 
 model AcademicYear {
@@ -443,6 +465,38 @@ model PaymentIntent {
   metadata          Json?
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
+}
+
+model Expense {
+  id           String          @id @default(cuid())
+  name         String
+  category     ExpenseCategory @default(other)
+  amount       Decimal         @db.Decimal(10, 2)
+  expenseDate  DateTime
+  note         String?
+  recordedById String
+  createdAt    DateTime        @default(now())
+
+  recordedBy   User @relation(fields: [recordedById], references: [id])
+
+  @@index([expenseDate])
+  @@index([category])
+}
+
+model IncomeEntry {
+  id           String         @id @default(cuid())
+  source       String
+  category     IncomeCategory @default(other)
+  amount       Decimal        @db.Decimal(10, 2)
+  incomeDate   DateTime
+  note         String?
+  recordedById String
+  createdAt    DateTime       @default(now())
+
+  recordedBy   User @relation(fields: [recordedById], references: [id])
+
+  @@index([incomeDate])
+  @@index([category])
 }
 
 model AuditLog {

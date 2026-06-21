@@ -6,3 +6,6 @@ dist/
 build/
 ABDULLAHBNMASUD.zip
 hadda-school/setup-admin.js
+
+.vercel
+.env*
