@@ -109,6 +109,63 @@ export async function removeFeeAssignment(formData: FormData): Promise<void> {
   revalidatePath('/admin/fees')
 }
 
+// Finds (or lazily creates) the single reserved fee bucket that arrears payments
+// are recorded against, so they appear in the normal payments list & audit log.
+export async function ensureArrearsFeeStructure() {
+  const existing = await db.feeStructure.findFirst({ where: { isArrears: true } })
+  if (existing) return existing
+
+  const year =
+    (await db.academicYear.findFirst({ where: { isCurrent: true } })) ??
+    (await db.academicYear.findFirst({ orderBy: { startDate: 'desc' } }))
+  if (!year) return null
+
+  return db.feeStructure.create({
+    data: {
+      academicYearId: year.id,
+      name: 'Previous Terms (Arrears)',
+      amount: 0,
+      frequency: 'one_time',
+      isArrears: true,
+      description: 'Outstanding fees carried over from before this system. Owed amount = terms owing × termly fee.',
+    },
+  })
+}
+
+// Admin manually sets how many terms a student owes from before the system started.
+export async function setStudentArrears(formData: FormData) {
+  const session = await auth()
+  if (!session) return { success: false, error: 'Unauthorized' }
+
+  const studentId = formData.get('studentId') as string
+  const arrearsTerms = parseInt(formData.get('arrearsTerms') as string)
+  const arrearsNote = (formData.get('arrearsNote') as string)?.trim() || null
+
+  if (!studentId || isNaN(arrearsTerms) || arrearsTerms < 0) {
+    return { success: false, error: 'Enter a valid number of terms (0 or more)' }
+  }
+
+  // Make sure the bucket exists so payments can be recorded against it later.
+  await ensureArrearsFeeStructure()
+
+  const student = await db.student.update({
+    where: { id: studentId },
+    data: { arrearsTerms, arrearsNote },
+    select: { firstName: true, lastName: true },
+  })
+
+  await logAudit({
+    userId: session.user.id,
+    action: 'student.arrears.set',
+    auditableType: 'Student',
+    auditableId: studentId,
+    description: `Set previous-terms arrears for ${student.firstName} ${student.lastName} to ${arrearsTerms} term(s)`,
+  })
+
+  revalidatePath(`/admin/students/${studentId}`)
+  return { success: true }
+}
+
 export async function recordFeePayment(formData: FormData) {
   const session = await auth()
   if (!session) return { success: false, error: 'Unauthorized' }

@@ -5,6 +5,7 @@ import Image from 'next/image'
 import Badge from '@/components/ui/Badge'
 import { formatDate, formatCurrency } from '@/lib/utils'
 import { deleteStudent } from '@/lib/actions/students'
+import { setStudentArrears } from '@/lib/actions/fees'
 import { redirect } from 'next/navigation'
 
 const STATUS_VARIANT: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'neutral'> = {
@@ -20,9 +21,11 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   const student = await db.student.findFirst({
     where: { id, deletedAt: null },
     include: {
-      currentClass: true,
+      currentClass: { include: { feeAssignments: { include: { feeStructure: true } } } },
       academicYear: true,
       guardians: true,
+      feeAssignments: { include: { feeStructure: true } },
+      feeDiscounts: true,
       feePayments: {
         include: { feeStructure: true },
         orderBy: { paymentDate: 'desc' },
@@ -38,10 +41,46 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
 
   if (!student) notFound()
 
+  // Previous-terms arrears: terms owing × one term's fee, less any arrears payments made.
+  const feeMap = new Map<string, (typeof student.feeAssignments)[number]['feeStructure']>()
+  for (const fa of student.feeAssignments) {
+    if (fa.feeStructure.isActive && !fa.feeStructure.isArrears) feeMap.set(fa.feeStructureId, fa.feeStructure)
+  }
+  for (const fa of student.currentClass?.feeAssignments ?? []) {
+    if (fa.feeStructure.isActive && !fa.feeStructure.isArrears && !feeMap.has(fa.feeStructureId)) {
+      feeMap.set(fa.feeStructureId, fa.feeStructure)
+    }
+  }
+  let termlyValue = 0
+  for (const [feeId, fee] of feeMap) {
+    if (fee.frequency !== 'termly') continue
+    const discount = student.feeDiscounts.find((d) => d.feeStructureId === feeId)
+    const gross = Number(fee.amount)
+    const discountAmt = discount
+      ? discount.discountType === 'percent'
+        ? (gross * Number(discount.value)) / 100
+        : Number(discount.value)
+      : 0
+    termlyValue += Math.max(0, gross - discountAmt)
+  }
+
+  const arrearsPaidAgg = await db.feePayment.aggregate({
+    where: { studentId: id, feeStructure: { isArrears: true } },
+    _sum: { amountPaid: true },
+  })
+  const arrearsGross = student.arrearsTerms * termlyValue
+  const arrearsPaid = Number(arrearsPaidAgg._sum.amountPaid ?? 0)
+  const arrearsOutstanding = Math.max(0, arrearsGross - arrearsPaid)
+
   async function handleDelete() {
     'use server'
     await deleteStudent(id)
     redirect('/admin/students')
+  }
+
+  async function handleSetArrears(formData: FormData) {
+    'use server'
+    await setStudentArrears(formData)
   }
 
   return (
@@ -146,6 +185,72 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Previous-terms arrears */}
+          <div className="bg-white border border-coffee-200 rounded-xl p-4 sm:p-5">
+            <div className="flex items-center justify-between mb-1">
+              <h2 className="font-semibold text-coffee-800">Outstanding from Previous Terms</h2>
+              {arrearsOutstanding > 0 && (
+                <span className="text-sm font-bold text-red-600">{formatCurrency(arrearsOutstanding)}</span>
+              )}
+            </div>
+            <p className="text-xs text-coffee-500 mb-4">
+              Fees owed from before this system. Owed amount = terms owing × the student&apos;s termly fee
+              {termlyValue > 0 ? ` (${formatCurrency(termlyValue)}/term)` : ''}. Record payments via the Record Payment button using the &ldquo;Previous Terms (Arrears)&rdquo; fee.
+            </p>
+
+            {student.arrearsTerms > 0 && (
+              <dl className="grid grid-cols-3 gap-3 text-sm mb-4">
+                <div>
+                  <dt className="text-coffee-500 text-xs">Terms owing</dt>
+                  <dd className="text-coffee-900 font-semibold">{student.arrearsTerms}</dd>
+                </div>
+                <div>
+                  <dt className="text-coffee-500 text-xs">Total owed</dt>
+                  <dd className="text-coffee-900 font-semibold">{formatCurrency(arrearsGross)}</dd>
+                </div>
+                <div>
+                  <dt className="text-coffee-500 text-xs">Paid so far</dt>
+                  <dd className="text-coffee-900 font-semibold">{formatCurrency(arrearsPaid)}</dd>
+                </div>
+              </dl>
+            )}
+            {student.arrearsTerms > 0 && termlyValue === 0 && (
+              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4">
+                No termly fee is assigned to this student yet, so the owed amount shows as ₦0. Assign a termly fee to value the arrears.
+              </p>
+            )}
+
+            <form action={handleSetArrears} className="flex flex-col sm:flex-row sm:items-end gap-3">
+              <input type="hidden" name="studentId" value={student.id} />
+              <div className="w-full sm:w-32">
+                <label className="block text-xs font-medium text-coffee-600 mb-1">Terms owing</label>
+                <input
+                  type="number"
+                  name="arrearsTerms"
+                  min={0}
+                  defaultValue={student.arrearsTerms}
+                  className="w-full border border-coffee-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-400"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="block text-xs font-medium text-coffee-600 mb-1">Note (optional)</label>
+                <input
+                  type="text"
+                  name="arrearsNote"
+                  defaultValue={student.arrearsNote ?? ''}
+                  placeholder="e.g. 2024/25 Term 2 & 3"
+                  className="w-full border border-coffee-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-400"
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full sm:w-auto bg-coffee-900 text-white rounded-lg px-5 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
+              >
+                Save
+              </button>
+            </form>
           </div>
 
           {/* Recent Payments */}

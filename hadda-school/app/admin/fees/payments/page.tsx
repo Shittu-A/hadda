@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Badge from '@/components/ui/Badge'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { recordFeePayment, deleteFeePayment } from '@/lib/actions/fees'
+import { recordFeePayment, deleteFeePayment, ensureArrearsFeeStructure } from '@/lib/actions/fees'
 
 async function handleRecord(formData: FormData): Promise<void> {
   'use server'
@@ -40,6 +40,9 @@ export default async function FeePaymentsPage({
     if (fromDate) where.paymentDate.gte = fromDate
     if (toDate) where.paymentDate.lte = toDate
   }
+
+  // Make sure the reserved "Previous Terms (Arrears)" fee exists so it can be selected here.
+  await ensureArrearsFeeStructure()
 
   const [students, feeStructures, currentYear] = await Promise.all([
     db.student.findMany({

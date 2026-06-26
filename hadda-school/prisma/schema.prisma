@@ -224,6 +224,8 @@ model Student {
   status          StudentStatus @default(active)
   currentClassId  String?
   academicYearId  String
+  arrearsTerms    Int           @default(0) // terms owed from before this system (manually set by admin)
+  arrearsNote     String?       // optional context, e.g. "2024/25 Term 2 & 3"
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
   deletedAt       DateTime?
@@ -377,6 +379,7 @@ model FeeStructure {
   amount         Decimal      @db.Decimal(10, 2)
   frequency      FeeFrequency
   isActive       Boolean      @default(true)
+  isArrears      Boolean      @default(false) // reserved bucket for previous-terms arrears payments
   description    String?
   createdAt      DateTime     @default(now())
 

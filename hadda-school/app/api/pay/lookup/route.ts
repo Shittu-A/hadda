@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     currentClass: { include: { feeAssignments: { include: { feeStructure: true } } } },
     feeAssignments: { include: { feeStructure: true } },
     feeDiscounts: true,
-    feePayments: true,
+    feePayments: { include: { feeStructure: { select: { isArrears: true } } } },
   } as const
 
   function buildPayload(student: Awaited<ReturnType<typeof db.student.findFirst>> & { currentClass?: any; feeAssignments: any[]; feeDiscounts: any[]; feePayments: any[] }) {
@@ -19,16 +19,19 @@ export async function POST(req: NextRequest) {
     const feeMap = new Map<string, any>()
 
     for (const fa of student.feeAssignments) {
-      if (fa.feeStructure.isActive) feeMap.set(fa.feeStructureId, fa.feeStructure)
+      if (fa.feeStructure.isActive && !fa.feeStructure.isArrears) feeMap.set(fa.feeStructureId, fa.feeStructure)
     }
 
     if (student.currentClass) {
       for (const fa of student.currentClass.feeAssignments) {
-        if (fa.feeStructure.isActive && !feeMap.has(fa.feeStructureId)) {
+        if (fa.feeStructure.isActive && !fa.feeStructure.isArrears && !feeMap.has(fa.feeStructureId)) {
           feeMap.set(fa.feeStructureId, fa.feeStructure)
         }
       }
     }
+
+    // Net value of one term's worth of fees (used to value previous-terms arrears).
+    let termlyValue = 0
 
     const fees = Array.from(feeMap.values()).map((fee) => {
       const discount = student.feeDiscounts.find((d: any) => d.feeStructureId === fee.id)
@@ -39,12 +42,35 @@ export async function POST(req: NextRequest) {
           : Number(discount.value)
         : 0
       const netAmount = Math.max(0, grossAmount - discountAmt)
+      if (fee.frequency === 'termly') termlyValue += netAmount
       const paid = student.feePayments
         .filter((p: any) => p.feeStructureId === fee.id)
         .reduce((sum: number, p: any) => sum + Number(p.amountPaid), 0)
       const outstanding = Math.max(0, netAmount - paid)
       return { feeStructureId: fee.id, name: fee.name, frequency: fee.frequency, grossAmount, discount: discountAmt, netAmount, paid, outstanding }
     }).filter((f) => f.outstanding > 0)
+
+    // Previous-terms arrears: terms owing × one term's fee, less any arrears payments made.
+    const arrearsTerms = student.arrearsTerms ?? 0
+    if (arrearsTerms > 0 && termlyValue > 0) {
+      const grossAmount = arrearsTerms * termlyValue
+      const paid = student.feePayments
+        .filter((p: any) => p.feeStructure?.isArrears)
+        .reduce((sum: number, p: any) => sum + Number(p.amountPaid), 0)
+      const outstanding = Math.max(0, grossAmount - paid)
+      if (outstanding > 0) {
+        fees.push({
+          feeStructureId: 'arrears',
+          name: `Previous terms (${arrearsTerms} term${arrearsTerms !== 1 ? 's' : ''} owing)`,
+          frequency: 'termly',
+          grossAmount,
+          discount: 0,
+          netAmount: grossAmount,
+          paid,
+          outstanding,
+        })
+      }
+    }
 
     return {
       id: student.id,
