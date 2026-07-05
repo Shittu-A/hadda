@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import Sidebar from '@/components/layout/Sidebar'
 import Topnav from '@/components/layout/Topnav'
 import { db } from '@/lib/db'
-import { LayoutDashboard, CalendarCheck, Clock, BookOpen, FileText, Camera } from 'lucide-react'
+import { LayoutDashboard, CalendarCheck, Clock, BookOpen, FileText, Camera, Banknote } from 'lucide-react'
 
 const teacherLinks = [
   { href: '/teacher', label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
@@ -11,6 +11,7 @@ const teacherLinks = [
   { href: '/teacher/attendance/photo', label: 'Class Photo Clock-In', icon: <Camera size={18} /> },
   { href: '/teacher/attendance/history', label: 'Attendance History', icon: <Clock size={18} /> },
   { href: '/teacher/memorization', label: 'Memorization Logs', icon: <BookOpen size={18} /> },
+  { href: '/teacher/fees', label: 'Fees & Payments', icon: <Banknote size={18} /> },
   { href: '/teacher/leave', label: 'Leave Requests', icon: <FileText size={18} /> },
 ]
 

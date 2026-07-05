@@ -35,7 +35,10 @@ export default async function LandingPage() {
             A Quran memorization school dedicated to nurturing the next generation of Huffadh with care, structure, and love.
           </p>
           <div className="flex flex-wrap gap-3 sm:gap-4 justify-center mt-6 sm:mt-8">
-            <Link href="/pay" className="bg-white text-coffee-900 hover:bg-coffee-100 rounded-xl px-5 sm:px-6 py-2 sm:py-3 font-medium text-sm sm:text-base transition-colors">
+            <Link href="/apply" className="bg-white text-coffee-900 hover:bg-coffee-100 rounded-xl px-5 sm:px-6 py-2 sm:py-3 font-medium text-sm sm:text-base transition-colors">
+              Apply for Admission
+            </Link>
+            <Link href="/pay" className="border-2 border-white text-white hover:bg-white/20 rounded-xl px-5 sm:px-6 py-2 sm:py-3 font-medium text-sm sm:text-base transition-colors">
               Pay School Fees
             </Link>
             <a href="#about" className="border-2 border-white text-white hover:bg-white/20 rounded-xl px-5 sm:px-6 py-2 sm:py-3 font-medium text-sm sm:text-base transition-colors">
@@ -185,7 +188,10 @@ export default async function LandingPage() {
           <p className="text-coffee-400 text-xs sm:text-sm mt-2">— Parent, 2024</p>
           <h2 className="text-2xl sm:text-3xl font-bold text-white mt-6 sm:mt-8">Ready to Enroll?</h2>
           <div className="flex flex-wrap gap-3 sm:gap-4 justify-center mt-4 sm:mt-6">
-            <Link href="/pay" className="bg-white text-coffee-900 hover:bg-coffee-100 rounded-xl px-5 sm:px-6 py-2 sm:py-3 font-medium text-sm sm:text-base transition-colors w-full sm:w-auto">
+            <Link href="/apply" className="bg-white text-coffee-900 hover:bg-coffee-100 rounded-xl px-5 sm:px-6 py-2 sm:py-3 font-medium text-sm sm:text-base transition-colors w-full sm:w-auto">
+              Apply for Admission
+            </Link>
+            <Link href="/pay" className="border-2 border-coffee-400 text-coffee-200 hover:border-coffee-300 rounded-xl px-5 sm:px-6 py-2 sm:py-3 font-medium text-sm sm:text-base transition-colors w-full sm:w-auto">
               Pay Fees Online
             </Link>
             <Link href="/login" className="border-2 border-coffee-400 text-coffee-200 hover:border-coffee-300 rounded-xl px-5 sm:px-6 py-2 sm:py-3 font-medium text-sm sm:text-base transition-colors w-full sm:w-auto">

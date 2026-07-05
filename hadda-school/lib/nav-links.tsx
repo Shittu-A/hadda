@@ -1,11 +1,12 @@
 import {
   LayoutDashboard, Users, CalendarRange, Calendar, Settings, ClipboardList,
   GraduationCap, UserCheck, CalendarCheck, Banknote, BookOpen, ArrowUpCircle,
-  Archive, BarChart3, FileText, IdCard, CalendarDays, Camera, Coins,
+  Archive, BarChart3, FileText, IdCard, CalendarDays, Camera, Coins, Inbox,
 } from 'lucide-react'
 
 export const adminLinks = [
   { href: '/admin', label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
+  { href: '/admin/applications', label: 'Applications', icon: <Inbox size={18} /> },
   { href: '/admin/students', label: 'Students', icon: <GraduationCap size={18} /> },
   { href: '/admin/classes', label: 'Classes', icon: <Users size={18} /> },
   { href: '/admin/attendance/students', label: 'Student Attendance', icon: <CalendarCheck size={18} /> },
@@ -30,6 +31,7 @@ export const superAdminLinks = [
   { href: '/super-admin/settings', label: 'Settings', icon: <Settings size={18} /> },
   { href: '/super-admin/audit-logs', label: 'Audit Logs', icon: <ClipboardList size={18} /> },
   // Admin features
+  { href: '/admin/applications', label: 'Applications', icon: <Inbox size={18} /> },
   { href: '/admin/students', label: 'Students', icon: <GraduationCap size={18} /> },
   { href: '/admin/classes', label: 'Classes', icon: <Users size={18} /> },
   { href: '/admin/attendance/students', label: 'Student Attendance', icon: <CalendarCheck size={18} /> },

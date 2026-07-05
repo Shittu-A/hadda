@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Badge from '@/components/ui/Badge'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { recordFeePayment, deleteFeePayment, ensureArrearsFeeStructure } from '@/lib/actions/fees'
+import { sendBulkBalanceReminders } from '@/lib/actions/sms'
 
 async function handleRecord(formData: FormData): Promise<void> {
   'use server'
@@ -16,10 +17,16 @@ async function handleDelete(formData: FormData): Promise<void> {
   await deleteFeePayment(formData)
 }
 
+async function handleSmsAll(): Promise<void> {
+  'use server'
+  const result = await sendBulkBalanceReminders()
+  redirect(`/admin/fees/payments?smsResult=${result.sent}:${result.skipped}:${result.failed}`)
+}
+
 export default async function FeePaymentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ studentId?: string; feeId?: string; from?: string; to?: string; page?: string }>
+  searchParams: Promise<{ studentId?: string; feeId?: string; from?: string; to?: string; page?: string; smsResult?: string }>
 }) {
   const session = await auth()
   if (!session) redirect('/login')
@@ -99,13 +106,34 @@ export default async function FeePaymentsPage({
           <h1 className="text-2xl font-bold text-coffee-900">Fee Payments</h1>
           <p className="text-coffee-600 text-sm mt-0.5">Record and view all fee payments</p>
         </div>
-        <Link
-          href="/admin/fees"
-          className="w-full sm:w-auto text-center text-sm text-coffee-500 hover:text-coffee-800 transition-colors"
-        >
-          ← Fee Structures
-        </Link>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <form action={handleSmsAll}>
+            <button
+              type="submit"
+              className="w-full sm:w-auto text-center border border-coffee-200 text-coffee-700 rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-50 transition-colors"
+            >
+              SMS all debtors
+            </button>
+          </form>
+          <Link
+            href="/admin/fees"
+            className="w-full sm:w-auto text-center text-sm text-coffee-500 hover:text-coffee-800 transition-colors"
+          >
+            ← Fee Structures
+          </Link>
+        </div>
       </div>
+
+      {sp.smsResult && (() => {
+        const [sent, skipped, failed] = sp.smsResult.split(':').map((n) => parseInt(n) || 0)
+        return (
+          <div className="bg-coffee-50 border border-coffee-200 rounded-xl px-4 py-3 text-sm text-coffee-700">
+            Balance reminder SMS: <span className="font-semibold">{sent}</span> sent,{' '}
+            <span className="font-semibold">{skipped}</span> skipped (SMS not configured),{' '}
+            <span className="font-semibold">{failed}</span> failed.
+          </div>
+        )
+      })()}
 
       {/* Record payment form */}
       <div className="bg-white border border-coffee-200 rounded-xl p-4 sm:p-5">
@@ -359,8 +387,16 @@ export default async function FeePaymentsPage({
                     <td className="px-3 sm:px-4 py-2.5 text-coffee-500 text-xs hidden lg:table-cell">{p.period || '—'}</td>
                     <td className="px-3 sm:px-4 py-2.5 text-coffee-400 text-xs font-mono hidden lg:table-cell">{p.reference || '—'}</td>
                     <td className="px-3 sm:px-4 py-2.5 text-coffee-400 text-xs hidden sm:table-cell">{p.recordedBy.name}</td>
-                    <td className="px-3 sm:px-4 py-2.5 text-right">
-                      <form action={handleDelete}>
+                    <td className="px-3 sm:px-4 py-2.5 text-right whitespace-nowrap">
+                      <a
+                        href={`/api/payments/${p.id}/receipt`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-coffee-600 hover:text-coffee-900 transition-colors mr-3"
+                      >
+                        Receipt
+                      </a>
+                      <form action={handleDelete} className="inline">
                         <input type="hidden" name="id" value={p.id} />
                         <button
                           type="submit"

@@ -6,6 +6,7 @@ import Badge from '@/components/ui/Badge'
 import { formatDate, formatCurrency } from '@/lib/utils'
 import { deleteStudent } from '@/lib/actions/students'
 import { setStudentArrears } from '@/lib/actions/fees'
+import { sendBalanceReminder } from '@/lib/actions/sms'
 import { redirect } from 'next/navigation'
 
 const STATUS_VARIANT: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'neutral'> = {
@@ -16,8 +17,15 @@ const STATUS_VARIANT: Record<string, 'success' | 'warning' | 'danger' | 'info' |
   transferred: 'neutral',
 }
 
-export default async function StudentDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function StudentDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ smsResult?: string }>
+}) {
   const { id } = await params
+  const sp = await searchParams
   const student = await db.student.findFirst({
     where: { id, deletedAt: null },
     include: {
@@ -81,6 +89,13 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
   async function handleSetArrears(formData: FormData) {
     'use server'
     await setStudentArrears(formData)
+  }
+
+  async function handleSendBalanceSms() {
+    'use server'
+    const result = await sendBalanceReminder(id)
+    const status = result.success ? 'sent' : result.skipped ? 'skipped' : 'failed'
+    redirect(`/admin/students/${id}?smsResult=${status}${result.error ? `:${encodeURIComponent(result.error)}` : ''}`)
   }
 
   return (
@@ -340,6 +355,25 @@ export default async function StudentDetailPage({ params }: { params: Promise<{ 
               >
                 Print Admission Letter
               </a>
+              <form action={handleSendBalanceSms}>
+                <button
+                  type="submit"
+                  className="block w-full text-center border border-coffee-200 text-coffee-700 rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-50 transition-colors"
+                >
+                  Send Balance SMS
+                </button>
+              </form>
+              {sp.smsResult && (() => {
+                const [status, errorRaw] = sp.smsResult.split(':')
+                const error = errorRaw ? decodeURIComponent(errorRaw) : null
+                if (status === 'sent') {
+                  return <p className="text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">Balance reminder SMS sent.</p>
+                }
+                if (status === 'skipped') {
+                  return <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">SMS not sent — SMS provider not configured yet.</p>
+                }
+                return <p className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">Could not send SMS{error ? `: ${error}` : ''}.</p>
+              })()}
             </div>
           </div>
 
