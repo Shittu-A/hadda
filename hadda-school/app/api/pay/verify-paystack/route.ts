@@ -33,6 +33,17 @@ export async function POST(req: NextRequest) {
     const amountPaid = data.data.amount / 100 // Convert back to naira
     let remainingAmount = amountPaid
 
+    // Get an admin user to attribute the payment recording to
+    const adminUser = await db.user.findFirst({
+      where: { role: { in: ['super_admin', 'admin'] } },
+      orderBy: { createdAt: 'asc' }
+    })
+    
+    if (!adminUser) {
+      return NextResponse.json({ error: 'System config error: no admin found' }, { status: 500 })
+    }
+    const recordedById = adminUser.id
+
     // Get outstanding balance to distribute payments
     const studentBalance = await getStudentBalance(studentId)
     if (!studentBalance || studentBalance.total === 0) {
@@ -58,6 +69,7 @@ export async function POST(req: NextRequest) {
         data: {
           studentId,
           feeStructureId: feeStructId,
+          recordedById,
           amountPaid: amountToPay,
           paymentDate: new Date(),
           paymentMethod: 'online',

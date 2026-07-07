@@ -3,6 +3,9 @@ import PublicNav from '@/components/layout/PublicNav'
 import PublicFooter from '@/components/layout/PublicFooter'
 import Image from 'next/image'
 
+export const dynamic = 'force-dynamic'
+
+
 function getYoutubeEmbedUrl(url: string): string | null {
   try {
     const u = new URL(url)
