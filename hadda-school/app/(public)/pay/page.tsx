@@ -6,6 +6,7 @@ import PublicFooter from '@/components/layout/PublicFooter'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
 import { formatCurrency } from '@/lib/utils'
+import PaystackPayButton from '@/components/payments/PaystackPayButton'
 
 interface FeeItem {
   feeStructureId: string
@@ -28,7 +29,7 @@ interface StudentResult {
   total: number
 }
 
-function StudentFees({ student }: { student: StudentResult }) {
+function StudentFees({ student, paystackKey, onPaymentSuccess }: { student: StudentResult, paystackKey?: string, onPaymentSuccess?: () => void }) {
   return (
     <div className="mt-6 bg-white border border-coffee-200 rounded-2xl p-6 sm:p-8">
       <div className="mb-6">
@@ -67,9 +68,20 @@ function StudentFees({ student }: { student: StudentResult }) {
             <span className="text-xl sm:text-2xl font-extrabold text-coffee-900">{formatCurrency(student.total)}</span>
           </div>
 
-          <p className="text-coffee-500 text-xs sm:text-sm text-center mb-4 px-2">
-            Online payment integration coming soon. Please pay at school and bring your receipt.
-          </p>
+          <div className="flex flex-col items-center gap-3 mt-6">
+            {paystackKey ? (
+              <PaystackPayButton 
+                amount={student.total} 
+                studentId={student.id} 
+                paystackKey={paystackKey} 
+                onSuccess={onPaymentSuccess}
+              />
+            ) : (
+              <p className="text-coffee-500 text-xs sm:text-sm text-center px-2">
+                Online payment integration coming soon. Please pay at school and bring your receipt.
+              </p>
+            )}
+          </div>
         </>
       )}
     </div>
@@ -83,9 +95,10 @@ export default function PayPage() {
   const [student, setStudent] = useState<StudentResult | null>(null)
   const [students, setStudents] = useState<StudentResult[] | null>(null)
   const [selectedStudent, setSelectedStudent] = useState<StudentResult | null>(null)
+  const [paystackKey, setPaystackKey] = useState<string | undefined>()
 
-  async function handleLookup(e: React.FormEvent) {
-    e.preventDefault()
+  async function handleLookup(e?: React.FormEvent) {
+    if (e) e.preventDefault()
     setLoading(true)
     setError('')
     setStudent(null)
@@ -102,15 +115,25 @@ export default function PayPage() {
 
     if (!res.ok) {
       setError(data.error ?? 'No student found with that admission number or phone number.')
-    } else if (data.student) {
-      setStudent(data.student)
-    } else if (data.students) {
-      setStudents(data.students)
     } else {
-      setError('No student found.')
+      if (data.paystackKey) {
+        setPaystackKey(data.paystackKey)
+      }
+      if (data.student) {
+        setStudent(data.student)
+      } else if (data.students) {
+        setStudents(data.students)
+      } else {
+        setError('No student found.')
+      }
     }
 
     setLoading(false)
+  }
+
+  const handlePaymentSuccess = () => {
+    alert('Payment successful!')
+    handleLookup() // Refresh balance
   }
 
   return (
@@ -182,12 +205,12 @@ export default function PayPage() {
               >
                 ← Back to student list
               </button>
-              <StudentFees student={selectedStudent} />
+              <StudentFees student={selectedStudent} paystackKey={paystackKey} onPaymentSuccess={handlePaymentSuccess} />
             </>
           )}
 
           {/* Single student result */}
-          {student && <StudentFees student={student} />}
+          {student && <StudentFees student={student} paystackKey={paystackKey} onPaymentSuccess={handlePaymentSuccess} />}
         </div>
       </section>
 
