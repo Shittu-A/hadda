@@ -6,7 +6,9 @@ import PublicFooter from '@/components/layout/PublicFooter'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
 import { formatCurrency } from '@/lib/utils'
-import PaystackPayButton from '@/components/payments/PaystackPayButton'
+import dynamic from 'next/dynamic'
+
+const PaystackPayButton = dynamic(() => import('@/components/payments/PaystackPayButton'), { ssr: false })
 
 interface FeeItem {
   feeStructureId: string
