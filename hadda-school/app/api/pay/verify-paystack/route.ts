@@ -60,7 +60,7 @@ export async function POST(req: NextRequest) {
           feeStructureId: feeStructId,
           amountPaid: amountToPay,
           paymentDate: new Date(),
-          paymentMethod: 'paystack',
+          paymentMethod: 'online',
           reference: reference,
         },
       })
