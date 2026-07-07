@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
   })
 
   const paystackSetting = await db.setting.findUnique({ where: { key: 'paystack_public_key' } })
-  const paystackKey = paystackSetting?.value || process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || null
+  const paystackKey = process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || paystackSetting?.value || null
 
   if (byAdmission) {
     return NextResponse.json({ student: computeStudentBalance(byAdmission), paystackKey })

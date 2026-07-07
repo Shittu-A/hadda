@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     }
 
     const secretSetting = await db.setting.findUnique({ where: { key: 'paystack_secret_key' } })
-    const secretKey = secretSetting?.value || process.env.PAYSTACK_SECRET_KEY
+    const secretKey = process.env.PAYSTACK_SECRET_KEY || secretSetting?.value
 
     if (!secretKey) {
       return NextResponse.json({ error: 'Paystack is not configured' }, { status: 500 })
