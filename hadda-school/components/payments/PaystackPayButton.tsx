@@ -8,12 +8,12 @@ import { formatCurrency } from '@/lib/utils'
 interface PaystackPayButtonProps {
   amount: number
   email?: string
-  studentId: string
+  studentIds: string[]
   paystackKey: string
   onSuccess?: () => void
 }
 
-export default function PaystackPayButton({ amount, email, studentId, paystackKey, onSuccess }: PaystackPayButtonProps) {
+export default function PaystackPayButton({ amount, email, studentIds, paystackKey, onSuccess }: PaystackPayButtonProps) {
   const [isVerifying, setIsVerifying] = useState(false)
 
   const config = {
@@ -24,9 +24,9 @@ export default function PaystackPayButton({ amount, email, studentId, paystackKe
     metadata: {
       custom_fields: [
         {
-          display_name: 'Student ID',
-          variable_name: 'student_id',
-          value: studentId,
+          display_name: 'Student IDs',
+          variable_name: 'student_ids',
+          value: studentIds.join(','),
         },
       ],
     },
@@ -42,7 +42,7 @@ export default function PaystackPayButton({ amount, email, studentId, paystackKe
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           reference: reference.reference,
-          studentId,
+          studentIds,
         }),
       })
       if (res.ok) {

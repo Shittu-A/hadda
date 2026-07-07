@@ -5,9 +5,12 @@ import { ensureArrearsFeeStructure } from '@/lib/actions/fees'
 
 export async function POST(req: NextRequest) {
   try {
-    const { reference, studentId } = await req.json()
-    if (!reference || !studentId) {
-      return NextResponse.json({ error: 'Missing reference or studentId' }, { status: 400 })
+    const body = await req.json()
+    const { reference } = body
+    const studentIds: string[] = body.studentIds ?? (body.studentId ? [body.studentId] : [])
+
+    if (!reference || studentIds.length === 0) {
+      return NextResponse.json({ error: 'Missing reference or studentIds' }, { status: 400 })
     }
 
     const secretSetting = await db.setting.findUnique({ where: { key: 'paystack_secret_key' } })
@@ -38,46 +41,48 @@ export async function POST(req: NextRequest) {
       where: { role: { in: ['super_admin', 'admin'] } },
       orderBy: { createdAt: 'asc' }
     })
-    
+
     if (!adminUser) {
       return NextResponse.json({ error: 'System config error: no admin found' }, { status: 500 })
     }
     const recordedById = adminUser.id
 
-    // Get outstanding balance to distribute payments
-    const studentBalance = await getStudentBalance(studentId)
-    if (!studentBalance || studentBalance.total === 0) {
-      return NextResponse.json({ error: 'No outstanding fees or student not found' }, { status: 400 })
-    }
+    // Distribute the single payment across each selected child in order, then
+    // across that child's fees starting from the top, until it runs out.
+    for (const studentId of studentIds) {
+      if (remainingAmount <= 0) break
 
-    // We distribute the payment to fees starting from the top
-    for (const fee of studentBalance.fees) {
-      if (remainingAmount <= 0) break;
-      const amountToPay = Math.min(fee.outstanding, remainingAmount)
+      const studentBalance = await getStudentBalance(studentId)
+      if (!studentBalance || studentBalance.total === 0) continue
 
-      let feeStructId = fee.feeStructureId
-      if (feeStructId === 'arrears') {
-        const arrearsBucket = await ensureArrearsFeeStructure()
-        if (arrearsBucket) {
-          feeStructId = arrearsBucket.id
-        } else {
-          continue // Skip if we can't get the arrears bucket
+      for (const fee of studentBalance.fees) {
+        if (remainingAmount <= 0) break
+        const amountToPay = Math.min(fee.outstanding, remainingAmount)
+
+        let feeStructId = fee.feeStructureId
+        if (feeStructId === 'arrears') {
+          const arrearsBucket = await ensureArrearsFeeStructure()
+          if (arrearsBucket) {
+            feeStructId = arrearsBucket.id
+          } else {
+            continue // Skip if we can't get the arrears bucket
+          }
         }
+
+        await db.feePayment.create({
+          data: {
+            studentId,
+            feeStructureId: feeStructId,
+            recordedById,
+            amountPaid: amountToPay,
+            paymentDate: new Date(),
+            paymentMethod: 'online',
+            reference: reference,
+          },
+        })
+
+        remainingAmount -= amountToPay
       }
-
-      await db.feePayment.create({
-        data: {
-          studentId,
-          feeStructureId: feeStructId,
-          recordedById,
-          amountPaid: amountToPay,
-          paymentDate: new Date(),
-          paymentMethod: 'online',
-          reference: reference,
-        },
-      })
-
-      remainingAmount -= amountToPay
     }
 
     return NextResponse.json({ success: true })
