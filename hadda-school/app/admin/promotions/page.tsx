@@ -52,7 +52,11 @@ export default async function PromotionsPage({
         include: { currentClass: true },
         orderBy: [{ currentClass: { order: 'asc' } }, { firstName: 'asc' }],
       }),
-      db.classRoom.findMany({ orderBy: { order: 'asc' }, select: { id: true, name: true } }),
+      db.classRoom.findMany({
+        where: { academicYearId: toYearId },
+        orderBy: { order: 'asc' },
+        select: { id: true, name: true },
+      }),
     ])
 
     const existingPromotions = await db.promotion.findMany({
@@ -138,6 +142,15 @@ export default async function PromotionsPage({
 
       {fromYearId && toYearId && fromYearId === toYearId && (
         <p className="text-red-500 text-sm">From year and To year must be different.</p>
+      )}
+
+      {fromYearId && toYearId && fromYearId !== toYearId && classes.length === 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl px-5 py-4 text-amber-800 text-sm">
+          The destination year has no classes yet. Create the classes for the new
+          year first (in{' '}
+          <a href="/admin/classes" className="underline font-medium">Classes</a>),
+          otherwise promoted students can't be placed into the new session.
+        </div>
       )}
 
       {/* Promotion form */}

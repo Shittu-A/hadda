@@ -5,7 +5,7 @@ import Image from 'next/image'
 import Badge from '@/components/ui/Badge'
 import { formatDate, formatCurrency } from '@/lib/utils'
 import { deleteStudent } from '@/lib/actions/students'
-import { setStudentArrears } from '@/lib/actions/fees'
+import { setStudentArrears, toggleStudentScholarship } from '@/lib/actions/fees'
 import { sendBalanceReminder } from '@/lib/actions/sms'
 import { redirect } from 'next/navigation'
 
@@ -89,6 +89,11 @@ export default async function StudentDetailPage({
   async function handleSetArrears(formData: FormData) {
     'use server'
     await setStudentArrears(formData)
+  }
+
+  async function handleToggleScholarship(formData: FormData) {
+    'use server'
+    await toggleStudentScholarship(formData)
   }
 
   async function handleSendBalanceSms() {
@@ -375,6 +380,53 @@ export default async function StudentDetailPage({
                 return <p className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">Could not send SMS{error ? `: ${error}` : ''}.</p>
               })()}
             </div>
+          </div>
+
+          {/* Scholarship */}
+          <div className="bg-white border border-coffee-200 rounded-xl p-4 sm:p-5">
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="font-semibold text-coffee-800">Scholarship</h2>
+              {student.scholarship && <Badge variant="info">On scholarship</Badge>}
+            </div>
+            <p className="text-xs text-coffee-500 mb-3">
+              {student.scholarship
+                ? 'This student owes no fees and is skipped when applying fees to all paying students.'
+                : 'Place this student on scholarship to exempt them from fees.'}
+            </p>
+            {student.scholarship && student.scholarshipNote && (
+              <p className="text-xs text-coffee-600 bg-coffee-50 border border-coffee-100 rounded-lg px-3 py-2 mb-3">
+                {student.scholarshipNote}
+              </p>
+            )}
+            {student.scholarship ? (
+              <form action={handleToggleScholarship}>
+                <input type="hidden" name="studentId" value={student.id} />
+                <input type="hidden" name="scholarship" value="false" />
+                <button
+                  type="submit"
+                  className="w-full border border-coffee-200 text-coffee-700 rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-50 transition-colors"
+                >
+                  Remove from scholarship
+                </button>
+              </form>
+            ) : (
+              <form action={handleToggleScholarship} className="space-y-2">
+                <input type="hidden" name="studentId" value={student.id} />
+                <input type="hidden" name="scholarship" value="true" />
+                <input
+                  type="text"
+                  name="scholarshipNote"
+                  placeholder="Note (e.g. sponsor name)"
+                  className="w-full border border-coffee-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-400"
+                />
+                <button
+                  type="submit"
+                  className="w-full bg-coffee-900 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
+                >
+                  Place on scholarship
+                </button>
+              </form>
+            )}
           </div>
 
           {student.status === 'active' && (

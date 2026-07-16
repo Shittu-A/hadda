@@ -235,6 +235,8 @@ model Student {
   academicYearId  String
   arrearsTerms    Int           @default(0) // terms owed from before this system (manually set by admin)
   arrearsNote     String?       // optional context, e.g. "2024/25 Term 2 & 3"
+  scholarship     Boolean       @default(false) // on scholarship: excluded from fees / "apply to all paying"
+  scholarshipNote String?       // optional context, e.g. "Full sponsor: XYZ Foundation"
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
   deletedAt       DateTime?

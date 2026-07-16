@@ -148,6 +148,69 @@ export async function deleteClass(id: string) {
   }
 }
 
+export async function cloneClasses(fromYearId: string, toYearId: string) {
+  try {
+    const session = await auth()
+    if (!session) {
+      return { success: false, error: 'Unauthorized' }
+    }
+
+    if (!fromYearId || !toYearId || fromYearId === toYearId) {
+      return { success: false, error: 'Choose a different source year to copy from' }
+    }
+
+    const [sourceClasses, targetClasses] = await Promise.all([
+      db.classRoom.findMany({
+        where: { academicYearId: fromYearId },
+        orderBy: { order: 'asc' },
+        select: { name: true, description: true, capacity: true, order: true },
+      }),
+      db.classRoom.findMany({
+        where: { academicYearId: toYearId },
+        select: { name: true },
+      }),
+    ])
+
+    if (sourceClasses.length === 0) {
+      return { success: false, error: 'The selected source year has no classes to copy' }
+    }
+
+    // Skip names that already exist in the target year so this can be run safely
+    // more than once without creating duplicates.
+    const existingNames = new Set(targetClasses.map((c) => c.name.trim().toLowerCase()))
+    const toCreate = sourceClasses.filter(
+      (c) => !existingNames.has(c.name.trim().toLowerCase())
+    )
+
+    if (toCreate.length === 0) {
+      return { success: false, error: 'All classes from that year already exist in this year' }
+    }
+
+    await db.classRoom.createMany({
+      data: toCreate.map((c) => ({
+        name: c.name,
+        description: c.description,
+        capacity: c.capacity,
+        order: c.order,
+        academicYearId: toYearId,
+      })),
+    })
+
+    await logAudit({
+      userId: session.user.id,
+      action: 'class.cloned',
+      auditableType: 'AcademicYear',
+      auditableId: toYearId,
+      description: `Cloned ${toCreate.length} class(es) from year ${fromYearId}`,
+    })
+
+    revalidatePath('/admin/classes')
+    return { success: true, created: toCreate.length }
+  } catch (error) {
+    return { success: false, error: 'Failed to clone classes' }
+  }
+}
+
 export async function assignTeachers(classId: string, formData: FormData) {
   try {
     const session = await auth()

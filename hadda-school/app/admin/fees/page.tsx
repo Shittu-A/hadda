@@ -140,14 +140,23 @@ export default async function AdminFeesPage() {
                 className="w-full border border-coffee-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-400"
               />
             </div>
-            <div className="flex items-end">
-              <button
-                type="submit"
-                className="w-full sm:w-auto bg-coffee-900 text-white rounded-lg px-6 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
-              >
-                Create Fee
-              </button>
-            </div>
+          </div>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pt-1">
+            <label className="flex items-center gap-2 text-sm text-coffee-700">
+              <input
+                type="checkbox"
+                name="applyToAll"
+                className="rounded border-coffee-300 text-coffee-900 focus:ring-coffee-400"
+              />
+              Apply to all paying students in the selected year
+              <span className="text-coffee-400">(skips students on scholarship)</span>
+            </label>
+            <button
+              type="submit"
+              className="w-full sm:w-auto bg-coffee-900 text-white rounded-lg px-6 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
+            >
+              Create Fee
+            </button>
           </div>
         </form>
       </div>

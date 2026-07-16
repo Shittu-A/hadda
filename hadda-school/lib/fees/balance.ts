@@ -35,6 +35,20 @@ export type StudentBalance = {
 // `student` must have been loaded with `balanceInclude`.
 export function computeStudentBalance(student: any): StudentBalance | null {
   if (!student) return null
+
+  // Students on scholarship owe nothing, regardless of fee assignments.
+  if (student.scholarship) {
+    return {
+      id: student.id,
+      admissionNumber: student.admissionNumber,
+      firstName: student.firstName,
+      lastName: student.lastName,
+      className: student.currentClass?.name ?? 'Unassigned',
+      fees: [],
+      total: 0,
+    }
+  }
+
   const feeMap = new Map<string, any>()
 
   for (const fa of student.feeAssignments) {

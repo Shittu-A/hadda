@@ -3,7 +3,13 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Badge from '@/components/ui/Badge'
 import { formatCurrency, formatDate } from '@/lib/utils'
-import { assignFeeToClass, removeFeeAssignment } from '@/lib/actions/fees'
+import {
+  assignFeeToClass,
+  removeFeeAssignment,
+  applyFeeToAllPaying,
+  removeScholarshipFromFee,
+  upsertFeeDiscount,
+} from '@/lib/actions/fees'
 
 const FREQ_LABEL: Record<string, string> = {
   monthly: 'Monthly',
@@ -20,6 +26,21 @@ async function handleAssign(formData: FormData): Promise<void> {
 async function handleRemove(formData: FormData): Promise<void> {
   'use server'
   await removeFeeAssignment(formData)
+}
+
+async function handleApplyAll(formData: FormData): Promise<void> {
+  'use server'
+  await applyFeeToAllPaying(formData)
+}
+
+async function handleRemoveScholarship(formData: FormData): Promise<void> {
+  'use server'
+  await removeScholarshipFromFee(formData)
+}
+
+async function handleAddGrant(formData: FormData): Promise<void> {
+  'use server'
+  await upsertFeeDiscount(formData)
 }
 
 export default async function FeeStructureDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -56,10 +77,27 @@ export default async function FeeStructureDetailPage({ params }: { params: Promi
   if (!fee) notFound()
 
   const classAssignments = fee.assignments.filter((a) => a.classId && !a.studentId)
+  const studentAssignments = fee.assignments.filter((a) => a.studentId)
   const assignedClassIds = new Set(classAssignments.map((a) => a.classId!))
   const unassignedClasses = classes.filter((c) => !assignedClassIds.has(c.id))
 
   const totalCollected = fee.payments.reduce((sum, p) => sum + Number(p.amountPaid), 0)
+
+  // Roster context for the apply / scholarship / grant controls.
+  const [payingCount, scholarshipCount, grantStudents] = await Promise.all([
+    db.student.count({
+      where: { deletedAt: null, status: 'active', scholarship: false, academicYearId: fee.academicYearId },
+    }),
+    db.student.count({
+      where: { deletedAt: null, status: 'active', scholarship: true, academicYearId: fee.academicYearId },
+    }),
+    db.student.findMany({
+      where: { deletedAt: null, status: 'active', academicYearId: fee.academicYearId },
+      select: { id: true, firstName: true, lastName: true, admissionNumber: true },
+      orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
+    }),
+  ])
+  const discountedStudentIds = new Set(fee.discounts.map((d) => d.student.id))
 
   return (
     <div className="p-4 sm:p-6 space-y-6 max-w-5xl">
@@ -147,10 +185,113 @@ export default async function FeeStructureDetailPage({ params }: { params: Promi
             )}
           </div>
 
+          {/* Apply to students / scholarships */}
+          <div className="bg-white border border-coffee-200 rounded-xl p-4 sm:p-5 space-y-4">
+            <div>
+              <h2 className="font-semibold text-coffee-800 mb-1">Assign to Students</h2>
+              <p className="text-xs text-coffee-500">
+                {studentAssignments.length} student{studentAssignments.length !== 1 ? 's' : ''} individually assigned ·
+                {' '}{payingCount} paying student{payingCount !== 1 ? 's' : ''} in {fee.academicYear.name}
+              </p>
+            </div>
+
+            <form action={handleApplyAll}>
+              <input type="hidden" name="feeStructureId" value={fee.id} />
+              <button
+                type="submit"
+                className="w-full bg-coffee-900 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
+              >
+                Apply to all {payingCount} paying student{payingCount !== 1 ? 's' : ''}
+              </button>
+            </form>
+
+            {scholarshipCount > 0 && (
+              <form action={handleRemoveScholarship}>
+                <input type="hidden" name="feeStructureId" value={fee.id} />
+                <button
+                  type="submit"
+                  className="w-full border border-amber-300 text-amber-800 rounded-lg px-4 py-2 text-sm font-medium hover:bg-amber-50 transition-colors"
+                >
+                  Take off {scholarshipCount} scholarship student{scholarshipCount !== 1 ? 's' : ''}
+                </button>
+              </form>
+            )}
+            <p className="text-xs text-coffee-400">
+              &ldquo;Apply to all&rdquo; skips students on scholarship and any already assigned.
+            </p>
+          </div>
+
+          {/* Add a grant */}
+          <div className="bg-white border border-coffee-200 rounded-xl p-4 sm:p-5">
+            <h2 className="font-semibold text-coffee-800 mb-1">Add a Grant</h2>
+            <p className="text-xs text-coffee-500 mb-4">
+              Reduce this fee for one student (fixed ₦ or %). They still pay the remainder.
+            </p>
+            <form action={handleAddGrant} className="space-y-3">
+              <input type="hidden" name="feeStructureId" value={fee.id} />
+              <div>
+                <label className="block text-xs font-medium text-coffee-600 mb-1">Student</label>
+                <select
+                  name="studentId"
+                  required
+                  className="w-full border border-coffee-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-coffee-400"
+                >
+                  <option value="">Select student…</option>
+                  {grantStudents.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.firstName} {s.lastName} ({s.admissionNumber})
+                      {discountedStudentIds.has(s.id) ? ' — has grant' : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-xs font-medium text-coffee-600 mb-1">Type</label>
+                  <select
+                    name="discountType"
+                    required
+                    className="w-full border border-coffee-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-coffee-400"
+                  >
+                    <option value="fixed">Fixed (₦)</option>
+                    <option value="percent">Percent (%)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-coffee-600 mb-1">Value</label>
+                  <input
+                    type="number"
+                    name="value"
+                    required
+                    min={0.01}
+                    step={0.01}
+                    placeholder="e.g. 5000"
+                    className="w-full border border-coffee-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-coffee-400"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-coffee-600 mb-1">Reason (optional)</label>
+                <input
+                  type="text"
+                  name="reason"
+                  placeholder="e.g. Sibling discount"
+                  className="w-full border border-coffee-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-coffee-400"
+                />
+              </div>
+              <button
+                type="submit"
+                className="w-full bg-coffee-900 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
+              >
+                Add Grant
+              </button>
+            </form>
+          </div>
+
           {/* Discounts */}
           {fee.discounts.length > 0 && (
             <div className="bg-white border border-coffee-200 rounded-xl p-4 sm:p-5">
-              <h2 className="font-semibold text-coffee-800 mb-3">Student Discounts</h2>
+              <h2 className="font-semibold text-coffee-800 mb-3">Grants &amp; Discounts</h2>
               <div className="space-y-2">
                 {fee.discounts.map((d) => (
                   <div key={d.id} className="flex items-center justify-between text-sm">

@@ -31,8 +31,17 @@ export async function createFeeStructure(formData: FormData) {
     description: `Created fee structure: ${name} (${frequency}) — ₦${amount}`,
   })
 
+  // Optionally assign to every active, non-scholarship student in this year.
+  let applied = 0
+  if (formData.get('applyToAll') === 'on') {
+    const fd = new FormData()
+    fd.set('feeStructureId', fee.id)
+    const res = await applyFeeToAllPaying(fd)
+    if (res.success) applied = res.applied ?? 0
+  }
+
   revalidatePath('/admin/fees')
-  return { success: true, id: fee.id }
+  return { success: true, id: fee.id, applied }
 }
 
 export async function toggleFeeStructure(formData: FormData): Promise<void> {
@@ -95,6 +104,128 @@ export async function assignFeeToClass(formData: FormData): Promise<void> {
 
   revalidatePath(`/admin/fees/${feeStructureId}`)
   revalidatePath('/admin/fees')
+}
+
+// Assigns a fee to every active student in the fee's academic year, skipping
+// students on scholarship and any who are already assigned. Drives balances via
+// student-level FeeAssignment rows.
+export async function applyFeeToAllPaying(formData: FormData) {
+  const session = await auth()
+  if (!session) return { success: false, error: 'Unauthorized' }
+
+  const feeStructureId = formData.get('feeStructureId') as string
+  if (!feeStructureId) return { success: false, error: 'Missing fee' }
+
+  const fee = await db.feeStructure.findUnique({
+    where: { id: feeStructureId },
+    select: { academicYearId: true, name: true },
+  })
+  if (!fee) return { success: false, error: 'Fee not found' }
+
+  const [students, existing] = await Promise.all([
+    db.student.findMany({
+      where: {
+        deletedAt: null,
+        status: 'active',
+        scholarship: false,
+        academicYearId: fee.academicYearId,
+      },
+      select: { id: true },
+    }),
+    db.feeAssignment.findMany({
+      where: { feeStructureId, studentId: { not: null } },
+      select: { studentId: true },
+    }),
+  ])
+
+  const alreadyAssigned = new Set(existing.map((a) => a.studentId))
+  const toCreate = students.filter((s) => !alreadyAssigned.has(s.id))
+
+  if (toCreate.length > 0) {
+    await db.feeAssignment.createMany({
+      data: toCreate.map((s) => ({ feeStructureId, studentId: s.id })),
+    })
+  }
+
+  await logAudit({
+    userId: session.user.id,
+    action: 'fee.applied_to_all',
+    auditableType: 'FeeStructure',
+    auditableId: feeStructureId,
+    description: `Applied fee "${fee.name}" to ${toCreate.length} paying student(s)`,
+  })
+
+  revalidatePath(`/admin/fees/${feeStructureId}`)
+  revalidatePath('/admin/fees')
+  return { success: true, applied: toCreate.length }
+}
+
+// Removes this fee from every student who is on scholarship (deletes their
+// student-level assignments). Use after marking students as scholarship.
+export async function removeScholarshipFromFee(formData: FormData) {
+  const session = await auth()
+  if (!session) return { success: false, error: 'Unauthorized' }
+
+  const feeStructureId = formData.get('feeStructureId') as string
+  if (!feeStructureId) return { success: false, error: 'Missing fee' }
+
+  const fee = await db.feeStructure.findUnique({
+    where: { id: feeStructureId },
+    select: { name: true },
+  })
+  if (!fee) return { success: false, error: 'Fee not found' }
+
+  const scholars = await db.student.findMany({
+    where: { scholarship: true },
+    select: { id: true },
+  })
+  const scholarIds = scholars.map((s) => s.id)
+
+  const result = await db.feeAssignment.deleteMany({
+    where: { feeStructureId, studentId: { in: scholarIds } },
+  })
+
+  await logAudit({
+    userId: session.user.id,
+    action: 'fee.removed_scholarship',
+    auditableType: 'FeeStructure',
+    auditableId: feeStructureId,
+    description: `Removed fee "${fee.name}" from ${result.count} scholarship student(s)`,
+  })
+
+  revalidatePath(`/admin/fees/${feeStructureId}`)
+  revalidatePath('/admin/fees')
+  return { success: true, removed: result.count }
+}
+
+// Toggles a student's scholarship status. Scholarship students are excluded from
+// "apply to all paying students" and owe no fees.
+export async function toggleStudentScholarship(formData: FormData) {
+  const session = await auth()
+  if (!session) return { success: false, error: 'Unauthorized' }
+
+  const studentId = formData.get('studentId') as string
+  const scholarship = formData.get('scholarship') === 'true'
+  const scholarshipNote = (formData.get('scholarshipNote') as string)?.trim() || null
+  if (!studentId) return { success: false, error: 'Missing student' }
+
+  const student = await db.student.update({
+    where: { id: studentId },
+    data: { scholarship, scholarshipNote: scholarship ? scholarshipNote : null },
+    select: { firstName: true, lastName: true },
+  })
+
+  await logAudit({
+    userId: session.user.id,
+    action: 'student.scholarship.set',
+    auditableType: 'Student',
+    auditableId: studentId,
+    description: `${scholarship ? 'Placed' : 'Removed'} ${student.firstName} ${student.lastName} ${scholarship ? 'on' : 'from'} scholarship`,
+  })
+
+  revalidatePath(`/admin/students/${studentId}`)
+  revalidatePath('/admin/fees/payments')
+  return { success: true }
 }
 
 export async function removeFeeAssignment(formData: FormData): Promise<void> {

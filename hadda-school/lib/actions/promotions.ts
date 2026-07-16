@@ -24,16 +24,31 @@ export async function processPromotions(formData: FormData) {
 
   const results: { studentId: string; outcome: string }[] = []
 
+  // Classes are scoped to a specific academic year, so "same class" must be
+  // resolved to the destination year's class that shares the same name.
+  const toYearClasses = await db.classRoom.findMany({
+    where: { academicYearId: toYearId },
+    select: { id: true, name: true },
+  })
+  const toClassByName = new Map(
+    toYearClasses.map((c) => [c.name.trim().toLowerCase(), c.id])
+  )
+
   for (const studentId of studentIds) {
     const outcome = formData.get(`outcome_${studentId}`) as string
-    const toClassId = (formData.get(`toClassId_${studentId}`) as string) || null
+    const selectedToClassId = (formData.get(`toClassId_${studentId}`) as string) || null
     const notes = (formData.get(`notes_${studentId}`) as string)?.trim() || null
 
     if (!outcome) continue
 
     const student = await db.student.findUnique({
       where: { id: studentId },
-      select: { currentClassId: true, firstName: true, lastName: true },
+      select: {
+        currentClassId: true,
+        firstName: true,
+        lastName: true,
+        currentClass: { select: { name: true } },
+      },
     })
     if (!student) continue
 
@@ -43,13 +58,22 @@ export async function processPromotions(formData: FormData) {
     })
     if (existing) continue
 
+    // Resolve the destination class. When no class was explicitly selected
+    // ("— same class —"), map to the destination year's class with the same
+    // name as the student's current class. Falls back to the current class if
+    // the destination year has no matching class.
+    const sameNameClassId = student.currentClass?.name
+      ? toClassByName.get(student.currentClass.name.trim().toLowerCase()) ?? null
+      : null
+    const resolvedToClassId = selectedToClassId ?? sameNameClassId ?? student.currentClassId
+
     await db.promotion.create({
       data: {
         studentId,
         fromAcademicYearId: fromYearId,
         toAcademicYearId: toYearId,
         fromClassId: student.currentClassId,
-        toClassId: outcome === 'promoted' ? toClassId : null,
+        toClassId: outcome === 'promoted' || outcome === 'retained' ? resolvedToClassId : null,
         outcome: outcome as any,
         processedById: session.user.id,
         notes,
@@ -57,13 +81,17 @@ export async function processPromotions(formData: FormData) {
     })
 
     // Update student record based on outcome
-    if (outcome === 'promoted') {
+    if (outcome === 'promoted' || outcome === 'retained') {
+      // Both advance the student into the new session; "retained" simply keeps
+      // them in the same-named class rather than moving up a level.
       await db.student.update({
         where: { id: studentId },
-        data: { currentClassId: toClassId, status: 'active' },
+        data: {
+          currentClassId: resolvedToClassId,
+          academicYearId: toYearId,
+          status: 'active',
+        },
       })
-    } else if (outcome === 'retained') {
-      // stays in same class, no update needed
     } else if (outcome === 'graduated') {
       await db.student.update({
         where: { id: studentId },
