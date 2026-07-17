@@ -2,7 +2,7 @@ import { db } from '@/lib/db'
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Badge from '@/components/ui/Badge'
-import { processPromotions } from '@/lib/actions/promotions'
+import { processPromotions, undoPromotions } from '@/lib/actions/promotions'
 
 const OUTCOME_LABEL: Record<string, string> = {
   promoted: 'Promoted',
@@ -25,10 +25,15 @@ async function handleProcess(formData: FormData): Promise<void> {
   await processPromotions(formData)
 }
 
+async function handleUndo(formData: FormData): Promise<void> {
+  'use server'
+  await undoPromotions(formData)
+}
+
 export default async function PromotionsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ fromYearId?: string; toYearId?: string; done?: string }>
+  searchParams: Promise<{ fromYearId?: string; toYearId?: string; done?: string; undone?: string }>
 }) {
   const session = await auth()
   if (!session) redirect('/login')
@@ -40,6 +45,7 @@ export default async function PromotionsPage({
   const fromYearId = sp.fromYearId || currentYear?.id || ''
   const toYearId = sp.toYearId || ''
   const isDone = sp.done === '1'
+  const undoneCount = sp.undone ? Number(sp.undone) : null
 
   let students: any[] = []
   let classes: { id: string; name: string }[] = []
@@ -90,6 +96,13 @@ export default async function PromotionsPage({
           {processedCount > 0 && (
             <span className="ml-1 text-green-600">({processedCount} already processed)</span>
           )}
+        </div>
+      )}
+
+      {undoneCount !== null && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl px-5 py-4 text-blue-800 text-sm font-medium">
+          Reversed {undoneCount} promotion{undoneCount === 1 ? '' : 's'}. Those students are back in
+          their previous class and year, and can be processed again.
         </div>
       )}
 
@@ -274,14 +287,14 @@ export default async function PromotionsPage({
       {/* Promotion history */}
       {fromYearId && processedCount > 0 && (
         <div className="overflow-x-auto">
-          <PromotionHistory fromYearId={fromYearId} />
+          <PromotionHistory fromYearId={fromYearId} toYearId={toYearId} />
         </div>
       )}
     </div>
   )
 }
 
-async function PromotionHistory({ fromYearId }: { fromYearId: string }) {
+async function PromotionHistory({ fromYearId, toYearId }: { fromYearId: string; toYearId: string }) {
   const promotions = await db.promotion.findMany({
     where: { fromAcademicYearId: fromYearId },
     include: {
@@ -298,7 +311,23 @@ async function PromotionHistory({ fromYearId }: { fromYearId: string }) {
 
   return (
     <div>
-      <h2 className="font-semibold text-coffee-800 mb-3">Processed ({promotions.length})</h2>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+        <h2 className="font-semibold text-coffee-800">Processed ({promotions.length})</h2>
+        <form action={handleUndo}>
+          <input type="hidden" name="fromYearId" value={fromYearId} />
+          <input type="hidden" name="toYearId" value={toYearId} />
+          <button
+            type="submit"
+            className="border border-red-200 text-red-700 rounded-lg px-4 py-2 text-sm font-medium hover:bg-red-50 transition-colors"
+          >
+            Undo all {promotions.length} & re-run
+          </button>
+        </form>
+      </div>
+      <p className="text-coffee-500 text-xs mb-3">
+        Undoing returns each student to the class and year they were promoted from, so you can
+        process them again.
+      </p>
       <div className="bg-white border border-coffee-200 rounded-xl overflow-hidden overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-coffee-50 border-b border-coffee-200">
@@ -310,6 +339,7 @@ async function PromotionHistory({ fromYearId }: { fromYearId: string }) {
               <th className="text-left px-4 py-3 text-coffee-700 font-semibold whitespace-nowrap hidden md:table-cell">To Year</th>
               <th className="text-left px-4 py-3 text-coffee-700 font-semibold whitespace-nowrap hidden lg:table-cell">Notes</th>
               <th className="text-left px-4 py-3 text-coffee-700 font-semibold whitespace-nowrap hidden lg:table-cell">By</th>
+              <th className="text-right px-4 py-3 text-coffee-700 font-semibold whitespace-nowrap"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-coffee-100">
@@ -329,6 +359,19 @@ async function PromotionHistory({ fromYearId }: { fromYearId: string }) {
                 <td className="px-4 py-2.5 text-coffee-600 text-xs hidden md:table-cell">{p.toAcademicYear.name}</td>
                 <td className="px-4 py-2.5 text-coffee-400 text-xs hidden lg:table-cell">{p.notes || '—'}</td>
                 <td className="px-4 py-2.5 text-coffee-400 text-xs hidden lg:table-cell">{p.processedBy.name}</td>
+                <td className="px-4 py-2.5 text-right">
+                  <form action={handleUndo}>
+                    <input type="hidden" name="fromYearId" value={fromYearId} />
+                    <input type="hidden" name="toYearId" value={toYearId} />
+                    <input type="hidden" name="studentId" value={p.student.id} />
+                    <button
+                      type="submit"
+                      className="text-red-600 text-xs font-medium hover:underline whitespace-nowrap"
+                    >
+                      Undo
+                    </button>
+                  </form>
+                </td>
               </tr>
             ))}
           </tbody>

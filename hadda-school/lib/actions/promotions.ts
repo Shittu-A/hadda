@@ -124,3 +124,63 @@ export async function processPromotions(formData: FormData) {
 
   redirect(`/admin/promotions?fromYearId=${fromYearId}&toYearId=${toYearId}&done=1`)
 }
+
+/**
+ * Reverses processed promotions so they can be run again. Each promotion row
+ * stores where the student came from, so undoing restores that class/year and
+ * clears the row that blocks re-processing (unique studentId+fromAcademicYearId).
+ *
+ * Pass studentId to undo a single student, otherwise every promotion out of
+ * fromYearId is reversed.
+ */
+export async function undoPromotions(formData: FormData) {
+  const session = await auth()
+  if (!session) return { success: false, error: 'Unauthorized' }
+  if (session.user.role !== 'admin' && session.user.role !== 'super_admin') {
+    return { success: false, error: 'Unauthorized' }
+  }
+
+  const fromYearId = formData.get('fromYearId') as string
+  const toYearId = (formData.get('toYearId') as string) || ''
+  const onlyStudentId = (formData.get('studentId') as string) || null
+
+  if (!fromYearId) return { success: false, error: 'Missing from year' }
+
+  const promotions = await db.promotion.findMany({
+    where: {
+      fromAcademicYearId: fromYearId,
+      ...(onlyStudentId ? { studentId: onlyStudentId } : {}),
+    },
+    select: { id: true, studentId: true, fromClassId: true },
+  })
+
+  for (const p of promotions) {
+    await db.student.update({
+      where: { id: p.studentId },
+      data: {
+        currentClassId: p.fromClassId,
+        academicYearId: fromYearId,
+        status: 'active',
+        deletedAt: null,
+      },
+    })
+  }
+
+  await db.promotion.deleteMany({
+    where: { id: { in: promotions.map((p) => p.id) } },
+  })
+
+  await logAudit({
+    userId: session.user.id,
+    action: 'promotions.undone',
+    description: `Reversed ${promotions.length} promotion${promotions.length === 1 ? '' : 's'} out of year ${fromYearId}`,
+  })
+
+  revalidatePath('/admin/promotions')
+  revalidatePath('/admin/students')
+  revalidatePath('/admin/alumni')
+
+  redirect(
+    `/admin/promotions?fromYearId=${fromYearId}${toYearId ? `&toYearId=${toYearId}` : ''}&undone=${promotions.length}`
+  )
+}
