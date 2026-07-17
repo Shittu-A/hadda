@@ -163,7 +163,13 @@ export async function cloneClasses(fromYearId: string, toYearId: string) {
       db.classRoom.findMany({
         where: { academicYearId: fromYearId },
         orderBy: { order: 'asc' },
-        select: { name: true, description: true, capacity: true, order: true },
+        select: {
+          name: true,
+          description: true,
+          capacity: true,
+          order: true,
+          teachers: { select: { userId: true, isPrimary: true } },
+        },
       }),
       db.classRoom.findMany({
         where: { academicYearId: toYearId },
@@ -186,7 +192,10 @@ export async function cloneClasses(fromYearId: string, toYearId: string) {
       return { success: false, error: 'All classes from that year already exist in this year' }
     }
 
-    await db.classRoom.createMany({
+    // Teacher assignments are cloned alongside the class. Without this the new
+    // year's classes have no teachers, so once students are promoted into them
+    // every teacher's class-scoped view (fees, dashboard) comes up empty.
+    const created = await db.classRoom.createManyAndReturn({
       data: toCreate.map((c) => ({
         name: c.name,
         description: c.description,
@@ -194,7 +203,19 @@ export async function cloneClasses(fromYearId: string, toYearId: string) {
         order: c.order,
         academicYearId: toYearId,
       })),
+      select: { id: true, name: true },
     })
+
+    const newIdByName = new Map(created.map((c) => [c.name.trim().toLowerCase(), c.id]))
+    const teacherLinks = toCreate.flatMap((c) => {
+      const newId = newIdByName.get(c.name.trim().toLowerCase())
+      if (!newId) return []
+      return c.teachers.map((t) => ({ classId: newId, userId: t.userId, isPrimary: t.isPrimary }))
+    })
+
+    if (teacherLinks.length > 0) {
+      await db.classTeacher.createMany({ data: teacherLinks, skipDuplicates: true })
+    }
 
     await logAudit({
       userId: session.user.id,

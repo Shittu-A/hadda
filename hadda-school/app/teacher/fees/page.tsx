@@ -20,28 +20,40 @@ export default async function TeacherFeesPage({
   const q = sp.q?.trim()
   const status: StatusFilter = sp.status === 'owing' || sp.status === 'paid' ? sp.status : 'all'
 
-  // Teachers only see students in classes they're linked to (via ClassTeacher).
-  // Admins/super_admins can see every active student.
   const isTeacher = session.user.role === 'teacher'
-  let classIds: string[] | null = null
-  if (isTeacher) {
-    const links = await db.classTeacher.findMany({ where: { userId: session.user.id }, select: { classId: true } })
-    classIds = links.map((l) => l.classId)
-  }
 
-  // Classes offered in the filter dropdown — a teacher's own classes, or all of them for admins.
-  const classes = await db.classRoom.findMany({
-    where: classIds ? { id: { in: classIds } } : {},
-    select: { id: true, name: true },
-    orderBy: [{ order: 'asc' }, { name: 'asc' }],
-  })
+  // The dropdown lists every class in the current year: a teacher defaults to their
+  // own class but may switch to any other.
+  const currentYear = await db.academicYear.findFirst({ where: { isCurrent: true }, select: { id: true } })
 
-  // A classId from the query string is only honoured if it's one the viewer may see.
-  const classId = sp.classId && classes.some((c) => c.id === sp.classId) ? sp.classId : undefined
+  const [classes, links] = await Promise.all([
+    db.classRoom.findMany({
+      where: currentYear ? { academicYearId: currentYear.id } : {},
+      select: { id: true, name: true },
+      orderBy: [{ order: 'asc' }, { name: 'asc' }],
+    }),
+    db.classTeacher.findMany({
+      where: { userId: session.user.id },
+      select: { classId: true, isPrimary: true },
+      orderBy: { isPrimary: 'desc' },
+    }),
+  ])
+
+  // A teacher's own class, used as the default view. Only links pointing at a class
+  // in the current year count — links left on a previous year's class have no students.
+  const ownClassId = links.find((l) => classes.some((c) => c.id === l.classId))?.classId
+
+  // "all" is an explicit choice; anything unrecognised falls back to the teacher's own class.
+  const classId =
+    sp.classId === 'all'
+      ? undefined
+      : sp.classId && classes.some((c) => c.id === sp.classId)
+        ? sp.classId
+        : ownClassId
 
   const where: any = { deletedAt: null, status: 'active' }
   if (classId) where.currentClassId = classId
-  else if (classIds) where.currentClassId = { in: classIds }
+  else if (currentYear) where.currentClass = { academicYearId: currentYear.id }
   if (q) {
     where.OR = [
       { firstName: { contains: q, mode: 'insensitive' } },
@@ -81,9 +93,13 @@ export default async function TeacherFeesPage({
   // Owing students first, largest debt at the top, so follow-ups are obvious.
   visibleRows.sort((a, b) => b.outstanding - a.outstanding || a.firstName.localeCompare(b.firstName))
 
+  // Carried in links so "all classes" survives navigation instead of snapping back
+  // to the teacher's own class.
+  const classParam = sp.classId === 'all' ? 'all' : classId
+
   const buildHref = (params: Record<string, string | undefined>) => {
     const next = new URLSearchParams()
-    const merged = { q, classId, status: status === 'all' ? undefined : status, studentId: sp.studentId, ...params }
+    const merged = { q, classId: classParam, status: status === 'all' ? undefined : status, studentId: sp.studentId, ...params }
     for (const [k, v] of Object.entries(merged)) if (v) next.set(k, v)
     const qs = next.toString()
     return qs ? `/teacher/fees?${qs}` : '/teacher/fees'
@@ -103,9 +119,8 @@ export default async function TeacherFeesPage({
   let recentPayments: Awaited<ReturnType<typeof paymentHistoryQuery>> = []
 
   if (selectedStudentId) {
-    // Make sure a selected student is one the teacher is actually allowed to view.
     selectedStudent = await db.student.findFirst({
-      where: { id: selectedStudentId, deletedAt: null, ...(classIds ? { currentClassId: { in: classIds } } : {}) },
+      where: { id: selectedStudentId, deletedAt: null },
       include: { currentClass: { select: { name: true } } },
     })
 
@@ -136,13 +151,15 @@ export default async function TeacherFeesPage({
         />
         <select
           name="classId"
-          defaultValue={classId || ''}
+          defaultValue={classParam || 'all'}
           className="w-full sm:w-56 border border-coffee-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-400"
         >
-          <option value="">{isTeacher ? 'All my classes' : 'All classes'}</option>
           {classes.map((c) => (
-            <option key={c.id} value={c.id}>{c.name}</option>
+            <option key={c.id} value={c.id}>
+              {c.name}{c.id === ownClassId ? ' (my class)' : ''}
+            </option>
           ))}
+          <option value="all">All classes</option>
         </select>
         {status !== 'all' && <input type="hidden" name="status" value={status} />}
         <button
@@ -177,7 +194,7 @@ export default async function TeacherFeesPage({
         {/* Student list */}
         <div className="bg-white border border-coffee-200 rounded-xl p-4 sm:p-5">
           <h2 className="font-semibold text-coffee-800 mb-3">
-            {isTeacher ? 'Students in your classes' : 'Students'}
+            {classId ? classes.find((c) => c.id === classId)?.name : 'All classes'}
           </h2>
 
           {/* Status filter */}
