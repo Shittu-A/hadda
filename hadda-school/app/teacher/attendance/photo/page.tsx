@@ -16,7 +16,8 @@ export default async function TeacherPhotoAttendancePage() {
 
   const [myClasses, submissions] = await Promise.all([
     db.classRoom.findMany({
-      where: { teachers: { some: { userId: session.user.id } } },
+      // Current session only — past cloned classes have no students.
+      where: { teachers: { some: { userId: session.user.id } }, academicYear: { isCurrent: true } },
       select: { id: true, name: true },
       orderBy: { order: 'asc' },
     }),

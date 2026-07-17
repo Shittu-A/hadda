@@ -23,10 +23,12 @@ export default async function TeacherAttendancePage({
   const selectedDate = sp.date || today
   const attendanceDate = new Date(selectedDate)
 
-  // Get classes where this teacher is assigned
+  // Get classes where this teacher is assigned, in the current session only.
+  // Past sessions' cloned classes keep the teacher link but have no students.
   const myClasses = await db.classRoom.findMany({
     where: {
       teachers: { some: { userId: session.user.id } },
+      academicYear: { isCurrent: true },
     },
     include: {
       students: {

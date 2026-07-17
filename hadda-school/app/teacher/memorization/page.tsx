@@ -36,7 +36,8 @@ export default async function TeacherMemorizationPage() {
 
   const [myClasses, surahs, recentLogs] = await Promise.all([
     db.classRoom.findMany({
-      where: { teachers: { some: { userId: session.user.id } } },
+      // Current session only — past cloned classes have no students.
+      where: { teachers: { some: { userId: session.user.id } }, academicYear: { isCurrent: true } },
       include: {
         students: {
           where: { deletedAt: null, status: 'active' },

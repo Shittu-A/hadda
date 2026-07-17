@@ -22,7 +22,9 @@ export default async function TeacherDashboardPage() {
 
   const [teacherClasses, pendingLeaves, recentLogs, upcomingEvents] = await Promise.all([
     db.classTeacher.findMany({
-      where: { userId: session.user.id },
+      // Only the current session's classes — cloned classes from past years
+      // keep the teacher link but hold no students.
+      where: { userId: session.user.id, class: { academicYear: { isCurrent: true } } },
       include: {
         class: {
           include: {
