@@ -9,3 +9,12 @@ hadda-school/setup-admin.js
 
 .vercel
 .env*
+
+# Scratch working directory — never version this
+temp/
+
+# Loose documents and images dropped at the repo root (may contain personal
+# data). Anchored to root so real assets under hadda-school/public/ still track.
+/*.pdf
+/*.jpeg
+/*.jpg
