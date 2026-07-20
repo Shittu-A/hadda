@@ -3,18 +3,7 @@ import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Badge from '@/components/ui/Badge'
 import { formatDate } from '@/lib/utils'
-
-const TYPE_LABELS: Record<string, string> = {
-  sabaq: 'Sabaq (New)',
-  sabqi: 'Sabqi (Recent)',
-  manzil: 'Manzil (Long-term)',
-}
-const QUALITY_VARIANT: Record<string, 'success' | 'info' | 'warning' | 'danger'> = {
-  excellent: 'success',
-  good: 'info',
-  average: 'warning',
-  weak: 'danger',
-}
+import { GRADE_VARIANT } from '@/lib/grades'
 
 export default async function AdminMemorizationPage({
   searchParams,
@@ -22,10 +11,9 @@ export default async function AdminMemorizationPage({
   searchParams: Promise<{
     classId?: string
     studentId?: string
-    type?: string
-    quality?: string
-    from?: string
-    to?: string
+    termId?: string
+    grade?: string
+    status?: string
     page?: string
   }>
 }) {
@@ -33,81 +21,66 @@ export default async function AdminMemorizationPage({
   if (!session) redirect('/login')
 
   const sp = await searchParams
-  const today = new Date().toISOString().split('T')[0]
   const pageNum = Math.max(1, parseInt(sp.page || '1'))
   const pageSize = 50
 
-  const fromDate = sp.from ? new Date(sp.from) : undefined
-  const toDate = sp.to ? new Date(sp.to + 'T23:59:59') : undefined
-
-  const [classes, currentYear] = await Promise.all([
+  const [classes, terms] = await Promise.all([
     db.classRoom.findMany({ orderBy: { order: 'asc' }, select: { id: true, name: true } }),
-    db.academicYear.findFirst({ where: { isCurrent: true } }),
+    db.term.findMany({
+      orderBy: [{ academicYear: { startDate: 'desc' } }, { order: 'asc' }],
+      include: { academicYear: { select: { name: true } } },
+    }),
   ])
+
+  // Default to the current term rather than every term ever recorded — a whole
+  // year of targets at once is rarely what an admin wants to look at.
+  const currentTerm = terms.find((t) => t.isCurrent)
+  const activeTermId = sp.termId || currentTerm?.id
 
   // Build where clause
   const where: any = {}
-  if (sp.classId) {
-    where.student = { currentClassId: sp.classId }
-  }
-  if (sp.studentId) {
-    where.studentId = sp.studentId
-  }
-  if (sp.type) {
-    where.type = sp.type
-  }
-  if (sp.quality) {
-    where.quality = sp.quality
-  }
-  if (fromDate || toDate) {
-    where.logDate = {}
-    if (fromDate) where.logDate.gte = fromDate
-    if (toDate) where.logDate.lte = toDate
-  }
+  if (activeTermId) where.termId = activeTermId
+  if (sp.classId) where.student = { currentClassId: sp.classId }
+  if (sp.studentId) where.studentId = sp.studentId
+  if (sp.grade) where.grade = sp.grade
+  if (sp.status === 'graded') where.achievedPercent = { not: null }
+  if (sp.status === 'pending') where.achievedPercent = null
 
-  // Fetch students in selected class for student filter dropdown
-  const classStudents = sp.classId
-    ? await db.student.findMany({
-        where: { currentClassId: sp.classId, deletedAt: null, status: 'active' },
-        orderBy: [{ firstName: 'asc' }],
-        select: { id: true, firstName: true, lastName: true },
-      })
-    : []
-
-  const [logs, total] = await Promise.all([
-    db.memorizationLog.findMany({
+  const [targets, total, gradedCount, pendingCount, avgAgg] = await Promise.all([
+    db.memorizationTarget.findMany({
       where,
       include: {
         student: { select: { id: true, firstName: true, lastName: true, admissionNumber: true } },
         teacher: { select: { id: true, name: true } },
+        term: { select: { name: true } },
         surahFrom: true,
         surahTo: true,
       },
-      orderBy: [{ logDate: 'desc' }, { createdAt: 'desc' }],
+      orderBy: [{ updatedAt: 'desc' }],
       take: pageSize,
       skip: (pageNum - 1) * pageSize,
     }),
-    db.memorizationLog.count({ where }),
+    db.memorizationTarget.count({ where }),
+    db.memorizationTarget.count({ where: { ...where, achievedPercent: { not: null } } }),
+    db.memorizationTarget.count({ where: { ...where, achievedPercent: null } }),
+    db.memorizationTarget.aggregate({
+      where: { ...where, achievedPercent: { not: null } },
+      _avg: { achievedPercent: true },
+    }),
   ])
 
-  // Summary stats (for current academic year, all students)
-  const statsWhere = currentYear ? { academicYearId: currentYear.id, ...where } : where
-  const [totalPages, totalSabaq, totalSabqi, totalManzil] = await Promise.all([
-    Promise.resolve(Math.ceil(total / pageSize)),
-    db.memorizationLog.count({ where: { ...statsWhere, type: 'sabaq' } }),
-    db.memorizationLog.count({ where: { ...statsWhere, type: 'sabqi' } }),
-    db.memorizationLog.count({ where: { ...statsWhere, type: 'manzil' } }),
-  ])
+  const averagePercent = avgAgg._avg.achievedPercent
+    ? Math.round(Number(avgAgg._avg.achievedPercent))
+    : 0
 
   function buildQuery(overrides: Record<string, string | undefined>) {
     const params = new URLSearchParams()
     const merged = {
       classId: sp.classId,
       studentId: sp.studentId,
-      type: sp.type,
-      quality: sp.quality,
-      from: sp.from,
-      to: sp.to,
+      termId: sp.termId,
+      grade: sp.grade,
+      status: sp.status,
       page: String(pageNum),
       ...overrides,
     }
@@ -120,17 +93,19 @@ export default async function AdminMemorizationPage({
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-coffee-900">Memorization Logs</h1>
-        <p className="text-coffee-600 text-sm mt-0.5">View all sabaq, sabqi, and manzil sessions</p>
+        <h1 className="text-2xl font-bold text-coffee-900">Memorization</h1>
+        <p className="text-coffee-600 text-sm mt-0.5">
+          Termly targets set by class teachers and the grades they awarded
+        </p>
       </div>
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: 'Total Logs', value: total, variant: 'neutral' as const },
-          { label: 'Sabaq', value: totalSabaq, variant: 'info' as const },
-          { label: 'Sabqi', value: totalSabqi, variant: 'warning' as const },
-          { label: 'Manzil', value: totalManzil, variant: 'success' as const },
+          { label: 'Targets Set', value: total },
+          { label: 'Graded', value: gradedCount },
+          { label: 'Awaiting Grade', value: pendingCount },
+          { label: 'Average Achieved', value: `${averagePercent}%` },
         ].map((s) => (
           <div key={s.label} className="bg-white border border-coffee-200 rounded-xl p-4 text-center">
             <p className="text-2xl font-bold text-coffee-900">{s.value}</p>
@@ -142,6 +117,22 @@ export default async function AdminMemorizationPage({
       {/* Filters */}
       <form method="GET" className="bg-white border border-coffee-200 rounded-xl p-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div>
+            <label className="block text-xs font-medium text-coffee-600 mb-1">Term</label>
+            <select
+              name="termId"
+              defaultValue={activeTermId || ''}
+              className="w-full border border-coffee-200 rounded-lg px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-coffee-400"
+            >
+              <option value="">All terms</option>
+              {terms.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.academicYear.name} — {t.name}{t.isCurrent ? ' (current)' : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div>
             <label className="block text-xs font-medium text-coffee-600 mb-1">Class</label>
             <select
@@ -157,57 +148,33 @@ export default async function AdminMemorizationPage({
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-coffee-600 mb-1">Type</label>
+            <label className="block text-xs font-medium text-coffee-600 mb-1">Status</label>
             <select
-              name="type"
-              defaultValue={sp.type || ''}
+              name="status"
+              defaultValue={sp.status || ''}
               className="w-full border border-coffee-200 rounded-lg px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-coffee-400"
             >
-              <option value="">All types</option>
-              <option value="sabaq">Sabaq</option>
-              <option value="sabqi">Sabqi</option>
-              <option value="manzil">Manzil</option>
+              <option value="">All</option>
+              <option value="graded">Graded</option>
+              <option value="pending">Awaiting grade</option>
             </select>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-coffee-600 mb-1">Quality</label>
+            <label className="block text-xs font-medium text-coffee-600 mb-1">Grade</label>
             <select
-              name="quality"
-              defaultValue={sp.quality || ''}
+              name="grade"
+              defaultValue={sp.grade || ''}
               className="w-full border border-coffee-200 rounded-lg px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-coffee-400"
             >
-              <option value="">All quality</option>
-              <option value="excellent">Excellent</option>
-              <option value="good">Good</option>
-              <option value="average">Average</option>
-              <option value="weak">Weak</option>
+              <option value="">All grades</option>
+              {['A', 'B', 'C', 'D', 'F'].map((g) => (
+                <option key={g} value={g}>{g}</option>
+              ))}
             </select>
           </div>
 
-          <div>
-            <label className="block text-xs font-medium text-coffee-600 mb-1">From</label>
-            <input
-              type="date"
-              name="from"
-              defaultValue={sp.from || ''}
-              max={today}
-              className="w-full border border-coffee-200 rounded-lg px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-coffee-400"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-coffee-600 mb-1">To</label>
-            <input
-              type="date"
-              name="to"
-              defaultValue={sp.to || ''}
-              max={today}
-              className="w-full border border-coffee-200 rounded-lg px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-coffee-400"
-            />
-          </div>
-
-          <div className="flex items-end gap-2">
+          <div className="flex items-end gap-2 lg:col-span-2">
             <button
               type="submit"
               className="flex-1 bg-coffee-900 text-white rounded-lg px-3 py-2 text-xs font-medium hover:bg-coffee-800 transition-colors"
@@ -224,15 +191,15 @@ export default async function AdminMemorizationPage({
         </div>
       </form>
 
-      {/* Logs table */}
-      {logs.length === 0 ? (
-        <div className="text-center py-16 text-coffee-400">No memorization logs found.</div>
+      {/* Targets table */}
+      {targets.length === 0 ? (
+        <div className="text-center py-16 text-coffee-400">No memorization targets found.</div>
       ) : (
         <>
           <div className="bg-white border border-coffee-200 rounded-xl overflow-hidden overflow-x-auto">
             <div className="px-5 py-3 bg-coffee-50 border-b border-coffee-200 flex items-center justify-between">
               <span className="text-sm text-coffee-600">
-                {total} log{total !== 1 ? 's' : ''} found
+                {total} target{total !== 1 ? 's' : ''} found
               </span>
               <span className="text-xs text-coffee-400">
                 Page {pageNum} of {Math.ceil(total / pageSize) || 1}
@@ -242,53 +209,60 @@ export default async function AdminMemorizationPage({
             <table className="w-full text-sm">
               <thead className="bg-coffee-50 border-b border-coffee-200">
                 <tr>
-                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold whitespace-nowrap">Date</th>
                   <th className="text-left px-4 py-3 text-coffee-700 font-semibold whitespace-nowrap">Student</th>
+                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold whitespace-nowrap hidden sm:table-cell">Term</th>
                   <th className="text-left px-4 py-3 text-coffee-700 font-semibold whitespace-nowrap hidden sm:table-cell">Teacher</th>
-                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold whitespace-nowrap hidden sm:table-cell">Type</th>
-                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold whitespace-nowrap hidden md:table-cell">Range</th>
+                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold whitespace-nowrap hidden md:table-cell">Target Portion</th>
                   <th className="text-left px-4 py-3 text-coffee-700 font-semibold whitespace-nowrap hidden md:table-cell">Pages</th>
-                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold whitespace-nowrap">Quality</th>
-                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold whitespace-nowrap hidden lg:table-cell">Notes</th>
+                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold whitespace-nowrap">Achieved</th>
+                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold whitespace-nowrap hidden lg:table-cell">Graded</th>
+                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold whitespace-nowrap hidden lg:table-cell">Remark</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-coffee-100">
-                {logs.map((log) => (
-                  <tr key={log.id} className="hover:bg-coffee-50 transition-colors">
-                    <td className="px-4 py-2.5 text-coffee-500 whitespace-nowrap text-xs">
-                      {formatDate(log.logDate)}
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <a
-                        href={`/admin/students/${log.student.id}`}
-                        className="font-medium text-coffee-900 hover:text-coffee-600 transition-colors"
-                      >
-                        {log.student.firstName} {log.student.lastName}
-                      </a>
-                      <p className="text-xs text-coffee-400 font-mono">{log.student.admissionNumber}</p>
-                    </td>
-                    <td className="px-4 py-2.5 text-coffee-600 text-xs hidden sm:table-cell">{log.teacher.name}</td>
-                    <td className="px-4 py-2.5 text-coffee-600 text-xs hidden sm:table-cell">
-                      {TYPE_LABELS[log.type] || log.type}
-                    </td>
-                    <td className="px-4 py-2.5 text-coffee-600 text-xs whitespace-nowrap hidden md:table-cell">
-                      <span className="font-medium">{log.surahFrom.nameEnglish}</span>
-                      {' '}:{log.ayahFrom}
-                      {' → '}
-                      <span className="font-medium">{log.surahTo.nameEnglish}</span>
-                      {' '}:{log.ayahTo}
-                    </td>
-                    <td className="px-4 py-2.5 text-coffee-700 font-medium text-xs hidden md:table-cell">
-                      {Number(log.pages).toFixed(2)}
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <Badge variant={QUALITY_VARIANT[log.quality]}>{log.quality}</Badge>
-                    </td>
-                    <td className="px-4 py-2.5 text-coffee-400 text-xs max-w-[150px] truncate hidden lg:table-cell">
-                      {log.notes || '—'}
-                    </td>
-                  </tr>
-                ))}
+                {targets.map((target) => {
+                  const percent = target.achievedPercent != null ? Number(target.achievedPercent) : null
+                  return (
+                    <tr key={target.id} className="hover:bg-coffee-50 transition-colors">
+                      <td className="px-4 py-2.5">
+                        <a
+                          href={`/admin/students/${target.student.id}`}
+                          className="font-medium text-coffee-900 hover:text-coffee-600 transition-colors"
+                        >
+                          {target.student.firstName} {target.student.lastName}
+                        </a>
+                        <p className="text-xs text-coffee-400 font-mono">{target.student.admissionNumber}</p>
+                      </td>
+                      <td className="px-4 py-2.5 text-coffee-600 text-xs hidden sm:table-cell">{target.term.name}</td>
+                      <td className="px-4 py-2.5 text-coffee-600 text-xs hidden sm:table-cell">{target.teacher.name}</td>
+                      <td className="px-4 py-2.5 text-coffee-600 text-xs whitespace-nowrap hidden md:table-cell">
+                        <span className="font-medium">{target.surahFrom.nameEnglish}</span>
+                        {' '}:{target.ayahFrom}
+                        {' → '}
+                        <span className="font-medium">{target.surahTo.nameEnglish}</span>
+                        {' '}:{target.ayahTo}
+                      </td>
+                      <td className="px-4 py-2.5 text-coffee-700 font-medium text-xs hidden md:table-cell">
+                        {Number(target.targetPages)}
+                      </td>
+                      <td className="px-4 py-2.5 whitespace-nowrap">
+                        {percent != null ? (
+                          <Badge variant={GRADE_VARIANT[target.grade ?? 'F'] ?? 'neutral'}>
+                            {percent}% · {target.grade}
+                          </Badge>
+                        ) : (
+                          <Badge variant="neutral">Pending</Badge>
+                        )}
+                      </td>
+                      <td className="px-4 py-2.5 text-coffee-500 text-xs whitespace-nowrap hidden lg:table-cell">
+                        {target.gradedAt ? formatDate(target.gradedAt) : '—'}
+                      </td>
+                      <td className="px-4 py-2.5 text-coffee-400 text-xs max-w-[150px] truncate hidden lg:table-cell">
+                        {target.remark || target.notes || '—'}
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
             </div>

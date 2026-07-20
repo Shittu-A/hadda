@@ -40,23 +40,36 @@ export default async function AdminFeesPage() {
   const feeStructures = await db.feeStructure.findMany({
     include: {
       academicYear: true,
+      term: true,
       assignments: { include: { class: true, student: true } },
       _count: { select: { payments: true } },
     },
-    orderBy: [{ academicYear: { startDate: 'desc' } }, { name: 'asc' }],
+    orderBy: [{ academicYear: { startDate: 'desc' } }, { name: 'asc' }, { term: { order: 'asc' } }],
   })
 
-  // Group by academic year
-  const byYear = feeStructures.reduce<Record<string, typeof feeStructures>>((acc, f) => {
-    const key = f.academicYearId
-    if (!acc[key]) acc[key] = []
-    acc[key].push(f)
-    return acc
-  }, {})
+  type Fee = (typeof feeStructures)[number]
 
-  const sortedYearIds = Array.from(
-    new Set(feeStructures.map((f) => f.academicYearId))
-  )
+  // A termly fee is stored as one row per term. Collapse those siblings back
+  // into a single line so the admin sees "Tuition" once rather than three times,
+  // with the individual terms listed underneath.
+  const groups = new Map<string, { rows: Fee[]; head: Fee }>()
+  for (const f of feeStructures) {
+    const key = f.termGroupId ?? f.id
+    const existing = groups.get(key)
+    if (existing) existing.rows.push(f)
+    else groups.set(key, { rows: [f], head: f })
+  }
+
+  // Group by academic year
+  const byYear = new Map<string, { rows: Fee[]; head: Fee }[]>()
+  for (const group of groups.values()) {
+    const key = group.head.academicYearId
+    const list = byYear.get(key)
+    if (list) list.push(group)
+    else byYear.set(key, [group])
+  }
+
+  const sortedYearIds = Array.from(byYear.keys())
 
   return (
     <div className="p-4 sm:p-6 space-y-8">
@@ -99,6 +112,7 @@ export default async function AdminFeesPage() {
                 placeholder="e.g. 50000"
                 className="w-full border border-coffee-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-400"
               />
+              <p className="text-xs text-coffee-400 mt-1">For a termly fee, this is the amount per term.</p>
             </div>
             <div>
               <label className="block text-sm font-medium text-coffee-700 mb-1">Frequency *</label>
@@ -112,6 +126,9 @@ export default async function AdminFeesPage() {
                 <option value="yearly">Yearly</option>
                 <option value="one_time">One-time</option>
               </select>
+              <p className="text-xs text-coffee-400 mt-1">
+                Termly creates one charge per term, so parents can pay a term at a time.
+              </p>
             </div>
             <div>
               <label className="block text-sm font-medium text-coffee-700 mb-1">Academic Year *</label>
@@ -167,9 +184,9 @@ export default async function AdminFeesPage() {
       ) : (
         <div className="space-y-6">
           {sortedYearIds.map((yearId) => {
-            const fees = byYear[yearId]
-            const yearName = fees[0].academicYear.name
-            const isCurrent = fees[0].academicYear.isCurrent
+            const feeGroups = byYear.get(yearId)!
+            const yearName = feeGroups[0].head.academicYear.name
+            const isCurrent = feeGroups[0].head.academicYear.isCurrent
             return (
               <div key={yearId}>
                 <div className="flex items-center gap-2 mb-3">
@@ -190,27 +207,52 @@ export default async function AdminFeesPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-coffee-100">
-                      {fees.map((fee) => {
-                        const classAssignments = fee.assignments.filter((a) => a.classId && !a.studentId)
-                        const studentAssignments = fee.assignments.filter((a) => a.studentId)
+                      {feeGroups.map(({ rows, head }) => {
+                        const isTermly = rows.length > 1 || head.termId !== null
+                        const classAssignments = head.assignments.filter((a) => a.classId && !a.studentId)
+                        const studentAssignments = head.assignments.filter((a) => a.studentId)
+                        const totalPayments = rows.reduce((s, r) => s + r._count.payments, 0)
+                        const yearTotal = rows.reduce((s, r) => s + Number(r.amount), 0)
                         return (
-                          <tr key={fee.id} className="hover:bg-coffee-50 transition-colors">
+                          <tr key={head.termGroupId ?? head.id} className="hover:bg-coffee-50 transition-colors">
                             <td className="px-3 sm:px-4 py-3">
                               <Link
-                                href={`/admin/fees/${fee.id}`}
+                                href={`/admin/fees/${head.id}`}
                                 className="font-medium text-coffee-900 hover:text-coffee-600 transition-colors"
                               >
-                                {fee.name}
+                                {head.name}
                               </Link>
-                              {fee.description && (
-                                <p className="text-xs text-coffee-400 mt-0.5 hidden sm:block">{fee.description}</p>
+                              {head.description && (
+                                <p className="text-xs text-coffee-400 mt-0.5 hidden sm:block">{head.description}</p>
+                              )}
+                              {isTermly && (
+                                <p className="text-xs text-coffee-400 mt-1 flex flex-wrap gap-x-2 gap-y-0.5">
+                                  {rows.map((r) => (
+                                    <Link
+                                      key={r.id}
+                                      href={`/admin/fees/${r.id}`}
+                                      className="hover:text-coffee-700 transition-colors"
+                                    >
+                                      {r.term?.name ?? 'No term'}
+                                      {r.term?.isCurrent ? ' •' : ''}
+                                    </Link>
+                                  ))}
+                                </p>
                               )}
                             </td>
                             <td className="px-3 sm:px-4 py-3 font-medium text-coffee-900 text-xs sm:text-sm">
-                              {formatCurrency(Number(fee.amount))}
+                              {formatCurrency(Number(head.amount))}
+                              {isTermly && (
+                                <span className="block text-xs font-normal text-coffee-400">
+                                  per term · {formatCurrency(yearTotal)} total
+                                </span>
+                              )}
                             </td>
                             <td className="px-3 sm:px-4 py-3 text-coffee-600 text-xs hidden sm:table-cell">
-                              {FREQ_LABEL[fee.frequency] || fee.frequency}
+                              {FREQ_LABEL[head.frequency] || head.frequency}
+                              {isTermly && (
+                                <span className="block text-coffee-400">{rows.length} term{rows.length !== 1 ? 's' : ''}</span>
+                              )}
                             </td>
                             <td className="px-3 sm:px-4 py-3 text-coffee-600 text-xs hidden lg:table-cell">
                               {classAssignments.length > 0 && (
@@ -219,34 +261,34 @@ export default async function AdminFeesPage() {
                               {studentAssignments.length > 0 && (
                                 <span className="ml-1 text-coffee-400">+{studentAssignments.length} students</span>
                               )}
-                              {fee.assignments.length === 0 && <span className="text-coffee-300">Unassigned</span>}
+                              {head.assignments.length === 0 && <span className="text-coffee-300">Unassigned</span>}
                             </td>
-                            <td className="px-3 sm:px-4 py-3 text-coffee-600 text-xs hidden sm:table-cell">{fee._count.payments}</td>
+                            <td className="px-3 sm:px-4 py-3 text-coffee-600 text-xs hidden sm:table-cell">{totalPayments}</td>
                             <td className="px-3 sm:px-4 py-3">
-                              <Badge variant={fee.isActive ? 'success' : 'neutral'}>
-                                {fee.isActive ? 'Active' : 'Inactive'}
+                              <Badge variant={head.isActive ? 'success' : 'neutral'}>
+                                {head.isActive ? 'Active' : 'Inactive'}
                               </Badge>
                             </td>
                             <td className="px-3 sm:px-4 py-3">
                               <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 sm:gap-3 justify-end">
                                 <Link
-                                  href={`/admin/fees/${fee.id}`}
+                                  href={`/admin/fees/${head.id}`}
                                   className="text-xs text-coffee-500 hover:text-coffee-800 transition-colors whitespace-nowrap"
                                 >
                                   Manage
                                 </Link>
                                 <form action={handleToggle}>
-                                  <input type="hidden" name="id" value={fee.id} />
+                                  <input type="hidden" name="id" value={head.id} />
                                   <button
                                     type="submit"
                                     className="text-xs text-coffee-500 hover:text-coffee-800 transition-colors whitespace-nowrap"
                                   >
-                                    {fee.isActive ? 'Deactivate' : 'Activate'}
+                                    {head.isActive ? 'Deactivate' : 'Activate'}
                                   </button>
                                 </form>
-                                {fee._count.payments === 0 && (
+                                {totalPayments === 0 && (
                                   <form action={handleDelete}>
-                                    <input type="hidden" name="id" value={fee.id} />
+                                    <input type="hidden" name="id" value={head.id} />
                                     <button
                                       type="submit"
                                       className="text-xs text-red-400 hover:text-red-600 transition-colors whitespace-nowrap"

@@ -7,6 +7,7 @@ import { formatDate, formatCurrency } from '@/lib/utils'
 import { deleteStudent } from '@/lib/actions/students'
 import { setStudentArrears, toggleStudentScholarship } from '@/lib/actions/fees'
 import { sendBalanceReminder } from '@/lib/actions/sms'
+import { computeTermlyValue } from '@/lib/fees/balance'
 import { redirect } from 'next/navigation'
 
 const STATUS_VARIANT: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'neutral'> = {
@@ -29,48 +30,34 @@ export default async function StudentDetailPage({
   const student = await db.student.findFirst({
     where: { id, deletedAt: null },
     include: {
-      currentClass: { include: { feeAssignments: { include: { feeStructure: true } } } },
+      // feeStructure.term is needed so the arrears valuation can tell terms apart.
+      currentClass: {
+        include: { feeAssignments: { include: { feeStructure: { include: { term: true } } } } },
+      },
       academicYear: true,
       guardians: true,
-      feeAssignments: { include: { feeStructure: true } },
+      feeAssignments: { include: { feeStructure: { include: { term: true } } } },
       feeDiscounts: true,
       feePayments: {
-        include: { feeStructure: true },
+        include: { feeStructure: { include: { term: true } } },
         orderBy: { paymentDate: 'desc' },
         take: 10,
       },
-      memorizationLogs: {
-        include: { surahFrom: true, surahTo: true },
-        orderBy: { logDate: 'desc' },
-        take: 5,
+      // One target per term, newest term first.
+      memTargets: {
+        include: { surahFrom: true, surahTo: true, term: true },
+        orderBy: [{ term: { academicYear: { startDate: 'desc' } } }, { term: { order: 'desc' } }],
+        take: 6,
       },
     },
   })
 
   if (!student) notFound()
 
-  // Previous-terms arrears: terms owing × one term's fee, less any arrears payments made.
-  const feeMap = new Map<string, (typeof student.feeAssignments)[number]['feeStructure']>()
-  for (const fa of student.feeAssignments) {
-    if (fa.feeStructure.isActive && !fa.feeStructure.isArrears) feeMap.set(fa.feeStructureId, fa.feeStructure)
-  }
-  for (const fa of student.currentClass?.feeAssignments ?? []) {
-    if (fa.feeStructure.isActive && !fa.feeStructure.isArrears && !feeMap.has(fa.feeStructureId)) {
-      feeMap.set(fa.feeStructureId, fa.feeStructure)
-    }
-  }
-  let termlyValue = 0
-  for (const [feeId, fee] of feeMap) {
-    if (fee.frequency !== 'termly') continue
-    const discount = student.feeDiscounts.find((d) => d.feeStructureId === feeId)
-    const gross = Number(fee.amount)
-    const discountAmt = discount
-      ? discount.discountType === 'percent'
-        ? (gross * Number(discount.value)) / 100
-        : Number(discount.value)
-      : 0
-    termlyValue += Math.max(0, gross - discountAmt)
-  }
+  // Previous-terms arrears: terms owing × one term's fee, less any arrears
+  // payments made. The per-term valuation is shared with the balance module so
+  // this page and the parent's bill can never disagree.
+  const termlyValue = computeTermlyValue(student)
 
   const arrearsPaidAgg = await db.feePayment.aggregate({
     where: { studentId: id, feeStructure: { isArrears: true } },
@@ -302,34 +289,49 @@ export default async function StudentDetailPage({
             </div>
           )}
 
-          {/* Recent Memorization */}
-          {student.memorizationLogs.length > 0 && (
+          {/* Memorization by term */}
+          {student.memTargets.length > 0 && (
             <div className="bg-white border border-coffee-200 rounded-xl p-4 sm:p-5">
-              <h2 className="font-semibold text-coffee-800 mb-4">Recent Memorization</h2>
+              <h2 className="font-semibold text-coffee-800 mb-4">Memorization by Term</h2>
               <div className="space-y-2">
-                {student.memorizationLogs.map((log) => (
-                  <div key={log.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-coffee-50 rounded-lg text-sm">
-                    <div className="flex-1 min-w-0">
-                      <span className="font-medium text-coffee-900 capitalize">{log.type}</span>
-                      <span className="text-coffee-600 ml-2 break-words">
-                        {log.surahFrom.nameEnglish} {log.ayahFrom} → {log.surahTo.nameEnglish} {log.ayahTo}
-                      </span>
+                {student.memTargets.map((target) => {
+                  const percent = target.achievedPercent != null ? Number(target.achievedPercent) : null
+                  return (
+                    <div key={target.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-coffee-50 rounded-lg text-sm">
+                      <div className="flex-1 min-w-0">
+                        <span className="font-medium text-coffee-900">{target.term.name}</span>
+                        <span className="text-coffee-600 ml-2 break-words">
+                          {target.surahFrom.nameEnglish} {target.ayahFrom} → {target.surahTo.nameEnglish} {target.ayahTo}
+                        </span>
+                        <p className="text-coffee-400 text-xs mt-0.5">
+                          Target {Number(target.targetPages)} pages
+                          {target.remark ? ` · ${target.remark}` : ''}
+                        </p>
+                      </div>
+                      <div className="text-left sm:text-right">
+                        {percent != null ? (
+                          <>
+                            <Badge
+                              variant={
+                                percent >= 80 ? 'success'
+                                : percent >= 70 ? 'info'
+                                : percent >= 50 ? 'warning'
+                                : 'danger'
+                              }
+                            >
+                              {percent}% · {target.grade}
+                            </Badge>
+                            {target.gradedAt && (
+                              <p className="text-coffee-400 text-xs mt-1">{formatDate(target.gradedAt)}</p>
+                            )}
+                          </>
+                        ) : (
+                          <Badge variant="neutral">Awaiting grade</Badge>
+                        )}
+                      </div>
                     </div>
-                    <div className="text-left sm:text-right">
-                      <Badge
-                        variant={
-                          log.quality === 'excellent' ? 'success'
-                          : log.quality === 'good' ? 'info'
-                          : log.quality === 'average' ? 'warning'
-                          : 'danger'
-                        }
-                      >
-                        {log.quality}
-                      </Badge>
-                      <p className="text-coffee-400 text-xs mt-1">{formatDate(log.logDate)}</p>
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           )}

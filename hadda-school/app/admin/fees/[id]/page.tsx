@@ -50,6 +50,7 @@ export default async function FeeStructureDetailPage({ params }: { params: Promi
       where: { id },
       include: {
         academicYear: true,
+        term: true,
         assignments: {
           include: {
             class: true,
@@ -106,15 +107,22 @@ export default async function FeeStructureDetailPage({ params }: { params: Promi
         <Link href="/admin/fees" className="text-coffee-500 text-sm hover:text-coffee-700">
           ← Back to Fee Structures
         </Link>
-        <div className="flex items-center gap-3 mt-2">
+        <div className="flex items-center gap-3 mt-2 flex-wrap">
           <h1 className="text-2xl font-bold text-coffee-900">{fee.name}</h1>
+          {fee.term && <Badge variant="info">{fee.term.name}</Badge>}
           <Badge variant={fee.isActive ? 'success' : 'neutral'}>
             {fee.isActive ? 'Active' : 'Inactive'}
           </Badge>
         </div>
         <p className="text-coffee-500 text-sm mt-0.5">
-          {formatCurrency(Number(fee.amount))} · {FREQ_LABEL[fee.frequency]} · {fee.academicYear.name}
+          {formatCurrency(Number(fee.amount))}
+          {fee.term ? ' for this term' : ''} · {FREQ_LABEL[fee.frequency]} · {fee.academicYear.name}
         </p>
+        {fee.term && (
+          <p className="text-coffee-400 text-xs mt-1">
+            This is one term of a termly fee. Assigning students or classes here covers every term.
+          </p>
+        )}
         {fee.description && <p className="text-coffee-400 text-sm mt-1">{fee.description}</p>}
       </div>
 

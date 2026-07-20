@@ -10,7 +10,7 @@ const teacherLinks = [
   { href: '/teacher/attendance', label: 'Take Attendance', icon: <CalendarCheck size={18} /> },
   { href: '/teacher/attendance/photo', label: 'Class Photo Clock-In', icon: <Camera size={18} /> },
   { href: '/teacher/attendance/history', label: 'Attendance History', icon: <Clock size={18} /> },
-  { href: '/teacher/memorization', label: 'Memorization Logs', icon: <BookOpen size={18} /> },
+  { href: '/teacher/memorization', label: 'Memorization', icon: <BookOpen size={18} /> },
   { href: '/teacher/fees', label: 'Fees & Payments', icon: <Banknote size={18} /> },
   { href: '/teacher/leave', label: 'Leave Requests', icon: <FileText size={18} /> },
 ]

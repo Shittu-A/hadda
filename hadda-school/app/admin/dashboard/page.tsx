@@ -47,13 +47,16 @@ export default async function AdminDashboardPage() {
         feeStructure: { select: { name: true } },
       },
     }),
-    db.memorizationLog.findMany({
+    // Most recently graded termly targets.
+    db.memorizationTarget.findMany({
+      where: { achievedPercent: { not: null } },
       take: 5,
-      orderBy: { createdAt: 'desc' },
+      orderBy: { gradedAt: 'desc' },
       include: {
         student: { select: { firstName: true, lastName: true } },
         surahFrom: { select: { nameEnglish: true } },
         surahTo: { select: { nameEnglish: true } },
+        term: { select: { name: true } },
       },
     }),
     db.event.findMany({
@@ -173,35 +176,38 @@ export default async function AdminDashboardPage() {
         {/* Recent memorization */}
         <div className="bg-white border border-coffee-200 rounded-xl p-5">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold text-coffee-800">Recent Memorization</h2>
+            <h2 className="font-semibold text-coffee-800">Recent Memorization Grades</h2>
             <Link href="/admin/memorization" className="text-xs text-coffee-400 hover:text-coffee-700">View all →</Link>
           </div>
           {recentMemo.length === 0 ? (
-            <p className="text-coffee-400 text-sm">No logs yet.</p>
+            <p className="text-coffee-400 text-sm">No grades recorded yet.</p>
           ) : (
             <div className="space-y-2.5">
-              {recentMemo.map((log) => (
-                <div key={log.id} className="text-sm">
-                  <div className="flex items-center justify-between">
-                    <p className="font-medium text-coffee-900">
-                      {log.student.firstName} {log.student.lastName}
+              {recentMemo.map((target) => {
+                const percent = Number(target.achievedPercent)
+                return (
+                  <div key={target.id} className="text-sm">
+                    <div className="flex items-center justify-between">
+                      <p className="font-medium text-coffee-900">
+                        {target.student.firstName} {target.student.lastName}
+                      </p>
+                      <Badge
+                        variant={
+                          percent >= 80 ? 'success'
+                          : percent >= 70 ? 'info'
+                          : percent >= 50 ? 'warning'
+                          : 'danger'
+                        }
+                      >
+                        {percent}% · {target.grade}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-coffee-400 mt-0.5">
+                      {target.term.name} · {target.surahFrom.nameEnglish} {target.ayahFrom} → {target.surahTo.nameEnglish} {target.ayahTo}
                     </p>
-                    <Badge
-                      variant={
-                        log.quality === 'excellent' ? 'success'
-                        : log.quality === 'good' ? 'info'
-                        : log.quality === 'average' ? 'warning'
-                        : 'danger'
-                      }
-                    >
-                      {log.quality}
-                    </Badge>
                   </div>
-                  <p className="text-xs text-coffee-400 mt-0.5">
-                    {log.type} · {log.surahFrom.nameEnglish} {log.ayahFrom} → {log.surahTo.nameEnglish} {log.ayahTo}
-                  </p>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>

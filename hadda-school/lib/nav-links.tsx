@@ -2,6 +2,7 @@ import {
   LayoutDashboard, Users, CalendarRange, Calendar, Settings, ClipboardList,
   GraduationCap, UserCheck, CalendarCheck, Banknote, BookOpen, ArrowUpCircle,
   Archive, BarChart3, FileText, IdCard, CalendarDays, Camera, Coins, Inbox,
+  CalendarClock,
 } from 'lucide-react'
 
 export const adminLinks = [
@@ -27,6 +28,7 @@ export const superAdminLinks = [
   { href: '/super-admin', label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
   { href: '/super-admin/users', label: 'Users', icon: <Users size={18} /> },
   { href: '/super-admin/academic-years', label: 'Academic Years', icon: <CalendarRange size={18} /> },
+  { href: '/super-admin/terms', label: 'Terms', icon: <CalendarClock size={18} /> },
   { href: '/super-admin/events', label: 'Events', icon: <Calendar size={18} /> },
   { href: '/super-admin/settings', label: 'Settings', icon: <Settings size={18} /> },
   { href: '/super-admin/audit-logs', label: 'Audit Logs', icon: <ClipboardList size={18} /> },

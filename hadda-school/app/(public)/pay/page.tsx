@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import PublicNav from '@/components/layout/PublicNav'
 import PublicFooter from '@/components/layout/PublicFooter'
 import Input from '@/components/ui/Input'
@@ -14,6 +14,10 @@ interface FeeItem {
   feeStructureId: string
   name: string
   frequency: string
+  termId: string | null
+  termName: string | null
+  termOrder: number | null
+  isUpcoming: boolean
   grossAmount: number
   discount: number
   netAmount: number
@@ -29,9 +33,90 @@ interface StudentResult {
   className: string
   fees: FeeItem[]
   total: number
+  dueNow: number
 }
 
-function StudentFees({ student, paystackKey, onPaymentSuccess, showPayButton = true }: { student: StudentResult, paystackKey?: string, onPaymentSuccess?: () => void, showPayButton?: boolean }) {
+// A fee line is identified by student + fee so two children can each have their
+// own "Tuition — First Term" without the tick boxes interfering.
+const lineKey = (studentId: string, feeStructureId: string) => `${studentId}:${feeStructureId}`
+
+// Terms already under way are ticked by default — that is what a parent has
+// actually been billed for. Terms that have not started are still listed so
+// paying ahead is possible, but they start unticked.
+function defaultSelection(students: StudentResult[]): Set<string> {
+  const next = new Set<string>()
+  for (const s of students) {
+    for (const f of s.fees) {
+      if (!f.isUpcoming) next.add(lineKey(s.id, f.feeStructureId))
+    }
+  }
+  return next
+}
+
+function FeeRow({
+  fee,
+  checked,
+  onToggle,
+}: {
+  fee: FeeItem
+  checked: boolean
+  onToggle: () => void
+}) {
+  return (
+    <label
+      className={`flex items-start sm:items-center justify-between p-3 sm:p-4 rounded-xl gap-3 cursor-pointer border transition-colors ${
+        checked ? 'border-coffee-500 bg-coffee-50' : 'border-coffee-200 bg-white hover:bg-coffee-50'
+      }`}
+    >
+      <div className="flex items-start sm:items-center gap-3 min-w-0">
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={onToggle}
+          className="mt-0.5 sm:mt-0 h-5 w-5 shrink-0 rounded border-coffee-300 text-coffee-900 focus:ring-coffee-500"
+        />
+        <div className="min-w-0">
+          <p className="font-medium text-coffee-900 text-sm sm:text-base">
+            {fee.name}
+            {fee.termName && <span className="text-coffee-500"> — {fee.termName}</span>}
+          </p>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5">
+            <span className="text-coffee-500 text-xs capitalize">{fee.frequency}</span>
+            {fee.isUpcoming && (
+              <span className="text-xs bg-coffee-100 text-coffee-600 rounded-full px-2 py-0.5">
+                Upcoming
+              </span>
+            )}
+            {fee.paid > 0 && (
+              <span className="text-xs text-coffee-500">{formatCurrency(fee.paid)} already paid</span>
+            )}
+          </div>
+          {fee.discount > 0 && (
+            <p className="text-green-600 text-xs mt-0.5">Discount applied: {formatCurrency(fee.discount)}</p>
+          )}
+        </div>
+      </div>
+      <div className="text-right shrink-0">
+        <p className="font-bold text-coffee-900 text-sm sm:text-base">{formatCurrency(fee.outstanding)}</p>
+        <p className="text-coffee-500 text-xs">outstanding</p>
+      </div>
+    </label>
+  )
+}
+
+function StudentFees({
+  student,
+  selected,
+  onToggle,
+}: {
+  student: StudentResult
+  selected: Set<string>
+  onToggle: (key: string) => void
+}) {
+  const selectedTotal = student.fees
+    .filter((f) => selected.has(lineKey(student.id, f.feeStructureId)))
+    .reduce((sum, f) => sum + f.outstanding, 0)
+
   return (
     <div className="mt-6 bg-white border border-coffee-200 rounded-2xl p-6 sm:p-8">
       <div className="mb-6">
@@ -47,45 +132,36 @@ function StudentFees({ student, paystackKey, onPaymentSuccess, showPayButton = t
         </div>
       ) : (
         <>
+          <p className="text-coffee-600 text-sm mb-4">
+            Tick the items you want to pay for now. You do not have to pay everything at once.
+          </p>
+
           <div className="space-y-2 sm:space-y-3 mb-6">
-            {student.fees.map((fee) => (
-              <div key={fee.feeStructureId} className="flex flex-col sm:flex-row items-start sm:items-center justify-between p-3 sm:p-4 bg-coffee-50 rounded-xl gap-2">
-                <div>
-                  <p className="font-medium text-coffee-900 text-sm sm:text-base">{fee.name}</p>
-                  <p className="text-coffee-500 text-xs capitalize">{fee.frequency}</p>
-                  {fee.discount > 0 && (
-                    <p className="text-green-600 text-xs">Discount applied: {formatCurrency(fee.discount)}</p>
-                  )}
-                </div>
-                <div className="text-right">
-                  <p className="font-bold text-coffee-900 text-sm sm:text-base">{formatCurrency(fee.outstanding)}</p>
-                  <p className="text-coffee-500 text-xs">outstanding</p>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="border-t border-coffee-200 pt-4 flex flex-col sm:flex-row items-start sm:items-center sm:justify-between mb-6 gap-2">
-            <span className="font-bold text-coffee-900">Total Outstanding</span>
-            <span className="text-xl sm:text-2xl font-extrabold text-coffee-900">{formatCurrency(student.total)}</span>
-          </div>
-
-          {showPayButton && (
-            <div className="flex flex-col items-center gap-3 mt-6">
-              {paystackKey ? (
-                <PaystackPayButton
-                  amount={student.total}
-                  studentIds={[student.id]}
-                  paystackKey={paystackKey}
-                  onSuccess={onPaymentSuccess}
+            {student.fees.map((fee) => {
+              const key = lineKey(student.id, fee.feeStructureId)
+              return (
+                <FeeRow
+                  key={key}
+                  fee={fee}
+                  checked={selected.has(key)}
+                  onToggle={() => onToggle(key)}
                 />
-              ) : (
-                <p className="text-coffee-500 text-xs sm:text-sm text-center px-2">
-                  Online payment integration coming soon. Please pay at school and bring your receipt.
-                </p>
-              )}
+              )
+            })}
+          </div>
+
+          <div className="border-t border-coffee-200 pt-4 space-y-1">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-1">
+              <span className="text-coffee-500 text-sm">Total outstanding</span>
+              <span className="text-coffee-600 text-sm">{formatCurrency(student.total)}</span>
             </div>
-          )}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-2">
+              <span className="font-bold text-coffee-900">Selected to pay</span>
+              <span className="text-xl sm:text-2xl font-extrabold text-coffee-900">
+                {formatCurrency(selectedTotal)}
+              </span>
+            </div>
+          </div>
         </>
       )}
     </div>
@@ -96,18 +172,22 @@ export default function PayPage() {
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [student, setStudent] = useState<StudentResult | null>(null)
   const [students, setStudents] = useState<StudentResult[] | null>(null)
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(new Set())
+  const [selectedLines, setSelectedLines] = useState<Set<string>>(new Set())
   const [paystackKey, setPaystackKey] = useState<string | undefined>()
+
+  // One student and many students are the same case with a different heading —
+  // keeping a single list avoids maintaining two selection code paths.
+  const isMultiple = (students?.length ?? 0) > 1
 
   async function handleLookup(e?: React.FormEvent) {
     if (e) e.preventDefault()
     setLoading(true)
     setError('')
-    setStudent(null)
     setStudents(null)
-    setSelectedIds(new Set())
+    setSelectedStudentIds(new Set())
+    setSelectedLines(new Set())
 
     const res = await fetch('/api/pay/lookup', {
       method: 'POST',
@@ -123,14 +203,16 @@ export default function PayPage() {
       if (data.paystackKey) {
         setPaystackKey(data.paystackKey)
       }
-      if (data.student) {
-        setStudent(data.student)
-      } else if (data.students) {
-        setStudents(data.students)
-        // Pre-select every child that still has an outstanding balance.
-        setSelectedIds(new Set(data.students.filter((s: StudentResult) => s.total > 0).map((s: StudentResult) => s.id)))
-      } else {
+
+      const found: StudentResult[] = (data.students ?? (data.student ? [data.student] : [])).filter(Boolean)
+
+      if (found.length === 0) {
         setError('No student found.')
+      } else {
+        setStudents(found)
+        // Pre-select every child that still has an outstanding balance.
+        setSelectedStudentIds(new Set(found.filter((s) => s.total > 0).map((s) => s.id)))
+        setSelectedLines(defaultSelection(found))
       }
     }
 
@@ -142,8 +224,8 @@ export default function PayPage() {
     handleLookup() // Refresh balance
   }
 
-  function toggleSelected(id: string) {
-    setSelectedIds((prev) => {
+  function toggleStudent(id: string) {
+    setSelectedStudentIds((prev) => {
       const next = new Set(prev)
       if (next.has(id)) next.delete(id)
       else next.add(id)
@@ -151,9 +233,42 @@ export default function PayPage() {
     })
   }
 
+  function toggleLine(key: string) {
+    setSelectedLines((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
+
   const payableStudents = students?.filter((s) => s.total > 0) ?? []
-  const selectedStudents = payableStudents.filter((s) => selectedIds.has(s.id))
-  const combinedTotal = selectedStudents.reduce((sum, s) => sum + s.total, 0)
+  const activeStudents = payableStudents.filter((s) => selectedStudentIds.has(s.id))
+
+  // Only ids go to the server; it reprices every line from the real balance.
+  const selections = useMemo(
+    () =>
+      activeStudents
+        .map((s) => ({
+          studentId: s.id,
+          feeStructureIds: s.fees
+            .filter((f) => selectedLines.has(lineKey(s.id, f.feeStructureId)))
+            .map((f) => f.feeStructureId),
+        }))
+        .filter((s) => s.feeStructureIds.length > 0),
+    [activeStudents, selectedLines]
+  )
+
+  const combinedTotal = activeStudents.reduce(
+    (sum, s) =>
+      sum +
+      s.fees
+        .filter((f) => selectedLines.has(lineKey(s.id, f.feeStructureId)))
+        .reduce((t, f) => t + f.outstanding, 0),
+    0
+  )
+
+  const selectedLineCount = selections.reduce((n, s) => n + s.feeStructureIds.length, 0)
 
   return (
     <div className="min-h-screen bg-coffee-50">
@@ -187,8 +302,8 @@ export default function PayPage() {
             </form>
           </div>
 
-          {/* Multiple students found — select one or more to pay together */}
-          {students && (
+          {/* Multiple students found — choose which children to pay for */}
+          {isMultiple && students && (
             <div className="mt-6 bg-white border border-coffee-200 rounded-2xl p-6 sm:p-8">
               <h2 className="text-base font-bold text-coffee-900 mb-1">Multiple students found</h2>
               <p className="text-coffee-500 text-sm mb-4">Tick the children you want to pay for. You can select more than one and pay for all of them in a single transaction.</p>
@@ -198,15 +313,15 @@ export default function PayPage() {
                     key={s.id}
                     className={`w-full flex items-center justify-between p-4 border rounded-xl transition-colors text-left ${
                       s.total > 0 ? 'cursor-pointer hover:bg-coffee-50 hover:border-coffee-400' : 'opacity-60'
-                    } ${selectedIds.has(s.id) ? 'border-coffee-500 bg-coffee-50' : 'border-coffee-200'}`}
+                    } ${selectedStudentIds.has(s.id) ? 'border-coffee-500 bg-coffee-50' : 'border-coffee-200'}`}
                   >
                     <div className="flex items-center gap-3">
                       <input
                         type="checkbox"
                         className="h-5 w-5 rounded border-coffee-300 text-coffee-900 focus:ring-coffee-500"
-                        checked={selectedIds.has(s.id)}
+                        checked={selectedStudentIds.has(s.id)}
                         disabled={s.total === 0}
-                        onChange={() => toggleSelected(s.id)}
+                        onChange={() => toggleStudent(s.id)}
                       />
                       <div>
                         <p className="font-semibold text-coffee-900">{s.firstName} {s.lastName}</p>
@@ -225,38 +340,45 @@ export default function PayPage() {
             </div>
           )}
 
-          {/* Combined breakdown + single checkout for every selected child */}
-          {selectedStudents.map((s) => (
-            <StudentFees key={s.id} student={s} showPayButton={false} />
+          {/* Per-term breakdown for each selected child */}
+          {activeStudents.map((s) => (
+            <StudentFees key={s.id} student={s} selected={selectedLines} onToggle={toggleLine} />
           ))}
 
-          {selectedStudents.length > 0 && (
+          {/* Single checkout for everything ticked above */}
+          {activeStudents.length > 0 && (
             <div className="mt-6 bg-white border border-coffee-200 rounded-2xl p-6 sm:p-8">
               <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between mb-6 gap-2">
-                <span className="font-bold text-coffee-900">
-                  Total for {selectedStudents.length} {selectedStudents.length === 1 ? 'child' : 'children'}
-                </span>
+                <div>
+                  <span className="font-bold text-coffee-900">
+                    Paying for {activeStudents.length === 1 ? '1 child' : `${activeStudents.length} children`}
+                  </span>
+                  <p className="text-coffee-500 text-xs mt-0.5">
+                    {selectedLineCount} item{selectedLineCount !== 1 ? 's' : ''} selected
+                  </p>
+                </div>
                 <span className="text-xl sm:text-2xl font-extrabold text-coffee-900">{formatCurrency(combinedTotal)}</span>
               </div>
               <div className="flex flex-col items-center gap-3">
-                {paystackKey ? (
-                  <PaystackPayButton
-                    amount={combinedTotal}
-                    studentIds={selectedStudents.map((s) => s.id)}
-                    paystackKey={paystackKey}
-                    onSuccess={handlePaymentSuccess}
-                  />
-                ) : (
+                {!paystackKey ? (
                   <p className="text-coffee-500 text-xs sm:text-sm text-center px-2">
                     Online payment integration coming soon. Please pay at school and bring your receipt.
                   </p>
+                ) : selectedLineCount === 0 ? (
+                  <p className="text-coffee-500 text-xs sm:text-sm text-center px-2">
+                    Tick at least one item above to continue.
+                  </p>
+                ) : (
+                  <PaystackPayButton
+                    amount={combinedTotal}
+                    selections={selections}
+                    paystackKey={paystackKey}
+                    onSuccess={handlePaymentSuccess}
+                  />
                 )}
               </div>
             </div>
           )}
-
-          {/* Single student result */}
-          {student && <StudentFees student={student} paystackKey={paystackKey} onPaymentSuccess={handlePaymentSuccess} />}
         </div>
       </section>
 

@@ -211,7 +211,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       where: { id },
       include: {
         student: { include: { currentClass: { select: { name: true } } } },
-        feeStructure: { select: { name: true } },
+        feeStructure: { select: { name: true, term: { select: { name: true } } } },
         recordedBy: { select: { name: true } },
       },
     }),
@@ -250,7 +250,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       studentName: `${payment.student.firstName} ${payment.student.lastName}`,
       admissionNumber: payment.student.admissionNumber,
       className: payment.student.currentClass?.name ?? 'Unassigned',
-      feeName: payment.feeStructure.name,
+      // Which term the money settled. Falls back to the free-text period so
+      // receipts for non-termly fees still show what was paid for.
+      feeName: (() => {
+        const term = payment.feeStructure.term?.name ?? payment.period
+        return term ? `${payment.feeStructure.name} — ${term}` : payment.feeStructure.name
+      })(),
       amountPaid: Number(payment.amountPaid),
       currencySymbol,
       paymentMethod: payment.paymentMethod.replace('_', ' '),

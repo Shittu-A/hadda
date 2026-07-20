@@ -150,7 +150,11 @@ export async function GET(req: NextRequest) {
         currentClass: { select: { name: true } },
         academicYear: { select: { name: true } },
         feeAssignments: {
-          include: { feeStructure: { select: { id: true, name: true, amount: true } } },
+          include: {
+            feeStructure: {
+              select: { id: true, name: true, amount: true, term: { select: { name: true, order: true } } },
+            },
+          },
         },
         feePayments: true,
         feeDiscounts: true,
@@ -163,15 +167,26 @@ export async function GET(req: NextRequest) {
   const rows: FeeRow[] = []
 
   for (const s of students) {
-    const feeMap = new Map<string, { name: string; amount: number }>()
+    // The fee column carries the term inline — the table has fixed column
+    // widths, so adding a separate Term column would squeeze the rest.
+    const feeMap = new Map<string, { name: string; amount: number; termOrder: number }>()
     for (const fa of s.feeAssignments) {
       if (!feeMap.has(fa.feeStructureId)) {
-        feeMap.set(fa.feeStructureId, { name: fa.feeStructure.name, amount: Number(fa.feeStructure.amount) })
+        const term = fa.feeStructure.term
+        feeMap.set(fa.feeStructureId, {
+          name: term ? `${fa.feeStructure.name} — ${term.name}` : fa.feeStructure.name,
+          amount: Number(fa.feeStructure.amount),
+          termOrder: term?.order ?? Number.MAX_SAFE_INTEGER,
+        })
       }
     }
     if (feeMap.size === 0) continue
 
-    for (const [feeId, fee] of feeMap) {
+    const orderedFees = Array.from(feeMap.entries()).sort(
+      ([, a], [, b]) => a.termOrder - b.termOrder || a.name.localeCompare(b.name)
+    )
+
+    for (const [feeId, fee] of orderedFees) {
       const discount = s.feeDiscounts.find((d) => d.feeStructureId === feeId)
       const discountAmt = discount
         ? discount.discountType === 'percent'

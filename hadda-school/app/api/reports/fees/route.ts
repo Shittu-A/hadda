@@ -23,7 +23,11 @@ export async function GET(req: NextRequest) {
       currentClass: { select: { name: true } },
       academicYear: { select: { name: true } },
       feeAssignments: {
-        include: { feeStructure: { select: { id: true, name: true, amount: true } } },
+        include: {
+          feeStructure: {
+            select: { id: true, name: true, amount: true, term: { select: { name: true, order: true } } },
+          },
+        },
       },
       feePayments: {
         include: { feeStructure: { select: { id: true, name: true } } },
@@ -40,6 +44,7 @@ export async function GET(req: NextRequest) {
     'Last Name': string
     Class: string
     'Academic Year': string
+    Term: string
     'Fee Name': string
     'Fee Amount (₦)': number
     'Discount (₦)': number
@@ -52,15 +57,22 @@ export async function GET(req: NextRequest) {
   const rows: FeeRow[] = []
 
   for (const s of students) {
-    const feeMap = new Map<string, { name: string; amount: number }>()
+    const feeMap = new Map<string, { name: string; amount: number; term: string; termOrder: number }>()
     for (const fa of s.feeAssignments) {
       if (!feeMap.has(fa.feeStructureId)) {
         feeMap.set(fa.feeStructureId, {
           name: fa.feeStructure.name,
           amount: Number(fa.feeStructure.amount),
+          term: fa.feeStructure.term?.name ?? '—',
+          termOrder: fa.feeStructure.term?.order ?? Number.MAX_SAFE_INTEGER,
         })
       }
     }
+
+    // Oldest term first so a student's rows read chronologically.
+    const orderedFees = Array.from(feeMap.entries()).sort(
+      ([, a], [, b]) => a.termOrder - b.termOrder || a.name.localeCompare(b.name)
+    )
 
     if (feeMap.size === 0) {
       rows.push({
@@ -69,6 +81,7 @@ export async function GET(req: NextRequest) {
         'Last Name': s.lastName,
         Class: s.currentClass?.name ?? 'Unassigned',
         'Academic Year': s.academicYear.name,
+        Term: '—',
         'Fee Name': '—',
         'Fee Amount (₦)': 0,
         'Discount (₦)': 0,
@@ -80,7 +93,7 @@ export async function GET(req: NextRequest) {
       continue
     }
 
-    for (const [feeId, fee] of feeMap) {
+    for (const [feeId, fee] of orderedFees) {
       const discount = s.feeDiscounts.find((d) => d.feeStructureId === feeId)
       const discountAmt = discount
         ? discount.discountType === 'percent'
@@ -99,6 +112,7 @@ export async function GET(req: NextRequest) {
         'Last Name': s.lastName,
         Class: s.currentClass?.name ?? 'Unassigned',
         'Academic Year': s.academicYear.name,
+        Term: fee.term,
         'Fee Name': fee.name,
         'Fee Amount (₦)': fee.amount,
         'Discount (₦)': Math.round(discountAmt * 100) / 100,
