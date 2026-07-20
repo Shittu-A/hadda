@@ -163,6 +163,8 @@ model User {
   leaveRequests       LeaveRequest[]      @relation("LeaveRequester")
   reviewedLeaves      LeaveRequest[]      @relation("LeaveReviewer")
   memorizationLogs    MemorizationLog[]
+  memTargetsSet       MemorizationTarget[] @relation("TargetTeacher")
+  memTargetsGraded    MemorizationTarget[] @relation("TargetGrader")
   auditLogs           AuditLog[]
   notifications       Notification[]
   recordedAttendances StudentAttendance[]
@@ -185,9 +187,31 @@ model AcademicYear {
   classes        ClassRoom[]
   students       Student[]
   memLogs        MemorizationLog[]
+  memTargets     MemorizationTarget[]
+  terms          Term[]
   promotionsFrom Promotion[]  @relation("FromYear")
   promotionsTo   Promotion[]  @relation("ToYear")
   feeStructures  FeeStructure[]
+}
+
+// A term (session) within an academic year. Nigerian schools run three, but the
+// count is not fixed here — terms are managed records, so a school can add more.
+model Term {
+  id             String   @id @default(cuid())
+  academicYearId String
+  name           String
+  order          Int
+  startDate      DateTime
+  endDate        DateTime
+  isCurrent      Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  academicYear  AcademicYear         @relation(fields: [academicYearId], references: [id])
+  feeStructures FeeStructure[]
+  memTargets    MemorizationTarget[]
+
+  @@unique([academicYearId, order])
+  @@index([isCurrent])
 }
 
 model ClassRoom {
@@ -249,6 +273,7 @@ model Student {
   feePayments     FeePayment[]
   feeDiscounts    FeeDiscount[]
   memorizationLogs MemorizationLog[]
+  memTargets      MemorizationTarget[]
   promotions      Promotion[]
 }
 
@@ -356,6 +381,8 @@ model Surah {
 
   logsFrom    MemorizationLog[] @relation("FromSurah")
   logsTo      MemorizationLog[] @relation("ToSurah")
+  targetsFrom MemorizationTarget[] @relation("TargetFromSurah")
+  targetsTo   MemorizationTarget[] @relation("TargetToSurah")
 }
 
 model MemorizationLog {
@@ -383,6 +410,51 @@ model MemorizationLog {
   @@index([studentId, logDate, type])
 }
 
+// Termly memorization. The class teacher sets one target per student per term
+// (a portion of the Qur'an plus a page count), then at term end records the
+// percentage the student actually achieved. The percentage is entered by the
+// teacher — it is deliberately never derived from session logs.
+//
+// This replaces day-to-day MemorizationLog entries. Those rows are retained for
+// historical reference but are no longer written or read.
+model MemorizationTarget {
+  id             String   @id @default(cuid())
+  studentId      String
+  termId         String
+  academicYearId String
+  teacherId      String
+
+  // The portion to memorise this term.
+  surahFromId Int
+  ayahFrom    Int
+  surahToId   Int
+  ayahTo      Int
+  targetPages Decimal @db.Decimal(6, 2)
+  notes       String?
+
+  // Filled in at the end of the term. Null until graded.
+  achievedPercent Decimal?  @db.Decimal(5, 2)
+  grade           String?   // derived from achievedPercent when graded
+  remark          String?
+  gradedAt        DateTime?
+  gradedById      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  student      Student      @relation(fields: [studentId], references: [id])
+  term         Term         @relation(fields: [termId], references: [id])
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id])
+  teacher      User         @relation("TargetTeacher", fields: [teacherId], references: [id])
+  gradedBy     User?        @relation("TargetGrader", fields: [gradedById], references: [id])
+  surahFrom    Surah        @relation("TargetFromSurah", fields: [surahFromId], references: [id])
+  surahTo      Surah        @relation("TargetToSurah", fields: [surahToId], references: [id])
+
+  @@unique([studentId, termId])
+  @@index([termId])
+  @@index([academicYearId])
+}
+
 model FeeStructure {
   id             String       @id @default(cuid())
   academicYearId String
@@ -394,10 +466,22 @@ model FeeStructure {
   description    String?
   createdAt      DateTime     @default(now())
 
+  // A termly fee is stored as one row per term, so each term carries its own
+  // outstanding balance, discount and payments — that is what lets a parent pay
+  // for a single term. `termId` is null for yearly / one_time / monthly fees.
+  termId      String?
+  // Shared by the sibling rows created from one termly fee, so the admin UI can
+  // present them as a single fee and act on all terms at once.
+  termGroupId String?
+
   academicYear AcademicYear    @relation(fields: [academicYearId], references: [id])
+  term         Term?           @relation(fields: [termId], references: [id])
   assignments  FeeAssignment[]
   payments     FeePayment[]
   discounts    FeeDiscount[]
+
+  @@index([termGroupId])
+  @@index([termId])
 }
 
 model FeeAssignment {

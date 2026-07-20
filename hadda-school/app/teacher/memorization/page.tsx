@@ -1,40 +1,29 @@
 import { db } from '@/lib/db'
 import { auth } from '@/lib/auth'
-import { createMemorizationLog, deleteMemorizationLog } from '@/lib/actions/memorization'
+import { upsertMemorizationTarget, gradeMemorizationTarget } from '@/lib/actions/memorization'
+import { getCurrentTerm } from '@/lib/current-term'
 import { redirect } from 'next/navigation'
 import Badge from '@/components/ui/Badge'
 import { formatDate } from '@/lib/utils'
+import { GRADE_VARIANT, GRADE_SCALE_LABEL } from '@/lib/grades'
 
-const TYPE_LABELS: Record<string, string> = {
-  sabaq: 'Sabaq (New)',
-  sabqi: 'Sabqi (Recent)',
-  manzil: 'Manzil (Long-term)',
-}
-const QUALITY_VARIANT: Record<string, 'success' | 'info' | 'warning' | 'danger'> = {
-  excellent: 'success',
-  good: 'info',
-  average: 'warning',
-  weak: 'danger',
-}
-
-async function handleCreate(formData: FormData): Promise<void> {
+async function handleSetTarget(formData: FormData): Promise<void> {
   'use server'
-  await createMemorizationLog(formData)
+  await upsertMemorizationTarget(formData)
 }
 
-async function handleDelete(formData: FormData): Promise<void> {
+async function handleGrade(formData: FormData): Promise<void> {
   'use server'
-  const id = formData.get('id') as string
-  await deleteMemorizationLog(id)
+  await gradeMemorizationTarget(formData)
 }
 
 export default async function TeacherMemorizationPage() {
   const session = await auth()
   if (!session) redirect('/login')
 
-  const today = new Date().toISOString().split('T')[0]
+  const term = await getCurrentTerm()
 
-  const [myClasses, surahs, recentLogs] = await Promise.all([
+  const [myClasses, surahs, targets] = await Promise.all([
     db.classRoom.findMany({
       // Current session only — past cloned classes have no students.
       where: { teachers: { some: { userId: session.user.id } }, academicYear: { isCurrent: true } },
@@ -47,270 +36,291 @@ export default async function TeacherMemorizationPage() {
       orderBy: { order: 'asc' },
     }),
     db.surah.findMany({ orderBy: { id: 'asc' } }),
-    db.memorizationLog.findMany({
-      where: { teacherId: session.user.id },
-      include: {
-        student: true,
-        surahFrom: true,
-        surahTo: true,
-      },
-      orderBy: [{ logDate: 'desc' }, { createdAt: 'desc' }],
-      take: 50,
-    }),
+    term
+      ? db.memorizationTarget.findMany({
+          where: { termId: term.id },
+          include: { surahFrom: true, surahTo: true },
+        })
+      : Promise.resolve([]),
   ])
 
   const allStudents = myClasses.flatMap((c) =>
     c.students.map((s) => ({ ...s, className: c.name }))
   )
 
+  const targetByStudent = new Map(targets.map((t) => [t.studentId, t]))
+
+  const withTarget = allStudents.filter((s) => targetByStudent.has(s.id))
+  const graded = withTarget.filter((s) => targetByStudent.get(s.id)?.achievedPercent != null)
+
+  if (!term) {
+    return (
+      <div className="p-4 sm:p-6 space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-coffee-900">Memorization</h1>
+          <p className="text-coffee-600 text-sm mt-0.5">Termly targets and grades</p>
+        </div>
+        <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
+          No current term has been set yet. Ask an administrator to set the current term before
+          recording memorization targets.
+        </p>
+      </div>
+    )
+  }
+
+  const termEnded = new Date(term.endDate) < new Date()
+
   return (
     <div className="p-4 sm:p-6 space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-coffee-900">Memorization Logs</h1>
-        <p className="text-coffee-600 text-sm mt-0.5">Log sabaq, sabqi, and manzil sessions</p>
-      </div>
-
-      {/* Log Form */}
-      <div className="bg-white border border-coffee-200 rounded-xl p-4 sm:p-5">
-        <h2 className="font-semibold text-coffee-800 mb-4">Log a Session</h2>
-
-        {allStudents.length === 0 ? (
-          <p className="text-coffee-400 text-sm">
-            You have no students assigned. Contact the admin.
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div>
+          <h1 className="text-2xl font-bold text-coffee-900">Memorization</h1>
+          <p className="text-coffee-600 text-sm mt-0.5">
+            Set each student a target for the term, then grade what they achieved
           </p>
-        ) : (
-          <form action={handleCreate} className="space-y-4">
-            {/* Row 1: student, date, type */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-coffee-700 mb-1">Student *</label>
-                <select
-                  name="studentId"
-                  required
-                  className="w-full border border-coffee-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-400"
-                >
-                  <option value="">Select student</option>
-                  {myClasses.map((cls) => (
-                    <optgroup key={cls.id} label={cls.name}>
-                      {cls.students.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.firstName} {s.lastName}
-                        </option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-coffee-700 mb-1">Date *</label>
-                <input
-                  type="date"
-                  name="logDate"
-                  required
-                  defaultValue={today}
-                  max={today}
-                  className="w-full border border-coffee-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-400"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-coffee-700 mb-1">Session Type *</label>
-                <select
-                  name="type"
-                  required
-                  className="w-full border border-coffee-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-400"
-                >
-                  <option value="sabaq">Sabaq — New lesson</option>
-                  <option value="sabqi">Sabqi — Recent revision</option>
-                  <option value="manzil">Manzil — Long-term revision</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Row 2: surah from/to */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-coffee-700">From</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-xs text-coffee-500 mb-1">Surah *</label>
-                    <select
-                      name="surahFromId"
-                      required
-                      className="w-full border border-coffee-200 rounded-lg px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-coffee-400"
-                    >
-                      <option value="">Select</option>
-                      {surahs.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.id}. {s.nameEnglish} ({s.nameArabic})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs text-coffee-500 mb-1">Ayah *</label>
-                    <input
-                      type="number"
-                      name="ayahFrom"
-                      required
-                      min={1}
-                      placeholder="1"
-                      className="w-full border border-coffee-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-400"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-coffee-700">To</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-xs text-coffee-500 mb-1">Surah *</label>
-                    <select
-                      name="surahToId"
-                      required
-                      className="w-full border border-coffee-200 rounded-lg px-2 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-coffee-400"
-                    >
-                      <option value="">Select</option>
-                      {surahs.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.id}. {s.nameEnglish} ({s.nameArabic})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs text-coffee-500 mb-1">Ayah *</label>
-                    <input
-                      type="number"
-                      name="ayahTo"
-                      required
-                      min={1}
-                      placeholder="7"
-                      className="w-full border border-coffee-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-400"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Row 3: pages, quality, notes */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-coffee-700 mb-1">Pages *</label>
-                <input
-                  type="number"
-                  name="pages"
-                  required
-                  min={0.25}
-                  step={0.25}
-                  placeholder="e.g. 1.5"
-                  className="w-full border border-coffee-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-400"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-coffee-700 mb-1">Quality *</label>
-                <select
-                  name="quality"
-                  required
-                  className="w-full border border-coffee-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-400"
-                >
-                  <option value="excellent">Excellent</option>
-                  <option value="good">Good</option>
-                  <option value="average">Average</option>
-                  <option value="weak">Weak / Needs Work</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-coffee-700 mb-1">Notes</label>
-                <input
-                  type="text"
-                  name="notes"
-                  placeholder="Optional notes…"
-                  className="w-full border border-coffee-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-400"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-end">
-              <button
-                type="submit"
-                className="bg-coffee-900 text-white rounded-lg px-6 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
-              >
-                Save Log
-              </button>
-            </div>
-          </form>
-        )}
+        </div>
+        <div className="text-left sm:text-right">
+          <Badge variant="info">{term.name}</Badge>
+          <p className="text-coffee-500 text-xs mt-1">
+            {formatDate(term.startDate)} – {formatDate(term.endDate)}
+          </p>
+        </div>
       </div>
 
-      {/* Recent logs */}
-      <div>
-        <h2 className="font-semibold text-coffee-800 mb-3">Recent Logs</h2>
-        {recentLogs.length === 0 ? (
-          <p className="text-coffee-400 text-sm">No logs yet.</p>
-        ) : (
-          <div className="bg-white border border-coffee-200 rounded-xl overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-coffee-50 border-b border-coffee-200">
-                  <tr>
-                    <th className="text-left px-3 sm:px-4 py-3 text-coffee-700 font-semibold">Date</th>
-                    <th className="text-left px-3 sm:px-4 py-3 text-coffee-700 font-semibold">Student</th>
-                    <th className="text-left px-3 sm:px-4 py-3 text-coffee-700 font-semibold hidden sm:table-cell">Type</th>
-                    <th className="text-left px-3 sm:px-4 py-3 text-coffee-700 font-semibold hidden md:table-cell">Range</th>
-                    <th className="text-left px-3 sm:px-4 py-3 text-coffee-700 font-semibold">Pages</th>
-                    <th className="text-left px-3 sm:px-4 py-3 text-coffee-700 font-semibold">Quality</th>
-                    <th className="px-3 sm:px-4 py-3"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-coffee-100">
-                  {recentLogs.map((log) => (
-                    <tr key={log.id} className="hover:bg-coffee-50 transition-colors">
-                      <td className="px-3 sm:px-4 py-2.5 text-coffee-500 whitespace-nowrap text-xs sm:text-sm">
-                        {formatDate(log.logDate)}
-                      </td>
-                      <td className="px-3 sm:px-4 py-2.5 font-medium text-coffee-900 text-xs sm:text-sm">
-                        {log.student.firstName} {log.student.lastName}
-                      </td>
-                      <td className="px-3 sm:px-4 py-2.5 text-coffee-600 capitalize hidden sm:table-cell text-xs">
-                        {TYPE_LABELS[log.type] || log.type}
-                      </td>
-                      <td className="px-3 sm:px-4 py-2.5 text-coffee-600 text-xs hidden md:table-cell">
-                        <span className="font-medium">{log.surahFrom.nameEnglish}</span>
-                        {' '}:{log.ayahFrom}
-                        {' → '}
-                        <span className="font-medium">{log.surahTo.nameEnglish}</span>
-                        {' '}:{log.ayahTo}
-                      </td>
-                      <td className="px-3 sm:px-4 py-2.5 text-coffee-700 font-medium text-xs sm:text-sm">
-                        {Number(log.pages).toFixed(2)}
-                      </td>
-                      <td className="px-3 sm:px-4 py-2.5">
-                        <Badge variant={QUALITY_VARIANT[log.quality]}>{log.quality}</Badge>
-                      </td>
-                      <td className="px-3 sm:px-4 py-2.5 text-right">
-                        <form action={handleDelete}>
-                          <input type="hidden" name="id" value={log.id} />
-                          <button
-                            type="submit"
-                            className="text-xs text-red-400 hover:text-red-600 transition-colors"
-                          >
-                            Delete
-                          </button>
-                        </form>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
+      {/* Progress at a glance */}
+      <div className="grid grid-cols-3 gap-3 sm:gap-4">
+        <div className="bg-white border border-coffee-200 rounded-xl p-3 sm:p-4 text-center">
+          <p className="text-xl sm:text-2xl font-bold text-coffee-900">{allStudents.length}</p>
+          <p className="text-xs text-coffee-500 mt-0.5">Students</p>
+        </div>
+        <div className="bg-white border border-coffee-200 rounded-xl p-3 sm:p-4 text-center">
+          <p className="text-xl sm:text-2xl font-bold text-coffee-900">{withTarget.length}</p>
+          <p className="text-xs text-coffee-500 mt-0.5">Targets set</p>
+        </div>
+        <div className="bg-white border border-coffee-200 rounded-xl p-3 sm:p-4 text-center">
+          <p className="text-xl sm:text-2xl font-bold text-coffee-900">{graded.length}</p>
+          <p className="text-xs text-coffee-500 mt-0.5">Graded</p>
+        </div>
       </div>
+
+      {termEnded && graded.length < withTarget.length && (
+        <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
+          {term.name} has ended and {withTarget.length - graded.length} student
+          {withTarget.length - graded.length !== 1 ? 's are' : ' is'} still ungraded.
+        </p>
+      )}
+
+      {allStudents.length === 0 ? (
+        <p className="text-coffee-400 text-sm">
+          You have no students in the current academic session.
+        </p>
+      ) : (
+        <div className="space-y-4">
+          {allStudents.map((student) => {
+            const target = targetByStudent.get(student.id)
+            const percent = target?.achievedPercent != null ? Number(target.achievedPercent) : null
+
+            return (
+              <div key={student.id} className="bg-white border border-coffee-200 rounded-xl p-4 sm:p-5">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4">
+                  <div>
+                    <p className="font-semibold text-coffee-900">
+                      {student.firstName} {student.lastName}
+                    </p>
+                    <p className="text-coffee-500 text-xs">
+                      {student.admissionNumber} · {student.className}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {percent != null ? (
+                      <>
+                        <span className="text-sm font-bold text-coffee-900">{percent}%</span>
+                        <Badge variant={GRADE_VARIANT[target!.grade ?? 'F'] ?? 'neutral'}>
+                          {target!.grade}
+                        </Badge>
+                      </>
+                    ) : target ? (
+                      <Badge variant="warning">Awaiting grade</Badge>
+                    ) : (
+                      <Badge variant="neutral">No target set</Badge>
+                    )}
+                  </div>
+                </div>
+
+                {target && (
+                  <div className="bg-coffee-50 rounded-lg px-3 py-2 mb-4 text-sm">
+                    <p className="text-coffee-800">
+                      {target.surahFrom.nameEnglish} {target.ayahFrom} → {target.surahTo.nameEnglish}{' '}
+                      {target.ayahTo}
+                      <span className="text-coffee-500"> · {Number(target.targetPages)} pages</span>
+                    </p>
+                    {target.notes && <p className="text-coffee-500 text-xs mt-0.5">{target.notes}</p>}
+                    {target.remark && (
+                      <p className="text-coffee-600 text-xs mt-1">Remark: {target.remark}</p>
+                    )}
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* Set / update the target */}
+                  <form action={handleSetTarget} className="space-y-3">
+                    <input type="hidden" name="studentId" value={student.id} />
+                    <p className="text-xs font-semibold text-coffee-700 uppercase tracking-wide">
+                      {target ? 'Update target' : 'Set target'}
+                    </p>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-xs font-medium text-coffee-600 mb-1">From surah</label>
+                        <select
+                          name="surahFromId"
+                          required
+                          defaultValue={target?.surahFromId ?? ''}
+                          className="w-full border border-coffee-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-400"
+                        >
+                          <option value="">Select</option>
+                          {surahs.map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.id}. {s.nameEnglish}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-coffee-600 mb-1">Ayah</label>
+                        <input
+                          type="number"
+                          name="ayahFrom"
+                          required
+                          min={1}
+                          defaultValue={target?.ayahFrom ?? ''}
+                          className="w-full border border-coffee-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-400"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-xs font-medium text-coffee-600 mb-1">To surah</label>
+                        <select
+                          name="surahToId"
+                          required
+                          defaultValue={target?.surahToId ?? ''}
+                          className="w-full border border-coffee-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-400"
+                        >
+                          <option value="">Select</option>
+                          {surahs.map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.id}. {s.nameEnglish}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-coffee-600 mb-1">Ayah</label>
+                        <input
+                          type="number"
+                          name="ayahTo"
+                          required
+                          min={1}
+                          defaultValue={target?.ayahTo ?? ''}
+                          className="w-full border border-coffee-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-400"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-coffee-600 mb-1">Target pages</label>
+                      <input
+                        type="number"
+                        name="targetPages"
+                        required
+                        min={0.25}
+                        step={0.25}
+                        defaultValue={target ? Number(target.targetPages) : ''}
+                        className="w-full border border-coffee-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-400"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-coffee-600 mb-1">Notes (optional)</label>
+                      <input
+                        type="text"
+                        name="notes"
+                        defaultValue={target?.notes ?? ''}
+                        className="w-full border border-coffee-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-400"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="w-full bg-coffee-900 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
+                    >
+                      {target ? 'Update Target' : 'Set Target'}
+                    </button>
+                  </form>
+
+                  {/* Grade at term end */}
+                  <form action={handleGrade} className="space-y-3">
+                    <p className="text-xs font-semibold text-coffee-700 uppercase tracking-wide">
+                      End-of-term grade
+                    </p>
+
+                    {!target ? (
+                      <p className="text-coffee-400 text-sm">Set a target first.</p>
+                    ) : (
+                      <>
+                        <input type="hidden" name="targetId" value={target.id} />
+                        <div>
+                          <label className="block text-xs font-medium text-coffee-600 mb-1">
+                            Achieved (%)
+                          </label>
+                          <input
+                            type="number"
+                            name="achievedPercent"
+                            required
+                            min={0}
+                            max={100}
+                            step={1}
+                            defaultValue={percent ?? ''}
+                            className="w-full border border-coffee-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-400"
+                          />
+                          <p className="text-xs text-coffee-400 mt-1">{GRADE_SCALE_LABEL}</p>
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-medium text-coffee-600 mb-1">
+                            Remark (optional)
+                          </label>
+                          <input
+                            type="text"
+                            name="remark"
+                            defaultValue={target.remark ?? ''}
+                            className="w-full border border-coffee-200 rounded-lg px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-400"
+                          />
+                        </div>
+
+                        {target.gradedAt && (
+                          <p className="text-xs text-coffee-400">
+                            Last graded {formatDate(target.gradedAt)}
+                          </p>
+                        )}
+
+                        <button
+                          type="submit"
+                          className="w-full border border-coffee-300 text-coffee-800 rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-50 transition-colors"
+                        >
+                          {percent != null ? 'Update Grade' : 'Save Grade'}
+                        </button>
+                      </>
+                    )}
+                  </form>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

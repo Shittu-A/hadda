@@ -6,10 +6,16 @@ export default async function ReportsPage() {
   const session = await auth()
   if (!session) redirect('/login')
 
-  const [classes, academicYears] = await Promise.all([
+  const [classes, academicYears, terms] = await Promise.all([
     db.classRoom.findMany({ orderBy: { order: 'asc' }, select: { id: true, name: true } }),
     db.academicYear.findMany({ orderBy: { startDate: 'desc' }, select: { id: true, name: true, isCurrent: true } }),
+    db.term.findMany({
+      orderBy: [{ academicYear: { startDate: 'desc' } }, { order: 'asc' }],
+      include: { academicYear: { select: { name: true } } },
+    }),
   ])
+
+  const currentTerm = terms.find((t) => t.isCurrent)
 
   const today = new Date().toISOString().split('T')[0]
   const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
@@ -142,7 +148,7 @@ export default async function ReportsPage() {
         <div className="bg-white border border-coffee-200 rounded-xl p-5">
           <div className="mb-4">
             <h2 className="font-semibold text-coffee-800">Memorization Report</h2>
-            <p className="text-xs text-coffee-400 mt-0.5">Pages memorized per student with sabaq/sabqi/manzil breakdown</p>
+            <p className="text-xs text-coffee-400 mt-0.5">Each student&apos;s termly target, the percentage achieved and their grade</p>
           </div>
           <form method="GET" action="/api/reports/memorization" className="space-y-3">
             <div>
@@ -157,27 +163,20 @@ export default async function ReportsPage() {
                 ))}
               </select>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-coffee-600 mb-1">From</label>
-                <input
-                  type="date"
-                  name="from"
-                  defaultValue={monthAgo}
-                  max={today}
-                  className="w-full border border-coffee-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-400"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-coffee-600 mb-1">To</label>
-                <input
-                  type="date"
-                  name="to"
-                  defaultValue={today}
-                  max={today}
-                  className="w-full border border-coffee-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-400"
-                />
-              </div>
+            <div>
+              <label className="block text-xs font-medium text-coffee-600 mb-1">Term</label>
+              <select
+                name="termId"
+                defaultValue={currentTerm?.id ?? ''}
+                className="w-full border border-coffee-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-400"
+              >
+                <option value="">All terms</option>
+                {terms.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.academicYear.name} — {t.name}{t.isCurrent ? ' (current)' : ''}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="flex flex-col sm:flex-row gap-2 pt-1">
               <button

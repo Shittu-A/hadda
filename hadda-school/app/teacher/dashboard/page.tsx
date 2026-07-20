@@ -5,13 +5,8 @@ import Link from 'next/link'
 import Badge from '@/components/ui/Badge'
 import { formatDate } from '@/lib/utils'
 import { GraduationCap, CalendarCheck, FileText, BookOpen } from 'lucide-react'
+import { GRADE_VARIANT } from '@/lib/grades'
 
-const QUALITY_VARIANT: Record<string, 'success' | 'info' | 'warning' | 'danger'> = {
-  excellent: 'success',
-  good: 'info',
-  average: 'warning',
-  weak: 'danger',
-}
 
 export default async function TeacherDashboardPage() {
   const session = await auth()
@@ -20,7 +15,7 @@ export default async function TeacherDashboardPage() {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
-  const [teacherClasses, pendingLeaves, recentLogs, upcomingEvents] = await Promise.all([
+  const [teacherClasses, pendingLeaves, recentTargets, upcomingEvents] = await Promise.all([
     db.classTeacher.findMany({
       // Only the current session's classes — cloned classes from past years
       // keep the teacher link but hold no students.
@@ -34,14 +29,17 @@ export default async function TeacherDashboardPage() {
       },
     }),
     db.leaveRequest.count({ where: { userId: session.user.id, status: 'pending' } }),
-    db.memorizationLog.findMany({
-      where: { teacherId: session.user.id },
+    // Memorization is termly now: show this term's targets and how many are
+    // still awaiting a grade, rather than a feed of daily sessions.
+    db.memorizationTarget.findMany({
+      where: { term: { isCurrent: true }, student: { deletedAt: null, status: 'active' } },
       take: 6,
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ achievedPercent: { sort: 'asc', nulls: 'first' } }, { updatedAt: 'desc' }],
       include: {
         student: { select: { firstName: true, lastName: true } },
         surahFrom: { select: { nameEnglish: true } },
         surahTo: { select: { nameEnglish: true } },
+        term: { select: { name: true } },
       },
     }),
     db.event.findMany({
@@ -117,7 +115,7 @@ export default async function TeacherDashboardPage() {
             <div className="space-y-2">
               {[
                 { href: '/teacher/attendance', label: 'Take Today\'s Attendance' },
-                { href: '/teacher/memorization', label: 'Log Memorization Session' },
+                { href: '/teacher/memorization', label: 'Memorization Targets & Grades' },
                 { href: '/teacher/attendance/history', label: 'Attendance History' },
                 { href: '/teacher/leave', label: 'Submit Leave Request' },
               ].map((a) => (
@@ -150,43 +148,56 @@ export default async function TeacherDashboardPage() {
         {/* Recent memorization logs */}
         <div className="lg:col-span-2 bg-white border border-coffee-200 rounded-xl p-4 sm:p-5">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 gap-2">
-            <h2 className="font-semibold text-coffee-800">Recent Memorization Logs</h2>
+            <h2 className="font-semibold text-coffee-800">This Term&apos;s Memorization</h2>
             <Link href="/teacher/memorization" className="text-xs text-coffee-400 hover:text-coffee-700">
               View all →
             </Link>
           </div>
-          {recentLogs.length === 0 ? (
+          {recentTargets.length === 0 ? (
             <div className="text-center py-8 text-coffee-400 text-sm">
-              No memorization logs yet.{' '}
+              No targets set for this term yet.{' '}
               <Link href="/teacher/memorization" className="text-coffee-600 underline underline-offset-2">
-                Log a session
+                Set a target
               </Link>
             </div>
           ) : (
             <div className="space-y-3">
-              {recentLogs.map((log) => (
-                <div key={log.id} className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3 bg-coffee-50 rounded-xl">
-                  <div className="p-2 bg-white rounded-lg text-coffee-600 shrink-0">
-                    <BookOpen size={16} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
-                      <p className="font-medium text-coffee-900 text-sm truncate">
-                        {log.student.firstName} {log.student.lastName}
-                      </p>
-                      <span className="text-xs text-coffee-400 capitalize shrink-0">{log.type}</span>
+              {recentTargets.map((target) => {
+                const percent = target.achievedPercent != null ? Number(target.achievedPercent) : null
+                return (
+                  <div key={target.id} className="flex flex-col sm:flex-row items-start sm:items-center gap-3 p-3 bg-coffee-50 rounded-xl">
+                    <div className="p-2 bg-white rounded-lg text-coffee-600 shrink-0">
+                      <BookOpen size={16} />
                     </div>
-                    <p className="text-xs text-coffee-500 mt-0.5">
-                      {log.surahFrom.nameEnglish} :{log.ayahFrom} → {log.surahTo.nameEnglish} :{log.ayahTo}
-                      {' · '}{Number(log.pages).toFixed(2)} pages
-                    </p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                        <p className="font-medium text-coffee-900 text-sm truncate">
+                          {target.student.firstName} {target.student.lastName}
+                        </p>
+                        <span className="text-xs text-coffee-400 shrink-0">{target.term.name}</span>
+                      </div>
+                      <p className="text-xs text-coffee-500 mt-0.5">
+                        {target.surahFrom.nameEnglish} :{target.ayahFrom} → {target.surahTo.nameEnglish} :{target.ayahTo}
+                        {' · '}{Number(target.targetPages)} pages
+                      </p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      {percent != null ? (
+                        <>
+                          <Badge variant={GRADE_VARIANT[target.grade ?? 'F'] ?? 'neutral'}>
+                            {percent}% · {target.grade}
+                          </Badge>
+                          {target.gradedAt && (
+                            <p className="text-xs text-coffee-400 mt-1">{formatDate(target.gradedAt)}</p>
+                          )}
+                        </>
+                      ) : (
+                        <Badge variant="warning">Awaiting grade</Badge>
+                      )}
+                    </div>
                   </div>
-                  <div className="shrink-0 text-right">
-                    <Badge variant={QUALITY_VARIANT[log.quality]}>{log.quality}</Badge>
-                    <p className="text-xs text-coffee-400 mt-1">{formatDate(log.logDate)}</p>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>

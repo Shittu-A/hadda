@@ -54,7 +54,17 @@ export async function sendBalanceReminder(studentId: string): Promise<SmsActionR
   const phone = primaryGuardianPhone(student.guardians)
   if (!phone) return { success: false, error: 'No guardian phone number on file for this student' }
 
-  const message = `Dear Parent, outstanding school fees for ${student.firstName} ${student.lastName} (${student.admissionNumber}) is ${formatCurrency(balance.total, currencySymbol)}. Kindly settle at your earliest convenience. - ${schoolName}`
+  // Quote what is actually due now rather than the year's full total, so a
+  // parent is not chased for terms that have not started. How many terms are
+  // owing is added as a short count — listing them by name would push the
+  // message past one GSM-7 page and double the cost.
+  const dueNow = balance.dueNow > 0 ? balance.dueNow : balance.total
+  const termsOwing = new Set(
+    balance.fees.filter((f) => !f.isUpcoming && f.termName).map((f) => f.termName)
+  ).size
+  const termPart = termsOwing > 1 ? ` across ${termsOwing} terms` : ''
+
+  const message = `Dear Parent, outstanding school fees for ${student.firstName} ${student.lastName} (${student.admissionNumber}) is ${formatCurrency(dueNow, currencySymbol)}${termPart}. You may pay one term at a time. Kindly settle at your earliest convenience. - ${schoolName}`
 
   const result = await sendSms({
     to: phone,

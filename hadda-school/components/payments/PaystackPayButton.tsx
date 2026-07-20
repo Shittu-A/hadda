@@ -5,21 +5,31 @@ import { usePaystackPayment } from 'react-paystack'
 import Button from '@/components/ui/Button'
 import { formatCurrency } from '@/lib/utils'
 
+// Which fee lines the parent ticked, per child. Only ids travel to the server —
+// the amounts are recomputed there from the student's real balance, so nothing
+// the browser sends can change what a line costs.
+export type PaymentSelection = {
+  studentId: string
+  feeStructureIds: string[]
+}
+
 interface PaystackPayButtonProps {
   amount: number
   email?: string
-  studentIds: string[]
+  selections: PaymentSelection[]
   paystackKey: string
   onSuccess?: () => void
 }
 
-export default function PaystackPayButton({ amount, email, studentIds, paystackKey, onSuccess }: PaystackPayButtonProps) {
+export default function PaystackPayButton({ amount, email, selections, paystackKey, onSuccess }: PaystackPayButtonProps) {
   const [isVerifying, setIsVerifying] = useState(false)
+
+  const studentIds = selections.map((s) => s.studentId)
 
   const config = {
     reference: (new Date()).getTime().toString(),
     email: email || 'payments@hadda.school', // Fallback email
-    amount: amount * 100, // Paystack amount is in kobo
+    amount: Math.round(amount * 100), // Paystack amount is in kobo
     publicKey: paystackKey,
     metadata: {
       custom_fields: [
@@ -42,7 +52,7 @@ export default function PaystackPayButton({ amount, email, studentIds, paystackK
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           reference: reference.reference,
-          studentIds,
+          selections,
         }),
       })
       if (res.ok) {

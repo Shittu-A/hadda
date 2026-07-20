@@ -25,7 +25,7 @@ export default async function SuperAdminDashboardPage() {
     feesTotal,
     recentAuditLogs,
     upcomingEvents,
-    totalMemoToday,
+    totalMemoGraded,
     pendingLeaves,
   ] = await Promise.all([
     db.student.count({ where: { status: 'active', deletedAt: null } }),
@@ -42,7 +42,11 @@ export default async function SuperAdminDashboardPage() {
       orderBy: { eventDate: 'asc' },
       take: 4,
     }),
-    db.memorizationLog.count({ where: { createdAt: { gte: today } } }),
+    // Memorization is graded once per term, so a daily count would read zero
+    // almost always — this tracks the current term's progress instead.
+    db.memorizationTarget.count({
+      where: { term: { isCurrent: true }, achievedPercent: { not: null } },
+    }),
     db.leaveRequest.count({ where: { status: 'pending' } }),
   ])
 
@@ -86,8 +90,8 @@ export default async function SuperAdminDashboardPage() {
             <BookOpen size={20} />
           </div>
           <div>
-            <p className="text-xl font-bold text-coffee-900">{totalMemoToday}</p>
-            <p className="text-xs text-coffee-500">Memorization logs today</p>
+            <p className="text-xl font-bold text-coffee-900">{totalMemoGraded}</p>
+            <p className="text-xs text-coffee-500">Memorization graded this term</p>
           </div>
         </div>
         <Link

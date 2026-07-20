@@ -59,8 +59,14 @@ export default async function FeePaymentsPage({
     }),
     db.feeStructure.findMany({
       where: { isActive: true },
-      orderBy: { name: 'asc' },
-      select: { id: true, name: true, amount: true, frequency: true },
+      orderBy: [{ name: 'asc' }, { term: { order: 'asc' } }],
+      select: {
+        id: true,
+        name: true,
+        amount: true,
+        frequency: true,
+        term: { select: { name: true, isCurrent: true } },
+      },
     }),
     db.academicYear.findFirst({ where: { isCurrent: true } }),
   ])
@@ -168,7 +174,7 @@ export default async function FeePaymentsPage({
                 <option value="">Select fee</option>
                 {feeStructures.map((f) => (
                   <option key={f.id} value={f.id}>
-                    {f.name} — {formatCurrency(Number(f.amount))}
+                    {f.name}{f.term ? ` — ${f.term.name}${f.term.isCurrent ? ' (current)' : ''}` : ''} — {formatCurrency(Number(f.amount))}
                   </option>
                 ))}
               </select>
@@ -218,9 +224,12 @@ export default async function FeePaymentsPage({
               <input
                 type="text"
                 name="period"
-                placeholder="e.g. Jan 2025 / Term 1"
+                placeholder="e.g. Jan 2025"
                 className="w-full border border-coffee-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-400"
               />
+              <p className="text-xs text-coffee-400 mt-1">
+                Leave blank for a termly fee — the term is recorded automatically.
+              </p>
             </div>
 
             <div>
