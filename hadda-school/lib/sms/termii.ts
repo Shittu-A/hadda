@@ -77,13 +77,19 @@ export async function sendSms({ to, body: rawBody, purpose, studentId, createdBy
 
   try {
     const settings = await db.setting.findMany({
-      where: { key: { in: ['sms_provider', 'sms_api_key', 'sms_sender_id'] } },
+      where: { key: { in: ['sms_provider', 'sms_api_key', 'sms_sender_id', 'sms_base_url', 'sms_channel'] } },
     })
     const getSetting = (key: string) => settings.find((s) => s.key === key)?.value?.trim() || ''
 
     const provider = getSetting('sms_provider') || 'none'
     const apiKey = getSetting('sms_api_key')
     const senderId = getSetting('sms_sender_id') || 'School'
+    // Termii's current live cluster is v4; the legacy api.ng cluster rejects newer
+    // (tlv_...) keys with "Invalid API Key". Configurable so a different cluster can be
+    // set without a code change. Trailing slashes trimmed so the path joins cleanly.
+    const baseUrl = (getSetting('sms_base_url') || 'https://v4.api.termii.com').replace(/\/+$/, '')
+    // 'generic' = promotional route, 'dnd' = transactional (delivers to DND-registered numbers).
+    const channel = getSetting('sms_channel') || 'dnd'
 
     if (provider === 'none' || !apiKey) {
       await logSms({ toPhone, body, purpose, studentId, createdById, status: 'skipped' })
@@ -92,7 +98,7 @@ export async function sendSms({ to, body: rawBody, purpose, studentId, createdBy
 
     if (provider === 'termii') {
       try {
-        const res = await fetch('https://api.ng.termii.com/api/sms/send', {
+        const res = await fetch(`${baseUrl}/api/sms/send`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -100,15 +106,23 @@ export async function sendSms({ to, body: rawBody, purpose, studentId, createdBy
             from: senderId,
             sms: body,
             type: 'plain',
-            channel: 'generic',
+            channel,
             api_key: apiKey,
           }),
         })
 
         const data = await res.json().catch(() => ({}) as any)
 
-        if (!res.ok || data?.code === 'error' || data?.code === 'network_issue') {
-          const errorMsg = data?.message || `Termii request failed (${res.status})`
+        // v4 signals errors with an HTTP 4xx/5xx + a numeric `status` and `error`/`message`;
+        // the legacy cluster used `code: 'error'`. Treat any non-2xx or error marker as a failure.
+        const failed =
+          !res.ok ||
+          data?.code === 'error' ||
+          data?.code === 'network_issue' ||
+          (typeof data?.status === 'number' && data.status >= 400)
+
+        if (failed) {
+          const errorMsg = data?.message || data?.error || `Termii request failed (${res.status})`
           await logSms({ toPhone, body, purpose, studentId, createdById, status: 'failed', provider: 'termii', error: errorMsg })
           return { ok: false, error: errorMsg }
         }
@@ -121,7 +135,7 @@ export async function sendSms({ to, body: rawBody, purpose, studentId, createdBy
           createdById,
           status: 'sent',
           provider: 'termii',
-          providerReference: data?.message_id ?? data?.message_id_str ?? undefined,
+          providerReference: data?.message_id ?? data?.message_id_str ?? data?.data?.message_id ?? undefined,
         })
         return { ok: true }
       } catch (err: any) {
