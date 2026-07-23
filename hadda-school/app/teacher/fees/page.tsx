@@ -71,6 +71,9 @@ export default async function TeacherFeesPage({
   // Balances for the whole list, so fee status is visible without opening each student.
   const rows = studentRecords.map((s) => {
     const bal = computeStudentBalance(s)!
+    const currentOutstanding = bal.fees
+      .filter((f) => f.isCurrent)
+      .reduce((sum, f) => sum + f.outstanding, 0)
     return {
       id: s.id,
       firstName: s.firstName,
@@ -78,6 +81,10 @@ export default async function TeacherFeesPage({
       admissionNumber: s.admissionNumber,
       className: bal.className,
       outstanding: bal.total,
+      // Everything owed that is not this term's fee: previous-terms arrears,
+      // other terms and non-term fees.
+      currentOutstanding,
+      otherOutstanding: bal.total - currentOutstanding,
       scholarship: s.scholarship,
     }
   })
@@ -85,6 +92,8 @@ export default async function TeacherFeesPage({
   const owingCount = rows.filter((r) => r.outstanding > 0).length
   const paidCount = rows.length - owingCount
   const totalOutstanding = rows.reduce((sum, r) => sum + r.outstanding, 0)
+  const currentTermOutstanding = rows.reduce((sum, r) => sum + r.currentOutstanding, 0)
+  const otherOutstanding = totalOutstanding - currentTermOutstanding
 
   const visibleRows = rows.filter((r) =>
     status === 'owing' ? r.outstanding > 0 : status === 'paid' ? r.outstanding === 0 : true
@@ -171,22 +180,26 @@ export default async function TeacherFeesPage({
       </form>
 
       {/* Summary */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <div className="bg-white border border-coffee-200 rounded-xl p-4">
           <p className="text-xs text-coffee-500">Students</p>
           <p className="text-xl font-bold text-coffee-900 mt-0.5">{rows.length}</p>
-        </div>
-        <div className="bg-white border border-coffee-200 rounded-xl p-4">
-          <p className="text-xs text-coffee-500">Fully paid</p>
-          <p className="text-xl font-bold text-green-600 mt-0.5">{paidCount}</p>
         </div>
         <div className="bg-white border border-coffee-200 rounded-xl p-4">
           <p className="text-xs text-coffee-500">Owing</p>
           <p className="text-xl font-bold text-red-600 mt-0.5">{owingCount}</p>
         </div>
         <div className="bg-white border border-coffee-200 rounded-xl p-4">
+          <p className="text-xs text-coffee-500">Current term due</p>
+          <p className="text-xl font-bold text-red-600 mt-0.5">{formatCurrency(currentTermOutstanding)}</p>
+        </div>
+        <div className="bg-white border border-coffee-200 rounded-xl p-4">
+          <p className="text-xs text-coffee-500">Arrears / other</p>
+          <p className="text-xl font-bold text-amber-600 mt-0.5">{formatCurrency(otherOutstanding)}</p>
+        </div>
+        <div className="bg-white border border-coffee-200 rounded-xl p-4">
           <p className="text-xs text-coffee-500">Total outstanding</p>
-          <p className="text-xl font-bold text-red-600 mt-0.5">{formatCurrency(totalOutstanding)}</p>
+          <p className="text-xl font-bold text-coffee-900 mt-0.5">{formatCurrency(totalOutstanding)}</p>
         </div>
       </div>
 
@@ -235,6 +248,11 @@ export default async function TeacherFeesPage({
                       <span className={`block text-xs mt-0.5 ${isSelected ? 'text-coffee-200' : 'text-coffee-400'}`}>
                         {s.admissionNumber} · {s.className}
                       </span>
+                      {s.outstanding > 0 && s.otherOutstanding > 0 && (
+                        <span className={`block text-xs mt-0.5 ${isSelected ? 'text-coffee-200' : 'text-coffee-500'}`}>
+                          Term {formatCurrency(s.currentOutstanding)} · Arrears/other {formatCurrency(s.otherOutstanding)}
+                        </span>
+                      )}
                     </span>
                     <span
                       className={`shrink-0 px-2 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap ${
@@ -266,30 +284,66 @@ export default async function TeacherFeesPage({
                 <p className="text-coffee-500 text-sm mt-0.5">{selectedStudent.currentClass?.name ?? 'Unassigned'}</p>
               </div>
 
-              {/* Outstanding fees */}
+              {/* Outstanding fees, split into this term vs everything else owed */}
               <div className="bg-white border border-coffee-200 rounded-xl p-4 sm:p-5">
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="font-semibold text-coffee-800">Outstanding Fees</h2>
                   {balance && balance.total > 0 && (
-                    <span className="text-sm font-bold text-red-600">{formatCurrency(balance.total)}</span>
+                    <span className="text-sm font-bold text-coffee-900">{formatCurrency(balance.total)}</span>
                   )}
                 </div>
                 {!balance || balance.fees.length === 0 ? (
                   <p className="text-sm text-coffee-400 py-2">No outstanding fees — fully paid up.</p>
                 ) : (
-                  <div className="space-y-2">
-                    {balance.fees.map((f) => (
+                  (() => {
+                    const currentFees = balance.fees.filter((f) => f.isCurrent)
+                    const otherFees = balance.fees.filter((f) => !f.isCurrent)
+                    const currentTotal = currentFees.reduce((s, f) => s + f.outstanding, 0)
+                    const otherTotal = otherFees.reduce((s, f) => s + f.outstanding, 0)
+
+                    const feeRow = (f: (typeof balance.fees)[number]) => (
                       <div key={f.feeStructureId} className="flex items-center justify-between p-2.5 bg-coffee-50 rounded-lg text-sm">
                         <div>
                           <p className="font-medium text-coffee-900">{f.name}</p>
                           <p className="text-xs text-coffee-500">
                             {formatCurrency(f.netAmount)} total · {formatCurrency(f.paid)} paid
+                            {f.isUpcoming ? ' · upcoming term' : ''}
                           </p>
                         </div>
                         <span className="font-semibold text-red-600">{formatCurrency(f.outstanding)}</span>
                       </div>
-                    ))}
-                  </div>
+                    )
+
+                    return (
+                      <div className="space-y-4">
+                        <div>
+                          <div className="flex items-center justify-between mb-2">
+                            <p className="text-xs font-semibold text-coffee-700 uppercase tracking-wide">Current term</p>
+                            <span className="text-sm font-bold text-red-600">{formatCurrency(currentTotal)}</span>
+                          </div>
+                          {currentFees.length === 0 ? (
+                            <p className="text-sm text-green-700 bg-green-50 rounded-lg px-3 py-2">
+                              This term&apos;s fee is fully paid.
+                            </p>
+                          ) : (
+                            <div className="space-y-2">{currentFees.map(feeRow)}</div>
+                          )}
+                        </div>
+
+                        {otherFees.length > 0 && (
+                          <div>
+                            <div className="flex items-center justify-between mb-2">
+                              <p className="text-xs font-semibold text-coffee-700 uppercase tracking-wide">
+                                Arrears &amp; other terms
+                              </p>
+                              <span className="text-sm font-bold text-amber-600">{formatCurrency(otherTotal)}</span>
+                            </div>
+                            <div className="space-y-2">{otherFees.map(feeRow)}</div>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })()
                 )}
               </div>
 

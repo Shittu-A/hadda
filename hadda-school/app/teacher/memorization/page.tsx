@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation'
 import Badge from '@/components/ui/Badge'
 import { formatDate } from '@/lib/utils'
 import { GRADE_VARIANT, GRADE_SCALE_LABEL } from '@/lib/grades'
+import BulkTargetForm from './BulkTargetForm'
 
 async function handleSetTarget(formData: FormData): Promise<void> {
   'use server'
@@ -115,6 +116,20 @@ export default async function TeacherMemorizationPage() {
           You have no students in the current academic session.
         </p>
       ) : (
+        <>
+        {!termEnded && (
+          <BulkTargetForm
+            students={allStudents.map((s) => ({
+              id: s.id,
+              firstName: s.firstName,
+              lastName: s.lastName,
+              admissionNumber: s.admissionNumber,
+              className: s.className,
+              hasTarget: targetByStudent.has(s.id),
+            }))}
+            surahs={surahs.map((s) => ({ id: s.id, nameEnglish: s.nameEnglish }))}
+          />
+        )}
         <div className="space-y-4">
           {allStudents.map((student) => {
             const target = targetByStudent.get(student.id)
@@ -320,6 +335,7 @@ export default async function TeacherMemorizationPage() {
             )
           })}
         </div>
+        </>
       )}
     </div>
   )

@@ -22,6 +22,9 @@ export type FeeLine = {
   // True when the term has not started yet. Such lines are still payable — a
   // parent may choose to pay ahead — but are not presented as money overdue.
   isUpcoming: boolean
+  // True only for the term flagged current. Lets a view separate "this term's
+  // fee" from older arrears and other terms.
+  isCurrent: boolean
   grossAmount: number
   discount: number
   netAmount: number
@@ -147,6 +150,7 @@ export function computeStudentBalance(student: any): StudentBalance | null {
       termName: fee.term?.name ?? null,
       termOrder: fee.term?.order ?? null,
       isUpcoming: fee.term ? new Date(fee.term.startDate) > now : false,
+      isCurrent: fee.term?.isCurrent ?? false,
       grossAmount,
       discount: discountAmt,
       netAmount,
@@ -175,6 +179,7 @@ export function computeStudentBalance(student: any): StudentBalance | null {
         // Sorts ahead of every real term — the oldest debt is paid off first.
         termOrder: -1,
         isUpcoming: false,
+        isCurrent: false,
         grossAmount,
         discount: 0,
         netAmount: grossAmount,
