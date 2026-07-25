@@ -15,14 +15,14 @@ export default async function AdminDashboardPage() {
   const monthStart = new Date(today.getFullYear(), today.getMonth(), 1)
   const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59)
 
+  // The income/expenses summary is the finance module's — super admin only.
+  const isSuperAdmin = session.user.role === 'super_admin'
+
   const [
     activeStudents,
     presentToday,
     teachersAbsent,
     feesThisMonth,
-    feesAllTime,
-    otherIncomeAllTime,
-    expensesAllTime,
     pendingLeaves,
     recentPayments,
     recentMemo,
@@ -35,9 +35,6 @@ export default async function AdminDashboardPage() {
       where: { paymentDate: { gte: monthStart, lte: monthEnd } },
       _sum: { amountPaid: true },
     }),
-    db.feePayment.aggregate({ _sum: { amountPaid: true } }),
-    db.incomeEntry.aggregate({ _sum: { amount: true } }),
-    db.expense.aggregate({ _sum: { amount: true } }),
     db.leaveRequest.count({ where: { status: 'pending' } }),
     db.feePayment.findMany({
       take: 5,
@@ -66,9 +63,17 @@ export default async function AdminDashboardPage() {
     }),
   ])
 
+  const [feesAllTime, otherIncomeAllTime, expensesAllTime] = isSuperAdmin
+    ? await Promise.all([
+        db.feePayment.aggregate({ _sum: { amountPaid: true } }),
+        db.incomeEntry.aggregate({ _sum: { amount: true } }),
+        db.expense.aggregate({ _sum: { amount: true } }),
+      ])
+    : [null, null, null]
+
   const totalIncome =
-    Number(feesAllTime._sum.amountPaid ?? 0) + Number(otherIncomeAllTime._sum.amount ?? 0)
-  const totalExpenses = Number(expensesAllTime._sum.amount ?? 0)
+    Number(feesAllTime?._sum.amountPaid ?? 0) + Number(otherIncomeAllTime?._sum.amount ?? 0)
+  const totalExpenses = Number(expensesAllTime?._sum.amount ?? 0)
   const balance = totalIncome - totalExpenses
 
   const stats = [
@@ -76,8 +81,12 @@ export default async function AdminDashboardPage() {
     { label: 'Present Today', value: presentToday, icon: Users, color: 'text-green-600', bg: 'bg-green-50', href: '/admin/attendance/students' },
     { label: 'Teachers Absent', value: teachersAbsent, icon: UserX, color: 'text-red-500', bg: 'bg-red-50', href: '/admin/attendance/teachers' },
     { label: 'Fees This Month', value: formatCurrency(Number(feesThisMonth._sum.amountPaid ?? 0)), icon: Banknote, color: 'text-coffee-600', bg: 'bg-coffee-50', href: '/admin/fees/payments' },
-    { label: 'Total Income', value: formatCurrency(totalIncome), icon: Coins, color: 'text-green-700', bg: 'bg-green-50', href: '/admin/finance' },
-    { label: 'Available Balance', value: formatCurrency(balance), icon: PiggyBank, color: balance >= 0 ? 'text-coffee-700' : 'text-red-600', bg: balance >= 0 ? 'bg-coffee-50' : 'bg-red-50', href: '/admin/finance' },
+    ...(isSuperAdmin
+      ? [
+          { label: 'Total Income', value: formatCurrency(totalIncome), icon: Coins, color: 'text-green-700', bg: 'bg-green-50', href: '/admin/finance' },
+          { label: 'Available Balance', value: formatCurrency(balance), icon: PiggyBank, color: balance >= 0 ? 'text-coffee-700' : 'text-red-600', bg: balance >= 0 ? 'bg-coffee-50' : 'bg-red-50', href: '/admin/finance' },
+        ]
+      : []),
   ]
 
   return (

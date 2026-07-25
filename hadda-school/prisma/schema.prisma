@@ -261,6 +261,10 @@ model Student {
   arrearsNote     String?       // optional context, e.g. "2024/25 Term 2 & 3"
   scholarship     Boolean       @default(false) // on scholarship: excluded from fees / "apply to all paying"
   scholarshipNote String?       // optional context, e.g. "Full sponsor: XYZ Foundation"
+  // Set by an admin ticking "printed" — the PDF can be opened any number of
+  // times, so only a deliberate mark counts as "this letter has been printed".
+  admissionLetterPrintedAt   DateTime?
+  admissionLetterPrintedById String?   // User.id of the admin who marked it
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
   deletedAt       DateTime?
@@ -672,6 +676,10 @@ model Applicant {
   assignedClassId  String?           // ClassRoom.id assigned on acceptance
   admissionNumber  String?           // issued on acceptance
   studentId        String?           // Student.id created on enrollment
+  // Set by an admin ticking "printed" on the application form (see
+  // Student.admissionLetterPrintedAt for the matching letter flag).
+  applicationFormPrintedAt   DateTime?
+  applicationFormPrintedById String?  // User.id of the admin who marked it
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
 

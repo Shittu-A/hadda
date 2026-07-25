@@ -4,6 +4,7 @@ import { db } from '@/lib/db'
 import { auth } from '@/lib/auth'
 import { logAudit } from '@/lib/audit'
 import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
 
 export async function markStudentAttendance(formData: FormData) {
   const session = await auth()
@@ -119,4 +120,32 @@ export async function markTeacherArrival(formData: FormData): Promise<void> {
   })
 
   revalidatePath('/admin/attendance/teachers')
+}
+
+/**
+ * Wipes every teacher attendance record. Super-admin only, and guarded by a
+ * typed confirmation so it cannot happen from a stray click — an admin marking
+ * daily attendance must not be able to clear the whole history.
+ */
+export async function resetTeacherAttendance(formData: FormData): Promise<void> {
+  const session = await auth()
+  if (!session || session.user.role !== 'super_admin') {
+    redirect('/admin/attendance/teachers?reset=unauthorized')
+  }
+
+  const confirmation = ((formData.get('confirm') as string) || '').trim().toUpperCase()
+  if (confirmation !== 'RESET') {
+    redirect('/admin/attendance/teachers?reset=unconfirmed')
+  }
+
+  const { count } = await db.teacherAttendance.deleteMany({})
+
+  await logAudit({
+    userId: session.user.id,
+    action: 'attendance.teacher.reset',
+    description: `Reset teacher attendance — deleted ${count} record${count !== 1 ? 's' : ''}`,
+  })
+
+  revalidatePath('/admin/attendance/teachers')
+  redirect(`/admin/attendance/teachers?reset=${count}`)
 }

@@ -3,7 +3,9 @@ import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Badge from '@/components/ui/Badge'
+import PrintedToggle from '@/components/ui/PrintedToggle'
 import { formatDate } from '@/lib/utils'
+import { deleteApplication, toggleApplicationFormPrinted } from '@/lib/actions/applications'
 
 const STATUS_VARIANT: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'neutral'> = {
   submitted: 'info',
@@ -86,6 +88,7 @@ export default async function ApplicationsPage({
                 <th className="text-left px-3 sm:px-4 py-3 text-coffee-700 font-semibold hidden lg:table-cell">Guardian</th>
                 <th className="text-left px-3 sm:px-4 py-3 text-coffee-700 font-semibold hidden sm:table-cell">Submitted</th>
                 <th className="text-left px-3 sm:px-4 py-3 text-coffee-700 font-semibold">Status</th>
+                <th className="text-left px-3 sm:px-4 py-3 text-coffee-700 font-semibold">Form</th>
                 <th className="px-3 sm:px-4 py-3"></th>
               </tr>
             </thead>
@@ -106,10 +109,28 @@ export default async function ApplicationsPage({
                   <td className="px-3 sm:px-4 py-3">
                     <Badge variant={STATUS_VARIANT[a.status] ?? 'neutral'}>{a.status}</Badge>
                   </td>
-                  <td className="px-3 sm:px-4 py-3 text-right">
-                    <Link href={`/admin/applications/${a.id}`} className="text-xs text-coffee-500 hover:text-coffee-800 transition-colors whitespace-nowrap">
-                      Review →
-                    </Link>
+                  <td className="px-3 sm:px-4 py-3">
+                    <PrintedToggle
+                      action={toggleApplicationFormPrinted}
+                      id={a.id}
+                      printedAt={a.applicationFormPrintedAt}
+                    />
+                  </td>
+                  <td className="px-3 sm:px-4 py-3">
+                    <div className="flex items-center justify-end gap-3">
+                      <Link href={`/admin/applications/${a.id}`} className="text-xs text-coffee-500 hover:text-coffee-800 transition-colors whitespace-nowrap">
+                        Review →
+                      </Link>
+                      <form action={deleteApplication}>
+                        <input type="hidden" name="id" value={a.id} />
+                        <button
+                          type="submit"
+                          className="text-xs text-red-400 hover:text-red-600 transition-colors"
+                        >
+                          Delete
+                        </button>
+                      </form>
+                    </div>
                   </td>
                 </tr>
               ))}

@@ -149,6 +149,72 @@ export async function updateApplicationStatus(formData: FormData) {
   }
 }
 
+/**
+ * Removes an application from the admin list for good. The Student record an
+ * enrolled applicant produced is left alone — only the application row goes.
+ */
+export async function deleteApplication(formData: FormData): Promise<void> {
+  const session = await auth()
+  if (!session || (session.user.role !== 'admin' && session.user.role !== 'super_admin')) return
+
+  const id = formData.get('id') as string
+  if (!id) return
+
+  const applicant = await db.applicant.findUnique({ where: { id }, select: { fullName: true } })
+  if (!applicant) return
+
+  await db.applicant.delete({ where: { id } })
+
+  await logAudit({
+    userId: session.user.id,
+    action: 'application.deleted',
+    auditableType: 'Applicant',
+    auditableId: id,
+    description: `Deleted application for ${applicant.fullName}`,
+  })
+
+  revalidatePath('/admin/applications')
+}
+
+/**
+ * Marks (or un-marks) an application form as printed. Opening the PDF does not
+ * set this — an admin ticks it deliberately once the paper copy exists.
+ */
+export async function toggleApplicationFormPrinted(formData: FormData): Promise<void> {
+  const session = await auth()
+  if (!session || (session.user.role !== 'admin' && session.user.role !== 'super_admin')) return
+
+  const id = formData.get('id') as string
+  if (!id) return
+
+  const applicant = await db.applicant.findUnique({
+    where: { id },
+    select: { fullName: true, applicationFormPrintedAt: true },
+  })
+  if (!applicant) return
+
+  const printed = applicant.applicationFormPrintedAt === null
+
+  await db.applicant.update({
+    where: { id },
+    data: {
+      applicationFormPrintedAt: printed ? new Date() : null,
+      applicationFormPrintedById: printed ? session.user.id : null,
+    },
+  })
+
+  await logAudit({
+    userId: session.user.id,
+    action: printed ? 'application.form_printed' : 'application.form_print_cleared',
+    auditableType: 'Applicant',
+    auditableId: id,
+    description: `Application form for ${applicant.fullName} marked as ${printed ? 'printed' : 'not printed'}`,
+  })
+
+  revalidatePath('/admin/applications')
+  revalidatePath(`/admin/applications/${id}`)
+}
+
 const AcceptEnrollSchema = z.object({
   id: z.string().min(1),
   classId: z.string().min(1, 'Class is required'),

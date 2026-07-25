@@ -3,8 +3,9 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import Badge from '@/components/ui/Badge'
+import PrintedToggle from '@/components/ui/PrintedToggle'
 import { formatDate, formatCurrency } from '@/lib/utils'
-import { deleteStudent } from '@/lib/actions/students'
+import { deleteStudent, toggleAdmissionLetterPrinted } from '@/lib/actions/students'
 import { setStudentArrears, toggleStudentScholarship } from '@/lib/actions/fees'
 import { sendBalanceReminder } from '@/lib/actions/sms'
 import { computeTermlyValue } from '@/lib/fees/balance'
@@ -362,6 +363,15 @@ export default async function StudentDetailPage({
               >
                 Print Admission Letter
               </a>
+              {/* Printed record — ticked by hand once the paper copy exists. */}
+              <div className="flex justify-center">
+                <PrintedToggle
+                  action={toggleAdmissionLetterPrinted}
+                  id={student.id}
+                  printedAt={student.admissionLetterPrintedAt}
+                  label="Letter not printed"
+                />
+              </div>
               <form action={handleSendBalanceSms}>
                 <button
                   type="submit"

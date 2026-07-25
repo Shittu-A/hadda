@@ -209,3 +209,44 @@ export async function deleteStudent(id: string) {
     return { success: false, error: 'Failed to delete student' }
   }
 }
+
+/**
+ * Marks (or un-marks) a student's admission letter as printed. Mirrors
+ * toggleApplicationFormPrinted in lib/actions/applications.ts — opening the PDF
+ * does not set this, an admin ticks it once the paper copy exists.
+ */
+export async function toggleAdmissionLetterPrinted(formData: FormData): Promise<void> {
+  const session = await auth()
+  if (!session || (session.user.role !== 'admin' && session.user.role !== 'super_admin')) return
+
+  const id = formData.get('id') as string
+  if (!id) return
+
+  const student = await db.student.findUnique({
+    where: { id },
+    select: { firstName: true, lastName: true, admissionLetterPrintedAt: true },
+  })
+  if (!student) return
+
+  const printed = student.admissionLetterPrintedAt === null
+
+  await db.student.update({
+    where: { id },
+    data: {
+      admissionLetterPrintedAt: printed ? new Date() : null,
+      admissionLetterPrintedById: printed ? session.user.id : null,
+    },
+  })
+
+  await logAudit({
+    userId: session.user.id,
+    action: printed ? 'student.admission_letter_printed' : 'student.admission_letter_print_cleared',
+    auditableType: 'Student',
+    auditableId: id,
+    description: `Admission letter for ${student.firstName} ${student.lastName} marked as ${printed ? 'printed' : 'not printed'}`,
+  })
+
+  revalidatePath('/admin/students')
+  revalidatePath(`/admin/students/${id}`)
+  revalidatePath('/admin/applications')
+}

@@ -5,8 +5,17 @@ import { auth } from '@/lib/auth'
 import { logAudit } from '@/lib/audit'
 import { revalidatePath } from 'next/cache'
 
-export async function createExpense(formData: FormData) {
+// The finance books are super-admin only — an admin's Fees pages cover student
+// billing, and /admin/finance is gated in app/admin/finance/layout.tsx. These
+// actions repeat the check so they cannot be invoked directly by an admin.
+async function requireSuperAdmin() {
   const session = await auth()
+  if (!session || session.user.role !== 'super_admin') return null
+  return session
+}
+
+export async function createExpense(formData: FormData) {
+  const session = await requireSuperAdmin()
   if (!session) return { success: false, error: 'Unauthorized' }
 
   const name = (formData.get('name') as string)?.trim()
@@ -44,7 +53,7 @@ export async function createExpense(formData: FormData) {
 }
 
 export async function deleteExpense(formData: FormData): Promise<void> {
-  const session = await auth()
+  const session = await requireSuperAdmin()
   if (!session) return
 
   const id = formData.get('id') as string
@@ -66,7 +75,7 @@ export async function deleteExpense(formData: FormData): Promise<void> {
 }
 
 export async function createIncome(formData: FormData) {
-  const session = await auth()
+  const session = await requireSuperAdmin()
   if (!session) return { success: false, error: 'Unauthorized' }
 
   const source = (formData.get('source') as string)?.trim()
@@ -104,7 +113,7 @@ export async function createIncome(formData: FormData) {
 }
 
 export async function deleteIncome(formData: FormData): Promise<void> {
-  const session = await auth()
+  const session = await requireSuperAdmin()
   if (!session) return
 
   const id = formData.get('id') as string

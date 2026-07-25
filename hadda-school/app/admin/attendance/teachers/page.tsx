@@ -1,5 +1,6 @@
 import { db } from '@/lib/db'
-import { markTeacherAttendance, markTeacherArrival } from '@/lib/actions/attendance'
+import { auth } from '@/lib/auth'
+import { markTeacherAttendance, markTeacherArrival, resetTeacherAttendance } from '@/lib/actions/attendance'
 import Badge from '@/components/ui/Badge'
 import LiveClock from '@/components/attendance/LiveClock'
 
@@ -14,8 +15,11 @@ const STATUS_VARIANT: Record<string, 'success' | 'danger' | 'warning' | 'neutral
 export default async function TeacherAttendancePage({
   searchParams,
 }: {
-  searchParams: Promise<{ date?: string }>
+  searchParams: Promise<{ date?: string; reset?: string }>
 }) {
+  const session = await auth()
+  const isSuperAdmin = session?.user.role === 'super_admin'
+
   const sp = await searchParams
   const today = new Date().toISOString().split('T')[0]
   const selectedDate = sp.date || today
@@ -39,6 +43,9 @@ export default async function TeacherAttendancePage({
   const existing = Object.fromEntries(records.map((r) => [r.userId, r]))
   const alreadySaved = records.length > 0
   const lateThreshold = thresholdSetting?.value ?? '08:00'
+
+  // Only the super admin can wipe the history, so only they need the total.
+  const totalRecords = isSuperAdmin ? await db.teacherAttendance.count() : 0
 
   return (
     <div className="p-4 sm:p-6 space-y-6">
@@ -197,6 +204,60 @@ export default async function TeacherAttendancePage({
           </div>
         </form>
       </details>
+
+      {/* Reset — super admin only, so a day-to-day admin cannot wipe the history */}
+      {isSuperAdmin && (
+        <details className="bg-white border border-red-200 rounded-xl overflow-hidden">
+          <summary className="px-4 sm:px-5 py-3 bg-red-50 border-b border-red-200 text-sm font-semibold text-red-700 cursor-pointer select-none">
+            Reset All Teacher Attendance
+          </summary>
+          <form action={resetTeacherAttendance} className="p-4 sm:p-5 space-y-3">
+            {sp.reset === 'unconfirmed' && (
+              <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                Nothing was deleted — you must type <strong>RESET</strong> to confirm.
+              </p>
+            )}
+            {sp.reset === 'unauthorized' && (
+              <p className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                Only the super admin can reset teacher attendance.
+              </p>
+            )}
+            {sp.reset && /^\d+$/.test(sp.reset) && (
+              <p className="text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                Teacher attendance reset — {sp.reset} record{sp.reset !== '1' ? 's' : ''} deleted.
+              </p>
+            )}
+
+            <p className="text-sm text-coffee-600">
+              Permanently deletes every teacher attendance record
+              {totalRecords > 0 ? ` (${totalRecords} currently stored)` : ''}. Staff start from a
+              clean slate. This cannot be undone.
+            </p>
+
+            <div className="flex flex-col sm:flex-row sm:items-end gap-3">
+              <div className="w-full sm:w-56">
+                <label className="block text-xs font-medium text-coffee-600 mb-1">
+                  Type RESET to confirm
+                </label>
+                <input
+                  type="text"
+                  name="confirm"
+                  placeholder="RESET"
+                  autoComplete="off"
+                  className="w-full border border-coffee-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={totalRecords === 0}
+                className="w-full sm:w-auto bg-red-600 text-white rounded-lg px-6 py-2 text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Reset Attendance
+              </button>
+            </div>
+          </form>
+        </details>
+      )}
     </div>
   )
 }

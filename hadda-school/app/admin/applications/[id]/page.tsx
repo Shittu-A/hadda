@@ -4,8 +4,15 @@ import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import Badge from '@/components/ui/Badge'
+import PrintedToggle from '@/components/ui/PrintedToggle'
 import { formatDate } from '@/lib/utils'
-import { updateApplicationStatus, acceptAndEnroll } from '@/lib/actions/applications'
+import {
+  updateApplicationStatus,
+  acceptAndEnroll,
+  deleteApplication,
+  toggleApplicationFormPrinted,
+} from '@/lib/actions/applications'
+import { toggleAdmissionLetterPrinted } from '@/lib/actions/students'
 
 const STATUS_VARIANT: Record<string, 'success' | 'warning' | 'danger' | 'info' | 'neutral'> = {
   submitted: 'info',
@@ -29,6 +36,12 @@ async function handleEnroll(formData: FormData): Promise<void> {
   }
 }
 
+async function handleDelete(formData: FormData): Promise<void> {
+  'use server'
+  await deleteApplication(formData)
+  redirect('/admin/applications')
+}
+
 export default async function ApplicationDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
   if (!session) redirect('/login')
@@ -37,6 +50,15 @@ export default async function ApplicationDetailPage({ params }: { params: Promis
 
   const applicant = await db.applicant.findUnique({ where: { id } })
   if (!applicant) notFound()
+
+  // Applicant.studentId is a plain scalar (no relation), so the enrolled
+  // student is fetched separately for its admission-letter printed flag.
+  const student = applicant.studentId
+    ? await db.student.findUnique({
+        where: { id: applicant.studentId },
+        select: { id: true, admissionLetterPrintedAt: true },
+      })
+    : null
 
   const [academicYears, currentYear] = await Promise.all([
     db.academicYear.findMany({ orderBy: { startDate: 'desc' } }),
@@ -59,26 +81,46 @@ export default async function ApplicationDetailPage({ params }: { params: Promis
           <h1 className="text-2xl font-bold text-coffee-900 mt-1">{applicant.fullName}</h1>
           <p className="text-coffee-600 text-sm mt-0.5">Applied {formatDate(applicant.createdAt)}</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Badge variant={STATUS_VARIANT[applicant.status] ?? 'neutral'}>{applicant.status}</Badge>
-          <a
-            href={`/api/applicants/${applicant.id}/application-form`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs border border-coffee-200 text-coffee-700 rounded-lg px-3 py-1.5 font-medium hover:bg-coffee-50 transition-colors whitespace-nowrap"
-          >
-            Print Application Form
-          </a>
-          {applicant.studentId && (
+        <div className="space-y-2 sm:text-right">
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+            <Badge variant={STATUS_VARIANT[applicant.status] ?? 'neutral'}>{applicant.status}</Badge>
             <a
-              href={`/api/students/${applicant.studentId}/admission-letter`}
+              href={`/api/applicants/${applicant.id}/application-form`}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs bg-coffee-900 text-white rounded-lg px-3 py-1.5 font-medium hover:bg-coffee-800 transition-colors whitespace-nowrap"
+              className="text-xs border border-coffee-200 text-coffee-700 rounded-lg px-3 py-1.5 font-medium hover:bg-coffee-50 transition-colors whitespace-nowrap"
             >
-              Print Admission Letter
+              Print Application Form
             </a>
-          )}
+            {applicant.studentId && (
+              <a
+                href={`/api/students/${applicant.studentId}/admission-letter`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs bg-coffee-900 text-white rounded-lg px-3 py-1.5 font-medium hover:bg-coffee-800 transition-colors whitespace-nowrap"
+              >
+                Print Admission Letter
+              </a>
+            )}
+          </div>
+
+          {/* Printed record — ticked by hand once the paper copy exists. */}
+          <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+            <PrintedToggle
+              action={toggleApplicationFormPrinted}
+              id={applicant.id}
+              printedAt={applicant.applicationFormPrintedAt}
+              label="Form not printed"
+            />
+            {student && (
+              <PrintedToggle
+                action={toggleAdmissionLetterPrinted}
+                id={student.id}
+                printedAt={student.admissionLetterPrintedAt}
+                label="Letter not printed"
+              />
+            )}
+          </div>
         </div>
       </div>
 
@@ -211,6 +253,24 @@ export default async function ApplicationDetailPage({ params }: { params: Promis
               </form>
             </div>
           )}
+
+          {/* Remove from the applications list */}
+          <div className="bg-white border border-coffee-200 rounded-xl p-4 sm:p-6">
+            <h2 className="font-semibold text-coffee-800 mb-1">Delete Application</h2>
+            <p className="text-coffee-500 text-xs mb-3">
+              Removes this application permanently.
+              {applicant.studentId ? ' The enrolled student record is kept.' : ''}
+            </p>
+            <form action={handleDelete}>
+              <input type="hidden" name="id" value={applicant.id} />
+              <button
+                type="submit"
+                className="w-full border border-red-200 text-red-600 rounded-lg px-4 py-2 text-sm font-medium hover:bg-red-50 transition-colors"
+              >
+                Delete Application
+              </button>
+            </form>
+          </div>
         </div>
       </div>
     </div>
