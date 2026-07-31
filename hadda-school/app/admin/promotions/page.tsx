@@ -2,6 +2,7 @@ import { db } from '@/lib/db'
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Badge from '@/components/ui/Badge'
+import SubmitButton from '@/components/ui/SubmitButton'
 import { processPromotions, undoPromotions } from '@/lib/actions/promotions'
 
 const OUTCOME_LABEL: Record<string, string> = {
@@ -266,12 +267,12 @@ export default async function PromotionsPage({
               })}
 
               <div className="flex justify-end pt-2">
-                <button
-                  type="submit"
+                <SubmitButton
+                  pendingText="Processing…"
                   className="bg-coffee-900 text-white rounded-lg px-8 py-2.5 text-sm font-medium hover:bg-coffee-800 transition-colors"
                 >
                   Process {pendingStudents.length} Student{pendingStudents.length !== 1 ? 's' : ''}
-                </button>
+                </SubmitButton>
               </div>
             </form>
           )}
@@ -316,12 +317,12 @@ async function PromotionHistory({ fromYearId, toYearId }: { fromYearId: string; 
         <form action={handleUndo}>
           <input type="hidden" name="fromYearId" value={fromYearId} />
           <input type="hidden" name="toYearId" value={toYearId} />
-          <button
-            type="submit"
+          <SubmitButton
+            pendingText="Undoing…"
             className="border border-red-200 text-red-700 rounded-lg px-4 py-2 text-sm font-medium hover:bg-red-50 transition-colors"
           >
             Undo all {promotions.length} & re-run
-          </button>
+          </SubmitButton>
         </form>
       </div>
       <p className="text-coffee-500 text-xs mb-3">
@@ -364,12 +365,12 @@ async function PromotionHistory({ fromYearId, toYearId }: { fromYearId: string; 
                     <input type="hidden" name="fromYearId" value={fromYearId} />
                     <input type="hidden" name="toYearId" value={toYearId} />
                     <input type="hidden" name="studentId" value={p.student.id} />
-                    <button
-                      type="submit"
+                    <SubmitButton
+                      pendingText="Undoing…"
                       className="text-red-600 text-xs font-medium hover:underline whitespace-nowrap"
                     >
                       Undo
-                    </button>
+                    </SubmitButton>
                   </form>
                 </td>
               </tr>

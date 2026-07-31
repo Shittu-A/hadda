@@ -5,6 +5,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import Badge from '@/components/ui/Badge'
 import PrintedToggle from '@/components/ui/PrintedToggle'
+import ActionForm from '@/components/ui/ActionForm'
+import SubmitButton from '@/components/ui/SubmitButton'
 import { formatDate } from '@/lib/utils'
 import {
   updateApplicationStatus,
@@ -23,9 +25,9 @@ const STATUS_VARIANT: Record<string, 'success' | 'warning' | 'danger' | 'info' |
   enrolled: 'success',
 }
 
-async function handleStatusUpdate(formData: FormData): Promise<void> {
+async function handleStatusUpdate(formData: FormData) {
   'use server'
-  await updateApplicationStatus(formData)
+  return updateApplicationStatus(formData)
 }
 
 async function handleEnroll(formData: FormData): Promise<void> {
@@ -173,7 +175,7 @@ export default async function ApplicationDetailPage({ params }: { params: Promis
           {/* Status update */}
           <div className="bg-white border border-coffee-200 rounded-xl p-4 sm:p-6">
             <h2 className="font-semibold text-coffee-800 mb-3">Update Status</h2>
-            <form action={handleStatusUpdate} className="space-y-3">
+            <ActionForm action={handleStatusUpdate} successMessage="Status updated." className="space-y-3">
               <input type="hidden" name="id" value={applicant.id} />
               <div>
                 <label className="block text-xs font-medium text-coffee-600 mb-1">Status</label>
@@ -198,13 +200,13 @@ export default async function ApplicationDetailPage({ params }: { params: Promis
                   className="w-full border border-coffee-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-400 resize-none"
                 />
               </div>
-              <button
-                type="submit"
+              <SubmitButton
+                pendingText="Saving…"
                 className="w-full bg-coffee-900 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
               >
                 Save Status
-              </button>
-            </form>
+              </SubmitButton>
+            </ActionForm>
           </div>
 
           {/* Accept & Enroll */}
@@ -244,12 +246,12 @@ export default async function ApplicationDetailPage({ params }: { params: Promis
                     ))}
                   </select>
                 </div>
-                <button
-                  type="submit"
+                <SubmitButton
+                  pendingText="Enrolling…"
                   className="w-full bg-green-700 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-green-800 transition-colors"
                 >
                   Accept &amp; Enroll
-                </button>
+                </SubmitButton>
               </form>
             </div>
           )}
@@ -263,12 +265,12 @@ export default async function ApplicationDetailPage({ params }: { params: Promis
             </p>
             <form action={handleDelete}>
               <input type="hidden" name="id" value={applicant.id} />
-              <button
-                type="submit"
+              <SubmitButton
+                pendingText="Deleting…"
                 className="w-full border border-red-200 text-red-600 rounded-lg px-4 py-2 text-sm font-medium hover:bg-red-50 transition-colors"
               >
                 Delete Application
-              </button>
+              </SubmitButton>
             </form>
           </div>
         </div>

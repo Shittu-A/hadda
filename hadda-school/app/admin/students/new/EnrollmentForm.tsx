@@ -3,6 +3,9 @@
 import { useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import SubmitButton from '@/components/ui/SubmitButton'
+import Spinner from '@/components/ui/Spinner'
+import { useToast } from '@/components/ui/ToastProvider'
 
 type AcademicYear = { id: string; name: string; isCurrent: boolean }
 
@@ -28,11 +31,11 @@ export default function EnrollmentForm({
   currentYearId: string
   action: (formData: FormData) => Promise<void>
 }) {
+  const toast = useToast()
   const [photoUrl, setPhotoUrl] = useState('')
   const [photoPreview, setPhotoPreview] = useState('')
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState('')
-  const [submitting, setSubmitting] = useState(false)
   const formRef = useRef<HTMLFormElement>(null)
 
   async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -49,9 +52,12 @@ export default function EnrollmentForm({
       const json = await res.json()
       if (!res.ok) throw new Error(json.error ?? 'Upload failed')
       setPhotoUrl(json.url)
+      toast.success('Photo uploaded.')
     } catch (err: unknown) {
-      setUploadError(err instanceof Error ? err.message : 'Upload failed')
+      const message = err instanceof Error ? err.message : 'Upload failed'
+      setUploadError(message)
       setPhotoUrl('')
+      toast.error(message)
     } finally {
       setUploading(false)
     }
@@ -62,7 +68,6 @@ export default function EnrollmentForm({
       e.preventDefault()
       return
     }
-    setSubmitting(true)
   }
 
   return (
@@ -96,7 +101,11 @@ export default function EnrollmentForm({
                 onChange={handlePhotoChange}
                 className="block w-full text-sm text-coffee-700 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-coffee-100 file:text-coffee-800 file:text-sm hover:file:bg-coffee-200"
               />
-              {uploading && <p className="text-xs text-coffee-500 mt-1">Uploading…</p>}
+              {uploading && (
+                <p className="text-xs text-coffee-500 mt-1 flex items-center gap-1.5">
+                  <Spinner className="h-3 w-3" /> Uploading…
+                </p>
+              )}
               {uploadError && <p className="text-xs text-red-600 mt-1">{uploadError}</p>}
               {photoUrl && !uploading && <p className="text-xs text-green-600 mt-1">Photo uploaded ✓</p>}
               <input type="hidden" name="photoUrl" value={photoUrl} />
@@ -259,13 +268,13 @@ export default function EnrollmentForm({
           >
             Cancel
           </Link>
-          <button
-            type="submit"
-            disabled={uploading || submitting}
+          <SubmitButton
+            pendingText="Enrolling…"
+            disabled={uploading}
             className="w-full sm:w-auto bg-coffee-900 text-white rounded-lg px-5 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors disabled:opacity-60"
           >
-            {submitting ? 'Enrolling…' : uploading ? 'Uploading photo…' : 'Enroll Student'}
-          </button>
+            {uploading ? 'Uploading photo…' : 'Enroll Student'}
+          </SubmitButton>
         </div>
       </form>
     </div>

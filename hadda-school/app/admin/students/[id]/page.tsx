@@ -4,6 +4,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import Badge from '@/components/ui/Badge'
 import PrintedToggle from '@/components/ui/PrintedToggle'
+import ActionForm from '@/components/ui/ActionForm'
+import SubmitButton from '@/components/ui/SubmitButton'
 import { formatDate, formatCurrency } from '@/lib/utils'
 import { deleteStudent, toggleAdmissionLetterPrinted } from '@/lib/actions/students'
 import { setStudentArrears, toggleStudentScholarship } from '@/lib/actions/fees'
@@ -76,12 +78,12 @@ export default async function StudentDetailPage({
 
   async function handleSetArrears(formData: FormData) {
     'use server'
-    await setStudentArrears(formData)
+    return setStudentArrears(formData)
   }
 
   async function handleToggleScholarship(formData: FormData) {
     'use server'
-    await toggleStudentScholarship(formData)
+    return toggleStudentScholarship(formData)
   }
 
   async function handleSendBalanceSms() {
@@ -230,7 +232,7 @@ export default async function StudentDetailPage({
               </p>
             )}
 
-            <form action={handleSetArrears} className="flex flex-col sm:flex-row sm:items-end gap-3">
+            <ActionForm action={handleSetArrears} successMessage="Arrears updated." className="flex flex-col sm:flex-row sm:items-end gap-3">
               <input type="hidden" name="studentId" value={student.id} />
               <div className="w-full sm:w-32">
                 <label className="block text-xs font-medium text-coffee-600 mb-1">Terms owing</label>
@@ -252,13 +254,13 @@ export default async function StudentDetailPage({
                   className="w-full border border-coffee-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-400"
                 />
               </div>
-              <button
-                type="submit"
+              <SubmitButton
+                pendingText="Saving…"
                 className="w-full sm:w-auto bg-coffee-900 text-white rounded-lg px-5 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
               >
                 Save
-              </button>
-            </form>
+              </SubmitButton>
+            </ActionForm>
           </div>
 
           {/* Recent Payments */}
@@ -373,12 +375,12 @@ export default async function StudentDetailPage({
                 />
               </div>
               <form action={handleSendBalanceSms}>
-                <button
-                  type="submit"
+                <SubmitButton
+                  pendingText="Sending…"
                   className="block w-full text-center border border-coffee-200 text-coffee-700 rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-50 transition-colors"
                 >
                   Send Balance SMS
-                </button>
+                </SubmitButton>
               </form>
               {sp.smsResult && (() => {
                 const [status, errorRaw] = sp.smsResult.split(':')
@@ -411,18 +413,18 @@ export default async function StudentDetailPage({
               </p>
             )}
             {student.scholarship ? (
-              <form action={handleToggleScholarship}>
+              <ActionForm action={handleToggleScholarship} successMessage="Removed from scholarship.">
                 <input type="hidden" name="studentId" value={student.id} />
                 <input type="hidden" name="scholarship" value="false" />
-                <button
-                  type="submit"
+                <SubmitButton
+                  pendingText="Saving…"
                   className="w-full border border-coffee-200 text-coffee-700 rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-50 transition-colors"
                 >
                   Remove from scholarship
-                </button>
-              </form>
+                </SubmitButton>
+              </ActionForm>
             ) : (
-              <form action={handleToggleScholarship} className="space-y-2">
+              <ActionForm action={handleToggleScholarship} successMessage="Placed on scholarship." className="space-y-2">
                 <input type="hidden" name="studentId" value={student.id} />
                 <input type="hidden" name="scholarship" value="true" />
                 <input
@@ -431,13 +433,13 @@ export default async function StudentDetailPage({
                   placeholder="Note (e.g. sponsor name)"
                   className="w-full border border-coffee-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-400"
                 />
-                <button
-                  type="submit"
+                <SubmitButton
+                  pendingText="Saving…"
                   className="w-full bg-coffee-900 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
                 >
                   Place on scholarship
-                </button>
-              </form>
+                </SubmitButton>
+              </ActionForm>
             )}
           </div>
 
@@ -448,12 +450,12 @@ export default async function StudentDetailPage({
                 Withdrawing a student will mark them as withdrawn and remove them from class rosters.
               </p>
               <form action={handleDelete}>
-                <button
-                  type="submit"
+                <SubmitButton
+                  pendingText="Withdrawing…"
                   className="w-full bg-red-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-red-700 transition-colors"
                 >
                   Withdraw Student
-                </button>
+                </SubmitButton>
               </form>
             </div>
           )}

@@ -3,6 +3,9 @@
 import { useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import SubmitButton from '@/components/ui/SubmitButton'
+import Spinner from '@/components/ui/Spinner'
+import { useToast } from '@/components/ui/ToastProvider'
 
 type Guardian = { id: string; name: string; phone: string | null; email: string | null; relationship: string; isPrimary: boolean }
 type ClassRoom = { id: string; name: string; academicYear: { name: string } }
@@ -30,12 +33,12 @@ export default function EditStudentForm({
   action: (formData: FormData) => Promise<void>
 }) {
   const primary = student.guardians.find((g) => g.isPrimary) ?? student.guardians[0]
+  const toast = useToast()
 
   const [photoUrl, setPhotoUrl] = useState(student.photoUrl ?? '')
   const [photoPreview, setPhotoPreview] = useState(student.photoUrl ?? '')
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState('')
-  const [submitting, setSubmitting] = useState(false)
   const formRef = useRef<HTMLFormElement>(null)
 
   const dobValue = student.dateOfBirth
@@ -56,8 +59,11 @@ export default function EditStudentForm({
       const json = await res.json()
       if (!res.ok) throw new Error(json.error ?? 'Upload failed')
       setPhotoUrl(json.url)
+      toast.success('Photo uploaded.')
     } catch (err: unknown) {
-      setUploadError(err instanceof Error ? err.message : 'Upload failed')
+      const message = err instanceof Error ? err.message : 'Upload failed'
+      setUploadError(message)
+      toast.error(message)
     } finally {
       setUploading(false)
     }
@@ -68,7 +74,6 @@ export default function EditStudentForm({
       e.preventDefault()
       return
     }
-    setSubmitting(true)
   }
 
   return (
@@ -106,7 +111,11 @@ export default function EditStudentForm({
                 onChange={handlePhotoChange}
                 className="block w-full text-sm text-coffee-700 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-coffee-100 file:text-coffee-800 file:text-sm hover:file:bg-coffee-200"
               />
-              {uploading && <p className="text-xs text-coffee-500 mt-1">Uploading…</p>}
+              {uploading && (
+                <p className="text-xs text-coffee-500 mt-1 flex items-center gap-1.5">
+                  <Spinner className="h-3 w-3" /> Uploading…
+                </p>
+              )}
               {uploadError && <p className="text-xs text-red-600 mt-1">{uploadError}</p>}
               {photoUrl && !uploading && photoUrl !== student.photoUrl && (
                 <p className="text-xs text-green-600 mt-1">New photo uploaded ✓</p>
@@ -253,13 +262,13 @@ export default function EditStudentForm({
           >
             Cancel
           </Link>
-          <button
-            type="submit"
-            disabled={uploading || submitting}
+          <SubmitButton
+            pendingText="Saving…"
+            disabled={uploading}
             className="w-full sm:w-auto bg-coffee-900 text-white rounded-lg px-5 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors disabled:opacity-60"
           >
-            {submitting ? 'Saving…' : uploading ? 'Uploading photo…' : 'Save Changes'}
-          </button>
+            {uploading ? 'Uploading photo…' : 'Save Changes'}
+          </SubmitButton>
         </div>
       </form>
     </div>

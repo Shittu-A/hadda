@@ -4,6 +4,8 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Badge from '@/components/ui/Badge'
 import PrintedToggle from '@/components/ui/PrintedToggle'
+import ActionForm from '@/components/ui/ActionForm'
+import SubmitButton from '@/components/ui/SubmitButton'
 import { formatDate } from '@/lib/utils'
 import { deleteApplication, toggleApplicationFormPrinted } from '@/lib/actions/applications'
 
@@ -14,6 +16,12 @@ const STATUS_VARIANT: Record<string, 'success' | 'warning' | 'danger' | 'info' |
   accepted: 'success',
   rejected: 'danger',
   enrolled: 'success',
+}
+
+async function handleDelete(formData: FormData) {
+  'use server'
+  await deleteApplication(formData)
+  return { success: true }
 }
 
 const STATUSES = ['submitted', 'shortlisted', 'interviewed', 'accepted', 'rejected', 'enrolled'] as const
@@ -121,15 +129,15 @@ export default async function ApplicationsPage({
                       <Link href={`/admin/applications/${a.id}`} className="text-xs text-coffee-500 hover:text-coffee-800 transition-colors whitespace-nowrap">
                         Review →
                       </Link>
-                      <form action={deleteApplication}>
+                      <ActionForm action={handleDelete} successMessage="Application deleted.">
                         <input type="hidden" name="id" value={a.id} />
-                        <button
-                          type="submit"
+                        <SubmitButton
+                          pendingText="Deleting…"
                           className="text-xs text-red-400 hover:text-red-600 transition-colors"
                         >
                           Delete
-                        </button>
-                      </form>
+                        </SubmitButton>
+                      </ActionForm>
                     </div>
                   </td>
                 </tr>
