@@ -159,7 +159,11 @@ export function computeStudentBalance(student: any): StudentBalance | null {
     }
   })
 
-  const fees = allLines.filter((f) => f.outstanding > 0)
+  // Keep a line once anything has happened on it — either money is still owed,
+  // or money has already been paid against it. Dropping fully-settled lines
+  // entirely (the old behaviour) meant a parent who finished paying a term lost
+  // all record of it instead of seeing "paid in full".
+  const fees = allLines.filter((f) => f.outstanding > 0 || f.paid > 0)
 
   const termlyValue = computeTermlyValue(student)
   const arrearsTerms = student.arrearsTerms ?? 0

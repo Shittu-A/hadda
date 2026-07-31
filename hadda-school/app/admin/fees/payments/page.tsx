@@ -3,18 +3,21 @@ import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Badge from '@/components/ui/Badge'
+import ActionForm from '@/components/ui/ActionForm'
+import SubmitButton from '@/components/ui/SubmitButton'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { recordFeePayment, deleteFeePayment, ensureArrearsFeeStructure } from '@/lib/actions/fees'
 import { sendBulkBalanceReminders } from '@/lib/actions/sms'
 
-async function handleRecord(formData: FormData): Promise<void> {
+async function handleRecord(formData: FormData) {
   'use server'
-  await recordFeePayment(formData)
+  return recordFeePayment(formData)
 }
 
-async function handleDelete(formData: FormData): Promise<void> {
+async function handleDelete(formData: FormData) {
   'use server'
   await deleteFeePayment(formData)
+  return { success: true }
 }
 
 async function handleSmsAll(): Promise<void> {
@@ -114,12 +117,12 @@ export default async function FeePaymentsPage({
         </div>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
           <form action={handleSmsAll}>
-            <button
-              type="submit"
+            <SubmitButton
+              pendingText="Sending…"
               className="w-full sm:w-auto text-center border border-coffee-200 text-coffee-700 rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-50 transition-colors"
             >
               SMS all debtors
-            </button>
+            </SubmitButton>
           </form>
           <Link
             href="/admin/fees"
@@ -144,7 +147,7 @@ export default async function FeePaymentsPage({
       {/* Record payment form */}
       <div className="bg-white border border-coffee-200 rounded-xl p-4 sm:p-5">
         <h2 className="font-semibold text-coffee-800 mb-4">Record Payment</h2>
-        <form action={handleRecord} className="space-y-4">
+        <ActionForm action={handleRecord} successMessage="Payment recorded." resetOnSuccess className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             <div>
               <label className="block text-sm font-medium text-coffee-700 mb-1">Student *</label>
@@ -253,15 +256,15 @@ export default async function FeePaymentsPage({
             </div>
 
             <div className="flex items-end">
-              <button
-                type="submit"
+              <SubmitButton
+                pendingText="Saving…"
                 className="w-full bg-coffee-900 text-white rounded-lg px-6 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
               >
                 Save Payment
-              </button>
+              </SubmitButton>
             </div>
           </div>
-        </form>
+        </ActionForm>
       </div>
 
       {/* Filters */}
@@ -405,15 +408,15 @@ export default async function FeePaymentsPage({
                       >
                         Receipt
                       </a>
-                      <form action={handleDelete} className="inline">
+                      <ActionForm action={handleDelete} successMessage="Payment deleted." className="inline">
                         <input type="hidden" name="id" value={p.id} />
-                        <button
-                          type="submit"
+                        <SubmitButton
+                          pendingText="Deleting…"
                           className="text-xs text-red-400 hover:text-red-600 transition-colors"
                         >
                           Delete
-                        </button>
-                      </form>
+                        </SubmitButton>
+                      </ActionForm>
                     </td>
                   </tr>
                 ))}

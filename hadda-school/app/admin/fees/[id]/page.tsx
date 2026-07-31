@@ -2,6 +2,8 @@ import { db } from '@/lib/db'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Badge from '@/components/ui/Badge'
+import ActionForm from '@/components/ui/ActionForm'
+import SubmitButton from '@/components/ui/SubmitButton'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import {
   assignFeeToClass,
@@ -18,29 +20,36 @@ const FREQ_LABEL: Record<string, string> = {
   one_time: 'One-time',
 }
 
-async function handleAssign(formData: FormData): Promise<void> {
+async function handleAssign(formData: FormData) {
   'use server'
   await assignFeeToClass(formData)
+  return { success: true, message: 'Class assigned.' }
 }
 
-async function handleRemove(formData: FormData): Promise<void> {
+async function handleRemove(formData: FormData) {
   'use server'
   await removeFeeAssignment(formData)
+  return { success: true, message: 'Assignment removed.' }
 }
 
-async function handleApplyAll(formData: FormData): Promise<void> {
+async function handleApplyAll(formData: FormData) {
   'use server'
-  await applyFeeToAllPaying(formData)
+  const result = await applyFeeToAllPaying(formData)
+  if (!result.success) return result
+  return { success: true, message: `Applied to ${result.applied} student(s).` }
 }
 
-async function handleRemoveScholarship(formData: FormData): Promise<void> {
+async function handleRemoveScholarship(formData: FormData) {
   'use server'
-  await removeScholarshipFromFee(formData)
+  const result = await removeScholarshipFromFee(formData)
+  if (!result.success) return result
+  return { success: true, message: `Removed from ${result.removed} scholarship student(s).` }
 }
 
-async function handleAddGrant(formData: FormData): Promise<void> {
+async function handleAddGrant(formData: FormData) {
   'use server'
   await upsertFeeDiscount(formData)
+  return { success: true, message: 'Grant added.' }
 }
 
 export default async function FeeStructureDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -155,23 +164,23 @@ export default async function FeeStructureDetailPage({ params }: { params: Promi
                 {classAssignments.map((a) => (
                   <div key={a.id} className="flex items-center justify-between">
                     <span className="text-sm text-coffee-900">{a.class?.name}</span>
-                    <form action={handleRemove}>
+                    <ActionForm action={handleRemove}>
                       <input type="hidden" name="id" value={a.id} />
                       <input type="hidden" name="feeStructureId" value={fee.id} />
-                      <button
-                        type="submit"
+                      <SubmitButton
+                        pendingText="Removing…"
                         className="text-xs text-red-400 hover:text-red-600 transition-colors"
                       >
                         Remove
-                      </button>
-                    </form>
+                      </SubmitButton>
+                    </ActionForm>
                   </div>
                 ))}
               </div>
             )}
 
             {unassignedClasses.length > 0 && (
-              <form action={handleAssign} className="flex flex-col sm:flex-row gap-2">
+              <ActionForm action={handleAssign} className="flex flex-col sm:flex-row gap-2" resetOnSuccess>
                 <input type="hidden" name="feeStructureId" value={fee.id} />
                 <select
                   name="classId"
@@ -183,13 +192,13 @@ export default async function FeeStructureDetailPage({ params }: { params: Promi
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
                 </select>
-                <button
-                  type="submit"
+                <SubmitButton
+                  pendingText="Adding…"
                   className="sm:w-auto bg-coffee-900 text-white rounded-lg px-3 py-1.5 text-xs font-medium hover:bg-coffee-800 transition-colors"
                 >
                   Add
-                </button>
-              </form>
+                </SubmitButton>
+              </ActionForm>
             )}
           </div>
 
@@ -203,26 +212,26 @@ export default async function FeeStructureDetailPage({ params }: { params: Promi
               </p>
             </div>
 
-            <form action={handleApplyAll}>
+            <ActionForm action={handleApplyAll}>
               <input type="hidden" name="feeStructureId" value={fee.id} />
-              <button
-                type="submit"
+              <SubmitButton
+                pendingText="Applying…"
                 className="w-full bg-coffee-900 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
               >
                 Apply to all {payingCount} paying student{payingCount !== 1 ? 's' : ''}
-              </button>
-            </form>
+              </SubmitButton>
+            </ActionForm>
 
             {scholarshipCount > 0 && (
-              <form action={handleRemoveScholarship}>
+              <ActionForm action={handleRemoveScholarship}>
                 <input type="hidden" name="feeStructureId" value={fee.id} />
-                <button
-                  type="submit"
+                <SubmitButton
+                  pendingText="Removing…"
                   className="w-full border border-amber-300 text-amber-800 rounded-lg px-4 py-2 text-sm font-medium hover:bg-amber-50 transition-colors"
                 >
                   Take off {scholarshipCount} scholarship student{scholarshipCount !== 1 ? 's' : ''}
-                </button>
-              </form>
+                </SubmitButton>
+              </ActionForm>
             )}
             <p className="text-xs text-coffee-400">
               &ldquo;Apply to all&rdquo; skips students on scholarship and any already assigned.
@@ -235,7 +244,7 @@ export default async function FeeStructureDetailPage({ params }: { params: Promi
             <p className="text-xs text-coffee-500 mb-4">
               Reduce this fee for one student (fixed ₦ or %). They still pay the remainder.
             </p>
-            <form action={handleAddGrant} className="space-y-3">
+            <ActionForm action={handleAddGrant} className="space-y-3" resetOnSuccess>
               <input type="hidden" name="feeStructureId" value={fee.id} />
               <div>
                 <label className="block text-xs font-medium text-coffee-600 mb-1">Student</label>
@@ -287,13 +296,13 @@ export default async function FeeStructureDetailPage({ params }: { params: Promi
                   className="w-full border border-coffee-200 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-coffee-400"
                 />
               </div>
-              <button
-                type="submit"
+              <SubmitButton
+                pendingText="Adding…"
                 className="w-full bg-coffee-900 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
               >
                 Add Grant
-              </button>
-            </form>
+              </SubmitButton>
+            </ActionForm>
           </div>
 
           {/* Discounts */}

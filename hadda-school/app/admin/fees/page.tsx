@@ -3,6 +3,8 @@ import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Badge from '@/components/ui/Badge'
+import ActionForm from '@/components/ui/ActionForm'
+import SubmitButton from '@/components/ui/SubmitButton'
 import { formatCurrency } from '@/lib/utils'
 import { createFeeStructure, toggleFeeStructure, deleteFeeStructure } from '@/lib/actions/fees'
 
@@ -13,19 +15,28 @@ const FREQ_LABEL: Record<string, string> = {
   one_time: 'One-time',
 }
 
-async function handleToggle(formData: FormData): Promise<void> {
+async function handleToggle(formData: FormData) {
   'use server'
   await toggleFeeStructure(formData)
+  return { success: true }
 }
 
-async function handleDelete(formData: FormData): Promise<void> {
+async function handleDelete(formData: FormData) {
   'use server'
   await deleteFeeStructure(formData)
+  return { success: true }
 }
 
-async function handleCreate(formData: FormData): Promise<void> {
+async function handleCreate(formData: FormData) {
   'use server'
-  await createFeeStructure(formData)
+  const result = await createFeeStructure(formData)
+  if (!result.success) return result
+  return {
+    success: true,
+    message: result.applied
+      ? `Fee created and applied to ${result.applied} student(s).`
+      : 'Fee created.',
+  }
 }
 
 export default async function AdminFeesPage() {
@@ -89,7 +100,7 @@ export default async function AdminFeesPage() {
       {/* Create form */}
       <div className="bg-white border border-coffee-200 rounded-xl p-4 sm:p-5">
         <h2 className="font-semibold text-coffee-800 mb-4">Create Fee Structure</h2>
-        <form action={handleCreate} className="space-y-4">
+        <ActionForm action={handleCreate} resetOnSuccess className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <div>
               <label className="block text-sm font-medium text-coffee-700 mb-1">Name *</label>
@@ -168,14 +179,14 @@ export default async function AdminFeesPage() {
               Apply to all paying students in the selected year
               <span className="text-coffee-400">(skips students on scholarship)</span>
             </label>
-            <button
-              type="submit"
+            <SubmitButton
+              pendingText="Creating…"
               className="w-full sm:w-auto bg-coffee-900 text-white rounded-lg px-6 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
             >
               Create Fee
-            </button>
+            </SubmitButton>
           </div>
-        </form>
+        </ActionForm>
       </div>
 
       {/* Fee structures by year */}
@@ -277,25 +288,28 @@ export default async function AdminFeesPage() {
                                 >
                                   Manage
                                 </Link>
-                                <form action={handleToggle}>
+                                <ActionForm
+                                  action={handleToggle}
+                                  successMessage={head.isActive ? 'Fee deactivated.' : 'Fee activated.'}
+                                >
                                   <input type="hidden" name="id" value={head.id} />
-                                  <button
-                                    type="submit"
+                                  <SubmitButton
+                                    pendingText="Saving…"
                                     className="text-xs text-coffee-500 hover:text-coffee-800 transition-colors whitespace-nowrap"
                                   >
                                     {head.isActive ? 'Deactivate' : 'Activate'}
-                                  </button>
-                                </form>
+                                  </SubmitButton>
+                                </ActionForm>
                                 {totalPayments === 0 && (
-                                  <form action={handleDelete}>
+                                  <ActionForm action={handleDelete} successMessage="Fee deleted.">
                                     <input type="hidden" name="id" value={head.id} />
-                                    <button
-                                      type="submit"
+                                    <SubmitButton
+                                      pendingText="Deleting…"
                                       className="text-xs text-red-400 hover:text-red-600 transition-colors whitespace-nowrap"
                                     >
                                       Delete
-                                    </button>
-                                  </form>
+                                    </SubmitButton>
+                                  </ActionForm>
                                 )}
                               </div>
                             </td>

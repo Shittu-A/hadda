@@ -5,6 +5,8 @@ import PublicNav from '@/components/layout/PublicNav'
 import PublicFooter from '@/components/layout/PublicFooter'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
+import Spinner from '@/components/ui/Spinner'
+import { useToast } from '@/components/ui/ToastProvider'
 import { formatCurrency } from '@/lib/utils'
 import dynamic from 'next/dynamic'
 
@@ -47,7 +49,7 @@ function defaultSelection(students: StudentResult[]): Set<string> {
   const next = new Set<string>()
   for (const s of students) {
     for (const f of s.fees) {
-      if (!f.isUpcoming) next.add(lineKey(s.id, f.feeStructureId))
+      if (!f.isUpcoming && f.outstanding > 0) next.add(lineKey(s.id, f.feeStructureId))
     }
   }
   return next
@@ -62,6 +64,29 @@ function FeeRow({
   checked: boolean
   onToggle: () => void
 }) {
+  // Nothing left to pay on this line — show it as settled instead of a
+  // tickable checkbox so a fully-paid term stays visible without inviting
+  // the parent to "pay" ₦0.
+  if (fee.outstanding === 0) {
+    return (
+      <div className="flex items-start sm:items-center justify-between p-3 sm:p-4 rounded-xl gap-3 border border-green-200 bg-green-50">
+        <div className="min-w-0">
+          <p className="font-medium text-coffee-900 text-sm sm:text-base">
+            {fee.name}
+            {fee.termName && <span className="text-coffee-500"> — {fee.termName}</span>}
+          </p>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5">
+            <span className="text-coffee-500 text-xs capitalize">{fee.frequency}</span>
+            <span className="text-xs text-green-700">{formatCurrency(fee.paid)} paid</span>
+          </div>
+        </div>
+        <span className="text-xs font-semibold text-green-700 bg-green-100 rounded-full px-2.5 py-1 shrink-0">
+          Paid ✓
+        </span>
+      </div>
+    )
+  }
+
   return (
     <label
       className={`flex items-start sm:items-center justify-between p-3 sm:p-4 rounded-xl gap-3 cursor-pointer border transition-colors ${
@@ -124,17 +149,21 @@ function StudentFees({
         <p className="text-coffee-500 text-xs sm:text-sm">{student.admissionNumber} · {student.className}</p>
       </div>
 
-      {student.fees.length === 0 ? (
+      {student.total === 0 && (
         <div className="text-center py-6">
           <p className="text-2xl mb-2">✅</p>
           <p className="font-bold text-coffee-900">All fees paid!</p>
           <p className="text-coffee-600 text-sm mt-1">No outstanding balance for this student.</p>
         </div>
-      ) : (
+      )}
+
+      {student.fees.length > 0 && (
         <>
-          <p className="text-coffee-600 text-sm mb-4">
-            Tick the items you want to pay for now. You do not have to pay everything at once.
-          </p>
+          {student.total > 0 && (
+            <p className="text-coffee-600 text-sm mb-4">
+              Tick the items you want to pay for now. You do not have to pay everything at once.
+            </p>
+          )}
 
           <div className="space-y-2 sm:space-y-3 mb-6">
             {student.fees.map((fee) => {
@@ -150,18 +179,20 @@ function StudentFees({
             })}
           </div>
 
-          <div className="border-t border-coffee-200 pt-4 space-y-1">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-1">
-              <span className="text-coffee-500 text-sm">Total outstanding</span>
-              <span className="text-coffee-600 text-sm">{formatCurrency(student.total)}</span>
+          {student.total > 0 && (
+            <div className="border-t border-coffee-200 pt-4 space-y-1">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-1">
+                <span className="text-coffee-500 text-sm">Total outstanding</span>
+                <span className="text-coffee-600 text-sm">{formatCurrency(student.total)}</span>
+              </div>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-2">
+                <span className="font-bold text-coffee-900">Selected to pay</span>
+                <span className="text-xl sm:text-2xl font-extrabold text-coffee-900">
+                  {formatCurrency(selectedTotal)}
+                </span>
+              </div>
             </div>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-2">
-              <span className="font-bold text-coffee-900">Selected to pay</span>
-              <span className="text-xl sm:text-2xl font-extrabold text-coffee-900">
-                {formatCurrency(selectedTotal)}
-              </span>
-            </div>
-          </div>
+          )}
         </>
       )}
     </div>
@@ -169,6 +200,7 @@ function StudentFees({
 }
 
 export default function PayPage() {
+  const toast = useToast()
   const [query, setQuery] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -189,38 +221,48 @@ export default function PayPage() {
     setSelectedStudentIds(new Set())
     setSelectedLines(new Set())
 
-    const res = await fetch('/api/pay/lookup', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query }),
-    })
+    // A network hiccup here used to leave the button stuck on "Searching…"
+    // forever, since nothing after the failed fetch ever ran — the try/finally
+    // guarantees loading always clears, even when the request itself fails.
+    try {
+      const res = await fetch('/api/pay/lookup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query }),
+      })
 
-    const data = await res.json()
+      const data = await res.json()
 
-    if (!res.ok) {
-      setError(data.error ?? 'No student found with that admission number or phone number.')
-    } else {
-      if (data.paystackKey) {
-        setPaystackKey(data.paystackKey)
-      }
-
-      const found: StudentResult[] = (data.students ?? (data.student ? [data.student] : [])).filter(Boolean)
-
-      if (found.length === 0) {
-        setError('No student found.')
+      if (!res.ok) {
+        setError(data.error ?? 'No student found with that admission number or phone number.')
       } else {
-        setStudents(found)
-        // Pre-select every child that still has an outstanding balance.
-        setSelectedStudentIds(new Set(found.filter((s) => s.total > 0).map((s) => s.id)))
-        setSelectedLines(defaultSelection(found))
-      }
-    }
+        if (data.paystackKey) {
+          setPaystackKey(data.paystackKey)
+        }
 
-    setLoading(false)
+        const found: StudentResult[] = (data.students ?? (data.student ? [data.student] : [])).filter(Boolean)
+
+        if (found.length === 0) {
+          setError('No student found.')
+        } else {
+          setStudents(found)
+          // Every child is shown by default, whether or not they still owe
+          // anything — a fully paid child should still be visible, just without
+          // anything ticked to pay.
+          setSelectedStudentIds(new Set(found.map((s) => s.id)))
+          setSelectedLines(defaultSelection(found))
+        }
+      }
+    } catch (err) {
+      console.error('Fee lookup failed:', err)
+      setError('Could not reach the server. Please check your connection and try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handlePaymentSuccess = () => {
-    alert('Payment successful!')
+    toast.success('Payment successful!')
     handleLookup() // Refresh balance
   }
 
@@ -242,8 +284,13 @@ export default function PayPage() {
     })
   }
 
-  const payableStudents = students?.filter((s) => s.total > 0) ?? []
-  const activeStudents = payableStudents.filter((s) => selectedStudentIds.has(s.id))
+  // Every ticked child is shown in full, including one who now owes nothing —
+  // seeing the details (and that the balance is ₦0) is the point after a
+  // payment. Only students who still owe something count toward checkout.
+  const visibleStudents = isMultiple
+    ? (students ?? []).filter((s) => selectedStudentIds.has(s.id))
+    : (students ?? [])
+  const activeStudents = visibleStudents.filter((s) => s.total > 0)
 
   // Only ids go to the server; it reprices every line from the real balance.
   const selections = useMemo(
@@ -297,6 +344,7 @@ export default function PayPage() {
                 <p className="text-red-600 text-sm bg-red-50 border border-red-200 rounded-lg px-3 py-2">{error}</p>
               )}
               <Button type="submit" className="w-full" disabled={loading}>
+                {loading && <Spinner />}
                 {loading ? 'Searching…' : 'Find My Fees'}
               </Button>
             </form>
@@ -340,8 +388,8 @@ export default function PayPage() {
             </div>
           )}
 
-          {/* Per-term breakdown for each selected child */}
-          {activeStudents.map((s) => (
+          {/* Per-term breakdown for each selected child, paid or not */}
+          {visibleStudents.map((s) => (
             <StudentFees key={s.id} student={s} selected={selectedLines} onToggle={toggleLine} />
           ))}
 

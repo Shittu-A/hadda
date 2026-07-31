@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { usePaystackPayment } from 'react-paystack'
 import Button from '@/components/ui/Button'
+import Spinner from '@/components/ui/Spinner'
+import { useToast } from '@/components/ui/ToastProvider'
 import { formatCurrency } from '@/lib/utils'
 
 // Which fee lines the parent ticked, per child. Only ids travel to the server —
@@ -22,6 +24,7 @@ interface PaystackPayButtonProps {
 }
 
 export default function PaystackPayButton({ amount, email, selections, paystackKey, onSuccess }: PaystackPayButtonProps) {
+  const toast = useToast()
   const [isVerifying, setIsVerifying] = useState(false)
 
   const studentIds = selections.map((s) => s.studentId)
@@ -58,11 +61,11 @@ export default function PaystackPayButton({ amount, email, selections, paystackK
       if (res.ok) {
         if (onSuccess) onSuccess()
       } else {
-        alert('Payment verification failed. Please contact the school.')
+        toast.error('Payment verification failed. Please contact the school with your reference: ' + reference.reference)
       }
     } catch (err) {
       console.error('Error verifying payment:', err)
-      alert('Network error while verifying payment.')
+      toast.error('Network error while verifying your payment. Please contact the school with your reference: ' + reference.reference)
     } finally {
       setIsVerifying(false)
     }
@@ -83,7 +86,8 @@ export default function PaystackPayButton({ amount, email, selections, paystackK
       disabled={isVerifying}
       className="w-full sm:w-auto"
     >
-      {isVerifying ? 'Verifying...' : `Pay ${formatCurrency(amount)} with Paystack`}
+      {isVerifying && <Spinner />}
+      {isVerifying ? 'Verifying…' : `Pay ${formatCurrency(amount)} with Paystack`}
     </Button>
   )
 }

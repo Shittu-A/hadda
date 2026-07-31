@@ -292,12 +292,15 @@ export default async function TeacherFeesPage({
                     <span className="text-sm font-bold text-coffee-900">{formatCurrency(balance.total)}</span>
                   )}
                 </div>
-                {!balance || balance.fees.length === 0 ? (
+                {!balance || balance.total === 0 ? (
                   <p className="text-sm text-coffee-400 py-2">No outstanding fees — fully paid up.</p>
                 ) : (
                   (() => {
-                    const currentFees = balance.fees.filter((f) => f.isCurrent)
-                    const otherFees = balance.fees.filter((f) => !f.isCurrent)
+                    // balance.fees also carries settled lines now (so the parent
+                    // portal can show "paid in full"); this panel only cares about
+                    // what is still owed.
+                    const currentFees = balance.fees.filter((f) => f.isCurrent && f.outstanding > 0)
+                    const otherFees = balance.fees.filter((f) => !f.isCurrent && f.outstanding > 0)
                     const currentTotal = currentFees.reduce((s, f) => s + f.outstanding, 0)
                     const otherTotal = otherFees.reduce((s, f) => s + f.outstanding, 0)
 

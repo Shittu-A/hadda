@@ -59,8 +59,10 @@ export async function sendBalanceReminder(studentId: string): Promise<SmsActionR
   // owing is added as a short count — listing them by name would push the
   // message past one GSM-7 page and double the cost.
   const dueNow = balance.dueNow > 0 ? balance.dueNow : balance.total
+  // fees may now include fully-settled lines (kept so parents can see what
+  // they've paid) — only count terms that are actually still owed.
   const termsOwing = new Set(
-    balance.fees.filter((f) => !f.isUpcoming && f.termName).map((f) => f.termName)
+    balance.fees.filter((f) => !f.isUpcoming && f.termName && f.outstanding > 0).map((f) => f.termName)
   ).size
   const termPart = termsOwing > 1 ? ` across ${termsOwing} terms` : ''
 
