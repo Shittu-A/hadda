@@ -5,10 +5,13 @@ import Link from 'next/link'
 import { formatDate, formatCurrency } from '@/lib/utils'
 import { Users, GraduationCap, Banknote, ClipboardList, BookOpen, CalendarCheck } from 'lucide-react'
 import { createEvent } from '@/lib/actions/events'
+import ActionForm from '@/components/ui/ActionForm'
+import SubmitButton from '@/components/ui/SubmitButton'
 
-async function handleCreate(formData: FormData): Promise<void> {
+async function handleCreate(formData: FormData) {
   'use server'
   await createEvent(formData)
+  return { success: true }
 }
 
 export default async function SuperAdminDashboardPage() {
@@ -166,7 +169,7 @@ export default async function SuperAdminDashboardPage() {
               <h2 className="font-semibold text-coffee-800">Add Event</h2>
               <Link href="/super-admin/events" className="text-xs text-coffee-400 hover:text-coffee-700">All events →</Link>
             </div>
-            <form action={handleCreate} className="space-y-3">
+            <ActionForm action={handleCreate} successMessage="Event created." resetOnSuccess className="space-y-3">
               <input
                 type="text"
                 name="title"
@@ -192,14 +195,14 @@ export default async function SuperAdminDashboardPage() {
                   <input type="checkbox" name="isPublished" value="true" className="rounded border-coffee-300" />
                   Publish immediately
                 </label>
-                <button
-                  type="submit"
+                <SubmitButton
+                  pendingText="Creating…"
                   className="bg-coffee-900 text-white rounded-lg px-4 py-1.5 text-xs font-medium hover:bg-coffee-800 transition-colors"
                 >
                   Create
-                </button>
+                </SubmitButton>
               </div>
-            </form>
+            </ActionForm>
           </div>
 
           <div className="bg-white border border-coffee-200 rounded-xl p-4 sm:p-5">

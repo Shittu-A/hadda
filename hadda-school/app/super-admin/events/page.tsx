@@ -3,22 +3,27 @@ import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Badge from '@/components/ui/Badge'
+import ActionForm from '@/components/ui/ActionForm'
+import SubmitButton from '@/components/ui/SubmitButton'
 import { formatDate } from '@/lib/utils'
 import { createEvent, deleteEvent, toggleEventPublish } from '@/lib/actions/events'
 
-async function handleCreate(formData: FormData): Promise<void> {
+async function handleCreate(formData: FormData) {
   'use server'
   await createEvent(formData)
+  return { success: true }
 }
 
-async function handleDelete(formData: FormData): Promise<void> {
+async function handleDelete(formData: FormData) {
   'use server'
   await deleteEvent(formData)
+  return { success: true }
 }
 
-async function handleToggle(formData: FormData): Promise<void> {
+async function handleToggle(formData: FormData) {
   'use server'
   await toggleEventPublish(formData)
+  return { success: true }
 }
 
 export default async function EventsPage() {
@@ -38,7 +43,7 @@ export default async function EventsPage() {
       {/* Create form */}
       <div className="bg-white border border-coffee-200 rounded-xl p-4 sm:p-5">
         <h2 className="font-semibold text-coffee-800 mb-4">Create Event</h2>
-        <form action={handleCreate} className="space-y-4">
+        <ActionForm action={handleCreate} successMessage="Event created." resetOnSuccess className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div>
               <label className="block text-sm font-medium text-coffee-700 mb-1">Title *</label>
@@ -89,14 +94,14 @@ export default async function EventsPage() {
               />
               Publish immediately
             </label>
-            <button
-              type="submit"
+            <SubmitButton
+              pendingText="Creating…"
               className="bg-coffee-900 text-white rounded-lg px-6 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
             >
               Create Event
-            </button>
+            </SubmitButton>
           </div>
-        </form>
+        </ActionForm>
       </div>
 
       {/* Events list */}
@@ -154,18 +159,18 @@ export default async function EventsPage() {
                         >
                           Edit
                         </Link>
-                        <form action={handleToggle}>
+                        <ActionForm action={handleToggle} successMessage={event.isPublished ? 'Event unpublished.' : 'Event published.'}>
                           <input type="hidden" name="id" value={event.id} />
-                          <button type="submit" className="text-xs text-coffee-500 hover:text-coffee-800 transition-colors">
+                          <SubmitButton pendingText="Saving…" className="text-xs text-coffee-500 hover:text-coffee-800 transition-colors">
                             {event.isPublished ? 'Unpublish' : 'Publish'}
-                          </button>
-                        </form>
-                        <form action={handleDelete}>
+                          </SubmitButton>
+                        </ActionForm>
+                        <ActionForm action={handleDelete} successMessage="Event deleted.">
                           <input type="hidden" name="id" value={event.id} />
-                          <button type="submit" className="text-xs text-red-400 hover:text-red-600 transition-colors">
+                          <SubmitButton pendingText="Deleting…" className="text-xs text-red-400 hover:text-red-600 transition-colors">
                             Delete
-                          </button>
-                        </form>
+                          </SubmitButton>
+                        </ActionForm>
                       </div>
                     </td>
                   </tr>

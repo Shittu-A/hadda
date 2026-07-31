@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import SubmitButton from '@/components/ui/SubmitButton'
 
 type Profile = {
   photoUrl: string | null
@@ -28,7 +29,6 @@ export default function ProfileForm({
   const [photoPreview, setPhotoPreview] = useState(existingProfile?.photoUrl ?? '')
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState('')
-  const [submitting, setSubmitting] = useState(false)
 
   async function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -63,7 +63,7 @@ export default function ProfileForm({
         </h1>
       </div>
 
-      <form action={action} onSubmit={() => setSubmitting(true)} className="space-y-6 bg-white border border-coffee-200 rounded-xl p-4 sm:p-6">
+      <form action={action} className="space-y-6 bg-white border border-coffee-200 rounded-xl p-4 sm:p-6">
         {/* Photo */}
         <div>
           <h2 className="text-base font-semibold text-coffee-800 mb-4 pb-2 border-b border-coffee-100">Profile Photo</h2>
@@ -165,13 +165,13 @@ export default function ProfileForm({
           >
             Cancel
           </Link>
-          <button
-            type="submit"
-            disabled={uploading || submitting}
+          <SubmitButton
+            pendingText="Saving…"
+            disabled={uploading}
             className="w-full sm:w-auto bg-coffee-900 text-white rounded-lg px-5 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors disabled:opacity-60"
           >
-            {submitting ? 'Saving…' : 'Save Profile'}
-          </button>
+            Save Profile
+          </SubmitButton>
         </div>
       </form>
     </div>

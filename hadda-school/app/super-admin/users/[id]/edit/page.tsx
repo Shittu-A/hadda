@@ -2,6 +2,7 @@ import { db } from '@/lib/db'
 import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { updateUser, changeUserPassword } from '@/lib/actions/users'
+import SubmitButton from '@/components/ui/SubmitButton'
 
 export default async function EditUserPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -73,13 +74,13 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
           >
             Cancel
           </Link>
-          <button
-            type="submit"
+          <SubmitButton
+            pendingText="Saving…"
             disabled={user.role === 'super_admin'}
             className="bg-coffee-900 text-white rounded-lg px-5 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors disabled:opacity-50"
           >
             Save Changes
-          </button>
+          </SubmitButton>
         </div>
       </form>
 
@@ -98,12 +99,12 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
           />
         </div>
         <div className="flex justify-end">
-          <button
-            type="submit"
+          <SubmitButton
+            pendingText="Saving…"
             className="bg-coffee-700 text-white rounded-lg px-5 py-2 text-sm font-medium hover:bg-coffee-600 transition-colors"
           >
             Change Password
-          </button>
+          </SubmitButton>
         </div>
       </form>
     </div>

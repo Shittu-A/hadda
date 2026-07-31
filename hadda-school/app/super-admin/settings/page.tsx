@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { SETTINGS_CONFIG, SETTING_GROUP_LABELS } from '@/lib/settings-config'
 import { upsertSettings } from '@/lib/actions/settings'
+import SubmitButton from '@/components/ui/SubmitButton'
 
 async function handleSave(formData: FormData): Promise<void> {
   'use server'
@@ -106,12 +107,12 @@ export default async function SettingsPage({
         })}
 
         <div className="flex justify-end">
-          <button
-            type="submit"
+          <SubmitButton
+            pendingText="Saving…"
             className="bg-coffee-900 text-white rounded-lg px-8 py-2.5 text-sm font-medium hover:bg-coffee-800 transition-colors"
           >
             Save Settings
-          </button>
+          </SubmitButton>
         </div>
       </form>
     </div>

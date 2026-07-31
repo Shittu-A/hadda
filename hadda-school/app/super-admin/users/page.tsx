@@ -2,12 +2,14 @@ import { db } from '@/lib/db'
 import { formatDate } from '@/lib/utils'
 import { toggleUserActive } from '@/lib/actions/users'
 import Badge from '@/components/ui/Badge'
+import ActionForm from '@/components/ui/ActionForm'
+import SubmitButton from '@/components/ui/SubmitButton'
 import Link from 'next/link'
 
-async function handleToggle(formData: FormData): Promise<void> {
+async function handleToggle(formData: FormData) {
   'use server'
   const id = formData.get('id') as string
-  await toggleUserActive(id)
+  return toggleUserActive(id)
 }
 
 const ROLE_VARIANT: Record<string, 'success' | 'info' | 'neutral'> = {
@@ -78,10 +80,13 @@ export default async function UsersPage() {
                             Edit
                           </Link>
                           {user.role !== 'super_admin' && (
-                            <form action={handleToggle}>
+                            <ActionForm
+                              action={handleToggle}
+                              successMessage={user.isActive ? 'User deactivated.' : 'User activated.'}
+                            >
                               <input type="hidden" name="id" value={user.id} />
-                              <button
-                                type="submit"
+                              <SubmitButton
+                                pendingText="Saving…"
                                 className={`text-xs font-medium border rounded-lg px-3 py-1.5 transition-colors whitespace-nowrap ${
                                   user.isActive
                                     ? 'text-orange-600 border-orange-200 hover:bg-orange-50'
@@ -89,8 +94,8 @@ export default async function UsersPage() {
                                 }`}
                               >
                                 {user.isActive ? 'Deactivate' : 'Activate'}
-                              </button>
-                            </form>
+                              </SubmitButton>
+                            </ActionForm>
                           )}
                         </div>
                       </td>

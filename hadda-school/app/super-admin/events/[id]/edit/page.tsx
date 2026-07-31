@@ -2,6 +2,7 @@ import { db } from '@/lib/db'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { updateEvent } from '@/lib/actions/events'
+import SubmitButton from '@/components/ui/SubmitButton'
 
 async function handleUpdate(formData: FormData): Promise<void> {
   'use server'
@@ -80,12 +81,12 @@ export default async function EditEventPage({ params }: { params: Promise<{ id: 
         </label>
 
         <div className="flex justify-end pt-2">
-          <button
-            type="submit"
+          <SubmitButton
+            pendingText="Saving…"
             className="bg-coffee-900 text-white rounded-lg px-6 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
           >
             Save Changes
-          </button>
+          </SubmitButton>
         </div>
       </form>
     </div>

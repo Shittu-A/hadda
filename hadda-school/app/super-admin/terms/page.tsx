@@ -2,22 +2,24 @@ import { db } from '@/lib/db'
 import { formatDate } from '@/lib/utils'
 import { createTerm, setCurrentTerm, deleteTerm } from '@/lib/actions/terms'
 import Badge from '@/components/ui/Badge'
+import ActionForm from '@/components/ui/ActionForm'
+import SubmitButton from '@/components/ui/SubmitButton'
 
-async function handleCreate(formData: FormData): Promise<void> {
+async function handleCreate(formData: FormData) {
   'use server'
-  await createTerm(formData)
+  return createTerm(formData)
 }
 
-async function handleSetCurrent(formData: FormData): Promise<void> {
+async function handleSetCurrent(formData: FormData) {
   'use server'
   const id = formData.get('id') as string
-  await setCurrentTerm(id)
+  return setCurrentTerm(id)
 }
 
-async function handleDelete(formData: FormData): Promise<void> {
+async function handleDelete(formData: FormData) {
   'use server'
   const id = formData.get('id') as string
-  await deleteTerm(id)
+  return deleteTerm(id)
 }
 
 export default async function TermsPage() {
@@ -51,7 +53,7 @@ export default async function TermsPage() {
       {/* Create Form */}
       <div className="bg-white border border-coffee-200 rounded-xl p-4 sm:p-5">
         <h2 className="text-base font-semibold text-coffee-800 mb-4">Add New Term</h2>
-        <form action={handleCreate} className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 items-end">
+        <ActionForm action={handleCreate} successMessage="Term created." resetOnSuccess className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 items-end">
           <div>
             <label className="block text-sm font-medium text-coffee-700 mb-1">Academic Year</label>
             <select
@@ -105,13 +107,13 @@ export default async function TermsPage() {
               className="border border-coffee-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-400 w-full sm:w-auto"
             />
           </div>
-          <button
-            type="submit"
+          <SubmitButton
+            pendingText="Adding…"
             className="bg-coffee-900 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors w-full sm:w-auto"
           >
             Add Term
-          </button>
-        </form>
+          </SubmitButton>
+        </ActionForm>
       </div>
 
       {/* One table per academic year */}
@@ -161,26 +163,26 @@ export default async function TermsPage() {
                         <td className="px-4 sm:px-5 py-3">
                           <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2 justify-end">
                             {!term.isCurrent && year.isCurrent && (
-                              <form action={handleSetCurrent}>
+                              <ActionForm action={handleSetCurrent} successMessage="Term set as current.">
                                 <input type="hidden" name="id" value={term.id} />
-                                <button
-                                  type="submit"
+                                <SubmitButton
+                                  pendingText="Setting…"
                                   className="text-xs font-medium text-blue-600 hover:text-blue-800 border border-blue-200 rounded-lg px-3 py-1.5 hover:bg-blue-50 transition-colors whitespace-nowrap"
                                 >
                                   Set Current
-                                </button>
-                              </form>
+                                </SubmitButton>
+                              </ActionForm>
                             )}
                             {canDelete && (
-                              <form action={handleDelete}>
+                              <ActionForm action={handleDelete} successMessage="Term deleted.">
                                 <input type="hidden" name="id" value={term.id} />
-                                <button
-                                  type="submit"
+                                <SubmitButton
+                                  pendingText="Deleting…"
                                   className="text-xs font-medium text-red-600 hover:text-red-800 border border-red-200 rounded-lg px-3 py-1.5 hover:bg-red-50 transition-colors whitespace-nowrap"
                                 >
                                   Delete
-                                </button>
-                              </form>
+                                </SubmitButton>
+                              </ActionForm>
                             )}
                           </div>
                         </td>
