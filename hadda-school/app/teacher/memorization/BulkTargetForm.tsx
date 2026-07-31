@@ -3,6 +3,8 @@
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { bulkUpsertMemorizationTargets } from '@/lib/actions/memorization'
+import { useToast } from '@/components/ui/ToastProvider'
+import Spinner from '@/components/ui/Spinner'
 
 type StudentLite = {
   id: string
@@ -23,10 +25,10 @@ export default function BulkTargetForm({
   surahs: Surah[]
 }) {
   const router = useRouter()
+  const toast = useToast()
   const [open, setOpen] = useState(false)
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [pending, setPending] = useState(false)
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   // Group students by class so the teacher can select a whole class at once.
   const groups = useMemo(() => {
@@ -67,10 +69,9 @@ export default function BulkTargetForm({
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
-    setMessage(null)
 
     if (selected.size === 0) {
-      setMessage({ type: 'error', text: 'Select at least one student first.' })
+      toast.error('Select at least one student first.')
       return
     }
 
@@ -78,18 +79,23 @@ export default function BulkTargetForm({
     for (const id of selected) formData.append('studentIds', id)
 
     setPending(true)
-    const result = await bulkUpsertMemorizationTargets(formData)
-    setPending(false)
+    // try/finally guarantees `pending` always clears, even if the request
+    // itself throws — otherwise the button could get stuck "Applying…" forever.
+    try {
+      const result = await bulkUpsertMemorizationTargets(formData)
 
-    if (result.success) {
-      setMessage({
-        type: 'success',
-        text: `Target applied to ${result.count} student${result.count !== 1 ? 's' : ''}.`,
-      })
-      setSelected(new Set())
-      router.refresh()
-    } else {
-      setMessage({ type: 'error', text: result.error ?? 'Failed to apply target.' })
+      if (result.success) {
+        toast.success(`Target applied to ${result.count} student${result.count !== 1 ? 's' : ''}.`)
+        setSelected(new Set())
+        router.refresh()
+      } else {
+        toast.error(result.error ?? 'Failed to apply target.')
+      }
+    } catch (err) {
+      console.error('Bulk target update failed:', err)
+      toast.error('Something went wrong. Please try again.')
+    } finally {
+      setPending(false)
     }
   }
 
@@ -260,23 +266,12 @@ export default function BulkTargetForm({
             </p>
           </div>
 
-          {message && (
-            <p
-              className={`text-sm rounded-lg px-4 py-2 ${
-                message.type === 'success'
-                  ? 'text-green-700 bg-green-50 border border-green-200'
-                  : 'text-red-700 bg-red-50 border border-red-200'
-              }`}
-            >
-              {message.text}
-            </p>
-          )}
-
           <button
             type="submit"
             disabled={pending}
-            className="w-full sm:w-auto bg-coffee-900 text-white rounded-lg px-5 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors disabled:opacity-60"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-coffee-900 text-white rounded-lg px-5 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors disabled:opacity-60"
           >
+            {pending && <Spinner />}
             {pending ? 'Applying…' : `Apply to ${selected.size || 'selected'} student${selected.size === 1 ? '' : 's'}`}
           </button>
         </form>

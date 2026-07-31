@@ -3,6 +3,8 @@ import { auth } from '@/lib/auth'
 import { createLeaveRequest } from '@/lib/actions/leave'
 import { redirect } from 'next/navigation'
 import Badge from '@/components/ui/Badge'
+import ActionForm from '@/components/ui/ActionForm'
+import SubmitButton from '@/components/ui/SubmitButton'
 import { formatDate } from '@/lib/utils'
 
 const STATUS_VARIANT: Record<string, 'warning' | 'success' | 'danger'> = {
@@ -11,9 +13,9 @@ const STATUS_VARIANT: Record<string, 'warning' | 'success' | 'danger'> = {
   rejected: 'danger',
 }
 
-async function handleCreate(formData: FormData): Promise<void> {
+async function handleCreate(formData: FormData) {
   'use server'
-  await createLeaveRequest(formData)
+  return createLeaveRequest(formData)
 }
 
 export default async function TeacherLeavePage() {
@@ -38,7 +40,7 @@ export default async function TeacherLeavePage() {
       {/* Submit form */}
       <div className="bg-white border border-coffee-200 rounded-xl p-4 sm:p-5">
         <h2 className="font-semibold text-coffee-800 mb-4">Request Leave</h2>
-        <form action={handleCreate} className="space-y-4">
+        <ActionForm action={handleCreate} successMessage="Leave request submitted." resetOnSuccess className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-coffee-700 mb-1">Start Date *</label>
@@ -72,14 +74,14 @@ export default async function TeacherLeavePage() {
             />
           </div>
           <div className="flex justify-end">
-            <button
-              type="submit"
+            <SubmitButton
+              pendingText="Submitting…"
               className="bg-coffee-900 text-white rounded-lg px-5 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
             >
               Submit Request
-            </button>
+            </SubmitButton>
           </div>
-        </form>
+        </ActionForm>
       </div>
 
       {/* History */}

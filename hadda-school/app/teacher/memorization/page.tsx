@@ -4,18 +4,20 @@ import { upsertMemorizationTarget, gradeMemorizationTarget } from '@/lib/actions
 import { getCurrentTerm } from '@/lib/current-term'
 import { redirect } from 'next/navigation'
 import Badge from '@/components/ui/Badge'
+import ActionForm from '@/components/ui/ActionForm'
+import SubmitButton from '@/components/ui/SubmitButton'
 import { formatDate } from '@/lib/utils'
 import { GRADE_VARIANT, GRADE_SCALE_LABEL } from '@/lib/grades'
 import BulkTargetForm from './BulkTargetForm'
 
-async function handleSetTarget(formData: FormData): Promise<void> {
+async function handleSetTarget(formData: FormData) {
   'use server'
-  await upsertMemorizationTarget(formData)
+  return upsertMemorizationTarget(formData)
 }
 
-async function handleGrade(formData: FormData): Promise<void> {
+async function handleGrade(formData: FormData) {
   'use server'
-  await gradeMemorizationTarget(formData)
+  return gradeMemorizationTarget(formData)
 }
 
 export default async function TeacherMemorizationPage() {
@@ -178,7 +180,11 @@ export default async function TeacherMemorizationPage() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                   {/* Set / update the target */}
-                  <form action={handleSetTarget} className="space-y-3">
+                  <ActionForm
+                    action={handleSetTarget}
+                    successMessage={target ? 'Target updated.' : 'Target set.'}
+                    className="space-y-3"
+                  >
                     <input type="hidden" name="studentId" value={student.id} />
                     <p className="text-xs font-semibold text-coffee-700 uppercase tracking-wide">
                       {target ? 'Update target' : 'Set target'}
@@ -267,16 +273,20 @@ export default async function TeacherMemorizationPage() {
                       />
                     </div>
 
-                    <button
-                      type="submit"
+                    <SubmitButton
+                      pendingText={target ? 'Updating…' : 'Saving…'}
                       className="w-full bg-coffee-900 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
                     >
                       {target ? 'Update Target' : 'Set Target'}
-                    </button>
-                  </form>
+                    </SubmitButton>
+                  </ActionForm>
 
                   {/* Grade at term end */}
-                  <form action={handleGrade} className="space-y-3">
+                  <ActionForm
+                    action={handleGrade}
+                    successMessage={percent != null ? 'Grade updated.' : 'Grade saved.'}
+                    className="space-y-3"
+                  >
                     <p className="text-xs font-semibold text-coffee-700 uppercase tracking-wide">
                       End-of-term grade
                     </p>
@@ -321,15 +331,15 @@ export default async function TeacherMemorizationPage() {
                           </p>
                         )}
 
-                        <button
-                          type="submit"
+                        <SubmitButton
+                          pendingText={percent != null ? 'Updating…' : 'Saving…'}
                           className="w-full border border-coffee-300 text-coffee-800 rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-50 transition-colors"
                         >
                           {percent != null ? 'Update Grade' : 'Save Grade'}
-                        </button>
+                        </SubmitButton>
                       </>
                     )}
-                  </form>
+                  </ActionForm>
                 </div>
               </div>
             )

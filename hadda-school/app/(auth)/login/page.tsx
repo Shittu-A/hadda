@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
+import Spinner from '@/components/ui/Spinner'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -19,20 +20,29 @@ export default function LoginPage() {
     setLoading(true)
     setError('')
 
-    const result = await signIn('credentials', { email, password, redirect: false })
+    // A thrown network error here used to leave the button stuck on
+    // "Signing in…" forever — the try/finally guarantees loading always
+    // clears, even when the request itself fails.
+    try {
+      const result = await signIn('credentials', { email, password, redirect: false })
 
-    if (result?.error) {
-      setError('Invalid email or password.')
+      if (result?.error) {
+        setError('Invalid email or password.')
+        return
+      }
+
+      const session = await getSession()
+      const role = (session?.user as any)?.role
+      if (role === 'super_admin') router.push('/super-admin')
+      else if (role === 'teacher') router.push('/teacher')
+      else router.push('/admin')
+      router.refresh()
+    } catch (err) {
+      console.error('Sign in failed:', err)
+      setError('Could not reach the server. Please check your connection and try again.')
+    } finally {
       setLoading(false)
-      return
     }
-
-    const session = await getSession()
-    const role = (session?.user as any)?.role
-    if (role === 'super_admin') router.push('/super-admin')
-    else if (role === 'teacher') router.push('/teacher')
-    else router.push('/admin')
-    router.refresh()
   }
 
   return (
@@ -72,6 +82,7 @@ export default function LoginPage() {
             )}
 
             <Button type="submit" className="w-full" disabled={loading}>
+              {loading && <Spinner />}
               {loading ? 'Signing in…' : 'Sign In'}
             </Button>
           </form>

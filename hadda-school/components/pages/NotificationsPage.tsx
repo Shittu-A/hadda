@@ -1,6 +1,8 @@
 import { db } from '@/lib/db'
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
+import ActionForm from '@/components/ui/ActionForm'
+import SubmitButton from '@/components/ui/SubmitButton'
 import { formatDate } from '@/lib/utils'
 import { markAllNotificationsRead, markNotificationRead } from '@/lib/actions/notifications'
 
@@ -29,14 +31,16 @@ function getNotificationLink(type: string, data: unknown): string {
   return '#'
 }
 
-async function handleMarkAll(): Promise<void> {
+async function handleMarkAll() {
   'use server'
   await markAllNotificationsRead()
+  return { success: true, message: 'All notifications marked as read.' }
 }
 
-async function handleMarkOne(formData: FormData): Promise<void> {
+async function handleMarkOne(formData: FormData) {
   'use server'
   await markNotificationRead(formData)
+  return { success: true, message: 'Notification marked as read.' }
 }
 
 export default async function NotificationsPage() {
@@ -63,14 +67,14 @@ export default async function NotificationsPage() {
           )}
         </div>
         {unreadCount > 0 && (
-          <form action={handleMarkAll}>
-            <button
-              type="submit"
+          <ActionForm action={handleMarkAll} successMessage="All notifications marked as read.">
+            <SubmitButton
+              pendingText="Marking…"
               className="text-sm text-coffee-500 hover:text-coffee-800 underline underline-offset-2 transition-colors"
             >
               Mark all as read
-            </button>
-          </form>
+            </SubmitButton>
+          </ActionForm>
         )}
       </div>
 
@@ -115,15 +119,19 @@ export default async function NotificationsPage() {
                   </div>
                 </div>
                 {isUnread && (
-                  <form action={handleMarkOne} className="shrink-0 self-start sm:self-auto">
+                  <ActionForm
+                    action={handleMarkOne}
+                    successMessage="Notification marked as read."
+                    className="shrink-0 self-start sm:self-auto"
+                  >
                     <input type="hidden" name="id" value={n.id} />
-                    <button
-                      type="submit"
+                    <SubmitButton
+                      pendingText="Marking…"
                       className="text-xs text-coffee-400 hover:text-coffee-700 transition-colors whitespace-nowrap"
                     >
                       Mark read
-                    </button>
-                  </form>
+                    </SubmitButton>
+                  </ActionForm>
                 )}
               </div>
             )

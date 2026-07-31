@@ -2,12 +2,14 @@ import { db } from '@/lib/db'
 import { auth } from '@/lib/auth'
 import { markStudentAttendance } from '@/lib/actions/attendance'
 import { redirect } from 'next/navigation'
+import ActionForm from '@/components/ui/ActionForm'
+import SubmitButton from '@/components/ui/SubmitButton'
 
 const STATUS_OPTIONS = ['present', 'absent', 'late', 'excused'] as const
 
-async function handleMark(formData: FormData): Promise<void> {
+async function handleMark(formData: FormData) {
   'use server'
-  await markStudentAttendance(formData)
+  return markStudentAttendance(formData)
 }
 
 export default async function TeacherAttendancePage({
@@ -86,7 +88,7 @@ export default async function TeacherAttendancePage({
         const classSaved = classStudents.some((s) => existing[s.id])
 
         return (
-          <form key={cls.id} action={handleMark} className="space-y-3">
+          <ActionForm key={cls.id} action={handleMark} successMessage="Attendance marked." className="space-y-3">
             <input type="hidden" name="classId" value={cls.id} />
             <input type="hidden" name="date" value={selectedDate} />
 
@@ -150,15 +152,15 @@ export default async function TeacherAttendancePage({
 
             {classStudents.length > 0 && (
               <div className="flex justify-end">
-                <button
-                  type="submit"
+                <SubmitButton
+                  pendingText="Saving…"
                   className="bg-coffee-900 text-white rounded-lg px-5 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
                 >
                   {classSaved ? 'Update' : 'Save'} — {cls.name}
-                </button>
+                </SubmitButton>
               </div>
             )}
-          </form>
+          </ActionForm>
         )
       })}
     </div>
