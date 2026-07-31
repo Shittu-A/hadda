@@ -4,11 +4,14 @@ import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import exifr from 'exifr'
 import imageCompression from 'browser-image-compression'
+import Spinner from '@/components/ui/Spinner'
+import { useToast } from '@/components/ui/ToastProvider'
 
 type ClassOption = { id: string; name: string }
 
 export default function PhotoAttendanceUploader({ classes }: { classes: ClassOption[] }) {
   const router = useRouter()
+  const toast = useToast()
   const fileRef = useRef<HTMLInputElement>(null)
   const [classId, setClassId] = useState(classes.length === 1 ? classes[0].id : '')
   const [file, setFile] = useState<File | null>(null)
@@ -98,10 +101,13 @@ export default function PhotoAttendanceUploader({ classes }: { classes: ClassOpt
       if (!res.ok) throw new Error(json.error ?? 'Upload failed')
 
       setSuccess('Photo submitted. Awaiting admin verification.')
+      toast.success('Photo submitted. Awaiting admin verification.')
       reset()
       router.refresh()
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Upload failed')
+      const message = err instanceof Error ? err.message : 'Upload failed'
+      setError(message)
+      toast.error(message)
     } finally {
       setBusy(false)
     }
@@ -182,8 +188,9 @@ export default function PhotoAttendanceUploader({ classes }: { classes: ClassOpt
           type="button"
           onClick={handleSubmit}
           disabled={busy || !file || !classId}
-          className="w-full sm:w-auto bg-coffee-900 text-white rounded-lg px-5 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors disabled:opacity-60"
+          className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-coffee-900 text-white rounded-lg px-5 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors disabled:opacity-60"
         >
+          {busy && <Spinner />}
           {busy ? 'Submitting…' : 'Submit Photo'}
         </button>
       </div>

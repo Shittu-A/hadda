@@ -1,19 +1,25 @@
 import { db } from '@/lib/db'
 import Badge from '@/components/ui/Badge'
+import ActionForm from '@/components/ui/ActionForm'
+import SubmitButton from '@/components/ui/SubmitButton'
 import { deleteClass, cloneClasses } from '@/lib/actions/classes'
 import Link from 'next/link'
 
-async function handleDelete(formData: FormData): Promise<void> {
+async function handleDelete(formData: FormData) {
   'use server'
   const id = formData.get('id') as string
-  await deleteClass(id)
+  const result = await deleteClass(id)
+  if (!result.success) return result
+  return { success: true, message: 'Class deleted.' }
 }
 
-async function handleClone(formData: FormData): Promise<void> {
+async function handleClone(formData: FormData) {
   'use server'
   const fromYearId = formData.get('fromYearId') as string
   const toYearId = formData.get('toYearId') as string
-  await cloneClasses(fromYearId, toYearId)
+  const result = await cloneClasses(fromYearId, toYearId)
+  if (!result.success) return result
+  return { success: true, message: `Copied ${result.created} class(es).` }
 }
 
 export default async function ClassesPage() {
@@ -76,7 +82,7 @@ export default async function ClassesPage() {
             Create the same classes (name, capacity, order) in <span className="font-medium">{currentYear.name}</span>.
             Classes that already exist here are skipped.
           </p>
-          <form action={handleClone} className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-end">
+          <ActionForm action={handleClone} successMessage="Classes copied." className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-end">
             <input type="hidden" name="toYearId" value={currentYear.id} />
             <div className="flex-1 sm:max-w-xs">
               <label className="block text-sm font-medium text-coffee-700 mb-1">Copy from</label>
@@ -91,13 +97,13 @@ export default async function ClassesPage() {
                 ))}
               </select>
             </div>
-            <button
-              type="submit"
+            <SubmitButton
+              pendingText="Copying…"
               className="bg-coffee-900 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors whitespace-nowrap"
             >
               Copy Classes
-            </button>
-          </form>
+            </SubmitButton>
+          </ActionForm>
         </div>
       )}
 
@@ -157,15 +163,15 @@ export default async function ClassesPage() {
                           Edit
                         </Link>
                         {classroom._count.students === 0 && (
-                          <form action={handleDelete} className="w-full sm:w-auto">
+                          <ActionForm action={handleDelete} successMessage="Class deleted." className="w-full sm:w-auto">
                             <input type="hidden" name="id" value={classroom.id} />
-                            <button
-                              type="submit"
+                            <SubmitButton
+                              pendingText="Deleting…"
                               className="w-full sm:w-auto text-xs font-medium text-red-600 border border-red-200 rounded-lg px-3 py-1.5 hover:bg-red-50 transition-colors"
                             >
                               Delete
-                            </button>
-                          </form>
+                            </SubmitButton>
+                          </ActionForm>
                         )}
                       </div>
                     </td>

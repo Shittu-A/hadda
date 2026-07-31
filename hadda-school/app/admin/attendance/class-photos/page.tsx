@@ -5,8 +5,22 @@ import {
   rejectAttendancePhoto,
   purgeExpiredAttendancePhotos,
 } from '@/lib/actions/attendance-photos'
+import ActionForm from '@/components/ui/ActionForm'
+import SubmitButton from '@/components/ui/SubmitButton'
 
 export const dynamic = 'force-dynamic'
+
+async function handleVerify(formData: FormData) {
+  'use server'
+  await verifyAttendancePhoto(formData)
+  return { success: true, message: 'Photo verified.' }
+}
+
+async function handleReject(formData: FormData) {
+  'use server'
+  await rejectAttendancePhoto(formData)
+  return { success: true, message: 'Photo rejected.' }
+}
 
 const STATUS_VARIANT: Record<string, 'success' | 'danger' | 'warning' | 'neutral'> = {
   pending: 'warning',
@@ -93,16 +107,16 @@ export default async function AdminClassPhotosPage() {
                   </div>
 
                   <div className="mt-auto flex flex-col gap-2">
-                    <form action={verifyAttendancePhoto}>
+                    <ActionForm action={handleVerify} successMessage="Photo verified.">
                       <input type="hidden" name="id" value={p.id} />
-                      <button
-                        type="submit"
+                      <SubmitButton
+                        pendingText="Verifying…"
                         className="w-full bg-green-700 text-white rounded-lg px-3 py-1.5 text-xs font-medium hover:bg-green-800 transition-colors"
                       >
                         Verify &amp; Mark Attendance
-                      </button>
-                    </form>
-                    <form action={rejectAttendancePhoto} className="flex gap-2">
+                      </SubmitButton>
+                    </ActionForm>
+                    <ActionForm action={handleReject} successMessage="Photo rejected." className="flex gap-2">
                       <input type="hidden" name="id" value={p.id} />
                       <input
                         type="text"
@@ -110,13 +124,13 @@ export default async function AdminClassPhotosPage() {
                         placeholder="Reason (optional)"
                         className="flex-1 min-w-0 border border-coffee-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-coffee-400"
                       />
-                      <button
-                        type="submit"
+                      <SubmitButton
+                        pendingText="Rejecting…"
                         className="bg-red-100 text-red-700 rounded-lg px-3 py-1.5 text-xs font-medium hover:bg-red-200 transition-colors whitespace-nowrap"
                       >
                         Reject
-                      </button>
-                    </form>
+                      </SubmitButton>
+                    </ActionForm>
                   </div>
                 </div>
               </div>

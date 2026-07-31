@@ -3,6 +3,8 @@ import { auth } from '@/lib/auth'
 import { markTeacherAttendance, markTeacherArrival, resetTeacherAttendance } from '@/lib/actions/attendance'
 import Badge from '@/components/ui/Badge'
 import LiveClock from '@/components/attendance/LiveClock'
+import ActionForm from '@/components/ui/ActionForm'
+import SubmitButton from '@/components/ui/SubmitButton'
 
 const STATUS_OPTIONS = ['present', 'absent', 'late', 'on_leave'] as const
 const STATUS_VARIANT: Record<string, 'success' | 'danger' | 'warning' | 'neutral'> = {
@@ -10,6 +12,18 @@ const STATUS_VARIANT: Record<string, 'success' | 'danger' | 'warning' | 'neutral
   absent: 'danger',
   late: 'warning',
   on_leave: 'neutral',
+}
+
+async function handleMarkArrival(formData: FormData) {
+  'use server'
+  await markTeacherArrival(formData)
+  return { success: true, message: 'Arrival recorded.' }
+}
+
+async function handleMarkAttendance(formData: FormData) {
+  'use server'
+  await markTeacherAttendance(formData)
+  return { success: true, message: 'Attendance saved.' }
 }
 
 export default async function TeacherAttendancePage({
@@ -123,16 +137,16 @@ export default async function TeacherAttendancePage({
 
                 {/* Mark Arrived (auto late detection) */}
                 {isToday && (
-                  <form action={markTeacherArrival}>
+                  <ActionForm action={handleMarkArrival} successMessage="Arrival recorded.">
                     <input type="hidden" name="teacherId" value={teacher.id} />
                     <input type="hidden" name="date" value={selectedDate} />
-                    <button
-                      type="submit"
+                    <SubmitButton
+                      pendingText="Marking…"
                       className="w-full sm:w-auto bg-green-700 text-white rounded-lg px-3 py-1.5 text-xs font-medium hover:bg-green-800 transition-colors"
                     >
                       {rec?.status === 'present' || rec?.status === 'late' ? 'Re-clock In' : 'Mark Arrived'}
-                    </button>
-                  </form>
+                    </SubmitButton>
+                  </ActionForm>
                 )}
               </div>
             )
@@ -145,7 +159,7 @@ export default async function TeacherAttendancePage({
         <summary className="px-4 sm:px-5 py-3 bg-coffee-50 border-b border-coffee-200 text-sm font-semibold text-coffee-700 cursor-pointer select-none">
           Manual Override (Absent / On Leave / Bulk Edit)
         </summary>
-        <form action={markTeacherAttendance} className="p-4 sm:p-5 space-y-4">
+        <ActionForm action={handleMarkAttendance} successMessage="Attendance saved." className="p-4 sm:p-5 space-y-4">
           <input type="hidden" name="date" value={selectedDate} />
 
           {alreadySaved && (
@@ -195,14 +209,14 @@ export default async function TeacherAttendancePage({
           </div>
 
           <div className="flex justify-end">
-            <button
-              type="submit"
+            <SubmitButton
+              pendingText="Saving…"
               className="w-full sm:w-auto bg-coffee-900 text-white rounded-lg px-6 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
             >
               {alreadySaved ? 'Update Attendance' : 'Save Attendance'}
-            </button>
+            </SubmitButton>
           </div>
-        </form>
+        </ActionForm>
       </details>
 
       {/* Reset — super admin only, so a day-to-day admin cannot wipe the history */}
@@ -247,13 +261,13 @@ export default async function TeacherAttendancePage({
                   className="w-full border border-coffee-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400"
                 />
               </div>
-              <button
-                type="submit"
+              <SubmitButton
+                pendingText="Resetting…"
                 disabled={totalRecords === 0}
                 className="w-full sm:w-auto bg-red-600 text-white rounded-lg px-6 py-2 text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Reset Attendance
-              </button>
+              </SubmitButton>
             </div>
           </form>
         </details>

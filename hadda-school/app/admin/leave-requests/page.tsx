@@ -2,11 +2,25 @@ import { db } from '@/lib/db'
 import { approveLeaveRequest, rejectLeaveRequest } from '@/lib/actions/leave'
 import Badge from '@/components/ui/Badge'
 import { formatDate } from '@/lib/utils'
+import ActionForm from '@/components/ui/ActionForm'
+import SubmitButton from '@/components/ui/SubmitButton'
 
 const STATUS_VARIANT: Record<string, 'warning' | 'success' | 'danger'> = {
   pending: 'warning',
   approved: 'success',
   rejected: 'danger',
+}
+
+async function handleApprove(formData: FormData) {
+  'use server'
+  await approveLeaveRequest(formData)
+  return { success: true, message: 'Leave approved.' }
+}
+
+async function handleReject(formData: FormData) {
+  'use server'
+  await rejectLeaveRequest(formData)
+  return { success: true, message: 'Leave rejected.' }
 }
 
 export default async function LeaveRequestsPage({
@@ -100,15 +114,15 @@ export default async function LeaveRequestsPage({
                   <td className="px-3 sm:px-5 py-3">
                     {req.status === 'pending' && (
                       <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-2 sm:justify-end">
-                        <form action={approveLeaveRequest}>
+                        <ActionForm action={handleApprove} successMessage="Leave approved.">
                           <input type="hidden" name="id" value={req.id} />
-                          <button
-                            type="submit"
+                          <SubmitButton
+                            pendingText="Approving…"
                             className="w-full text-xs font-medium text-green-600 border border-green-200 rounded-lg px-2 sm:px-3 py-1.5 hover:bg-green-50 transition-colors whitespace-nowrap"
                           >
                             Approve
-                          </button>
-                        </form>
+                          </SubmitButton>
+                        </ActionForm>
                         <RejectForm id={req.id} />
                       </div>
                     )}
@@ -125,7 +139,7 @@ export default async function LeaveRequestsPage({
 
 function RejectForm({ id }: { id: string }) {
   return (
-    <form action={rejectLeaveRequest} className="flex flex-col sm:flex-row sm:items-center gap-1 w-full sm:w-auto">
+    <ActionForm action={handleReject} successMessage="Leave rejected." className="flex flex-col sm:flex-row sm:items-center gap-1 w-full sm:w-auto">
       <input type="hidden" name="id" value={id} />
       <input
         type="text"
@@ -133,12 +147,12 @@ function RejectForm({ id }: { id: string }) {
         placeholder="Reason (optional)"
         className="w-full sm:w-32 border border-coffee-200 rounded px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-coffee-400"
       />
-      <button
-        type="submit"
+      <SubmitButton
+        pendingText="Rejecting…"
         className="w-full sm:w-auto text-xs font-medium text-red-600 border border-red-200 rounded-lg px-2 sm:px-3 py-1.5 hover:bg-red-50 transition-colors whitespace-nowrap"
       >
         Reject
-      </button>
-    </form>
+      </SubmitButton>
+    </ActionForm>
   )
 }

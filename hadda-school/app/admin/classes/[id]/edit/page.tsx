@@ -2,6 +2,7 @@ import { db } from '@/lib/db'
 import { updateClass, assignTeachers } from '@/lib/actions/classes'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
+import SubmitButton from '@/components/ui/SubmitButton'
 
 export default async function EditClassPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -114,12 +115,12 @@ export default async function EditClassPage({ params }: { params: Promise<{ id: 
           >
             Cancel
           </Link>
-          <button
-            type="submit"
+          <SubmitButton
+            pendingText="Saving…"
             className="w-full sm:w-auto bg-coffee-900 text-white rounded-lg px-5 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
           >
             Save Changes
-          </button>
+          </SubmitButton>
         </div>
       </form>
 
@@ -170,12 +171,12 @@ export default async function EditClassPage({ params }: { params: Promise<{ id: 
           >
             Cancel
           </Link>
-          <button
-            type="submit"
+          <SubmitButton
+            pendingText="Saving…"
             className="w-full sm:w-auto bg-coffee-700 text-white rounded-lg px-5 py-2 text-sm font-medium hover:bg-coffee-600 transition-colors"
           >
             Save Teachers
-          </button>
+          </SubmitButton>
         </div>
       </form>
     </div>

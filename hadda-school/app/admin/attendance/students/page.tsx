@@ -2,6 +2,8 @@ import { db } from '@/lib/db'
 import { markStudentAttendance } from '@/lib/actions/attendance'
 import Badge from '@/components/ui/Badge'
 import Link from 'next/link'
+import ActionForm from '@/components/ui/ActionForm'
+import SubmitButton from '@/components/ui/SubmitButton'
 
 const STATUS_OPTIONS = ['present', 'absent', 'late', 'excused'] as const
 const STATUS_VARIANT: Record<string, 'success' | 'danger' | 'warning' | 'neutral'> = {
@@ -11,9 +13,11 @@ const STATUS_VARIANT: Record<string, 'success' | 'danger' | 'warning' | 'neutral
   excused: 'neutral',
 }
 
-async function handleMark(formData: FormData): Promise<void> {
+async function handleMark(formData: FormData) {
   'use server'
-  await markStudentAttendance(formData)
+  const result = await markStudentAttendance(formData)
+  if (!result.success) return result
+  return { success: true, message: 'Attendance saved.' }
 }
 
 export default async function StudentAttendancePage({
@@ -105,7 +109,7 @@ export default async function StudentAttendancePage({
       )}
 
       {selectedClassId && students.length > 0 && (
-        <form action={handleMark} className="space-y-4">
+        <ActionForm action={handleMark} successMessage="Attendance saved." className="space-y-4">
           <input type="hidden" name="classId" value={selectedClassId} />
           <input type="hidden" name="date" value={selectedDate} />
 
@@ -168,14 +172,14 @@ export default async function StudentAttendancePage({
           </div>
 
           <div className="flex justify-end">
-            <button
-              type="submit"
+            <SubmitButton
+              pendingText="Saving…"
               className="w-full sm:w-auto bg-coffee-900 text-white rounded-lg px-6 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
             >
               {alreadySaved ? 'Update Attendance' : 'Save Attendance'}
-            </button>
+            </SubmitButton>
           </div>
-        </form>
+        </ActionForm>
       )}
 
       {!selectedClassId && (

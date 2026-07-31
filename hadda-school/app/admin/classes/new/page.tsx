@@ -2,6 +2,7 @@ import { db } from '@/lib/db'
 import { createClass } from '@/lib/actions/classes'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import SubmitButton from '@/components/ui/SubmitButton'
 
 async function handleSubmit(formData: FormData) {
   'use server'
@@ -93,12 +94,12 @@ export default async function NewClassPage() {
           >
             Cancel
           </Link>
-          <button
-            type="submit"
+          <SubmitButton
+            pendingText="Creating…"
             className="w-full sm:w-auto bg-coffee-900 text-white rounded-lg px-5 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
           >
             Create Class
-          </button>
+          </SubmitButton>
         </div>
       </form>
     </div>

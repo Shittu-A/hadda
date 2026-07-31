@@ -4,20 +4,23 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { createExpense, deleteExpense } from '@/lib/actions/finance'
+import ActionForm from '@/components/ui/ActionForm'
+import SubmitButton from '@/components/ui/SubmitButton'
 
 const CATEGORIES = [
   'refreshment', 'salary', 'utilities', 'maintenance',
   'supplies', 'transport', 'rent', 'events', 'other',
 ] as const
 
-async function handleCreate(formData: FormData): Promise<void> {
+async function handleCreate(formData: FormData) {
   'use server'
-  await createExpense(formData)
+  return createExpense(formData)
 }
 
-async function handleDelete(formData: FormData): Promise<void> {
+async function handleDelete(formData: FormData) {
   'use server'
   await deleteExpense(formData)
+  return { success: true }
 }
 
 export default async function ExpensesPage({
@@ -87,7 +90,7 @@ export default async function ExpensesPage({
       {/* Record expense form */}
       <div className="bg-white border border-coffee-200 rounded-xl p-4 sm:p-5">
         <h2 className="font-semibold text-coffee-800 mb-4">Record Expense</h2>
-        <form action={handleCreate} className="space-y-4">
+        <ActionForm action={handleCreate} successMessage="Expense recorded." resetOnSuccess className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             <div>
               <label className="block text-sm font-medium text-coffee-700 mb-1">Name *</label>
@@ -150,15 +153,15 @@ export default async function ExpensesPage({
             </div>
 
             <div className="flex items-end">
-              <button
-                type="submit"
+              <SubmitButton
+                pendingText="Saving…"
                 className="w-full bg-coffee-900 text-white rounded-lg px-6 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
               >
                 Save Expense
-              </button>
+              </SubmitButton>
             </div>
           </div>
-        </form>
+        </ActionForm>
       </div>
 
       {/* Filters */}
@@ -261,15 +264,15 @@ export default async function ExpensesPage({
                     <td className="px-3 sm:px-4 py-2.5 text-coffee-500 text-xs hidden lg:table-cell">{e.note || '—'}</td>
                     <td className="px-3 sm:px-4 py-2.5 text-coffee-400 text-xs hidden sm:table-cell">{e.recordedBy.name}</td>
                     <td className="px-3 sm:px-4 py-2.5 text-right">
-                      <form action={handleDelete}>
+                      <ActionForm action={handleDelete} successMessage="Expense deleted.">
                         <input type="hidden" name="id" value={e.id} />
-                        <button
-                          type="submit"
+                        <SubmitButton
+                          pendingText="Deleting…"
                           className="text-xs text-red-400 hover:text-red-600 transition-colors"
                         >
                           Delete
-                        </button>
-                      </form>
+                        </SubmitButton>
+                      </ActionForm>
                     </td>
                   </tr>
                 ))}
