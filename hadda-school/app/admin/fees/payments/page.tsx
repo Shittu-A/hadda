@@ -8,6 +8,7 @@ import SubmitButton from '@/components/ui/SubmitButton'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { recordFeePayment, deleteFeePayment, ensureArrearsFeeStructure } from '@/lib/actions/fees'
 import { sendBulkBalanceReminders } from '@/lib/actions/sms'
+import StudentIdPaymentForm from './StudentIdPaymentForm'
 
 async function handleRecord(formData: FormData) {
   'use server'
@@ -266,6 +267,17 @@ export default async function FeePaymentsPage({
           </div>
         </ActionForm>
       </div>
+
+      {session.user.role === 'super_admin' && (
+        <StudentIdPaymentForm
+          feeStructures={feeStructures.map((f) => ({
+            id: f.id,
+            name: f.name,
+            amount: Number(f.amount),
+            term: f.term,
+          }))}
+        />
+      )}
 
       {/* Filters */}
       <form method="GET" className="bg-white border border-coffee-200 rounded-xl p-3 sm:p-4">

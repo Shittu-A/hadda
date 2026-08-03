@@ -385,6 +385,31 @@ export async function setStudentArrears(formData: FormData) {
   return { success: true }
 }
 
+// Lets a super-admin resolve a raw Student.id directly — e.g. reconciling a
+// payment provider's reference metadata against our records — rather than
+// hunting through the name dropdown, which only lists active students and
+// can't be searched by id at all. Deliberately does not filter on deletedAt
+// or status: a mismatched-id investigation is exactly the case where the
+// student a payment refers to may have been deleted or is no longer active.
+export async function lookupStudentById(studentId: string) {
+  const session = await auth()
+  if (!session || session.user.role !== 'super_admin') {
+    return { success: false, error: 'Unauthorized' }
+  }
+
+  const id = studentId.trim()
+  if (!id) return { success: false, error: 'Enter a student ID' }
+
+  const student = await db.student.findUnique({
+    where: { id },
+    select: { id: true, firstName: true, lastName: true, admissionNumber: true, status: true, deletedAt: true },
+  })
+
+  if (!student) return { success: false, error: 'No student found with that ID' }
+
+  return { success: true, student }
+}
+
 export async function recordFeePayment(formData: FormData) {
   const session = await auth()
   if (!session) return { success: false, error: 'Unauthorized' }
