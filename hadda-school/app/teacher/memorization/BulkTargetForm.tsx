@@ -198,14 +198,16 @@ export default function BulkTargetForm({
               <p className="text-xs font-semibold text-coffee-700 uppercase tracking-wide">
                 Apply to ({selected.size} selected)
               </p>
-              <div className="flex flex-wrap gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => setMany(allIds, !allSelected)}
-                  className="px-2.5 py-1 rounded-lg text-xs font-medium bg-coffee-50 text-coffee-700 hover:bg-coffee-100 transition-colors"
-                >
-                  {allSelected ? 'Clear all' : 'Select all'}
-                </button>
+              <div className="flex flex-wrap items-center gap-3">
+                <label className="flex items-center gap-1.5 text-xs font-medium text-coffee-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={() => setMany(allIds, !allSelected)}
+                    className="rounded border-coffee-300 text-coffee-900 focus:ring-coffee-400"
+                  />
+                  Mark all
+                </label>
                 {withoutTargetIds.length > 0 && (
                   <button
                     type="button"
@@ -226,13 +228,15 @@ export default function BulkTargetForm({
                   <div key={className}>
                     <div className="flex items-center justify-between px-3 py-2 bg-coffee-50 sticky top-0">
                       <p className="text-xs font-semibold text-coffee-700">{className}</p>
-                      <button
-                        type="button"
-                        onClick={() => setMany(ids, !allInClass)}
-                        className="text-xs font-medium text-coffee-600 hover:text-coffee-900"
-                      >
-                        {allInClass ? 'Clear class' : 'Select class'}
-                      </button>
+                      <label className="flex items-center gap-1.5 text-xs font-medium text-coffee-600 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={allInClass}
+                          onChange={() => setMany(ids, !allInClass)}
+                          className="rounded border-coffee-300 text-coffee-900 focus:ring-coffee-400"
+                        />
+                        Mark all
+                      </label>
                     </div>
                     {list.map((s) => (
                       <label

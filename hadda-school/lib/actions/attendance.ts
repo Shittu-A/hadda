@@ -21,7 +21,12 @@ export async function markStudentAttendance(formData: FormData) {
   const attendanceDate = new Date(date)
 
   try {
-    await db.$transaction(
+    // Run the per-student upserts concurrently rather than as one sequential
+    // $transaction — each row is independent (keyed on studentId+date), so
+    // there's nothing to roll back for. Sequentially awaiting one upsert per
+    // student made large classes slow and could blow the transaction's
+    // default 5s timeout, surfacing as "Failed to save attendance".
+    await Promise.all(
       studentIds.map((studentId) => {
         const status = (formData.get(`status_${studentId}`) as string) || 'present'
         const note = (formData.get(`note_${studentId}`) as string) || null
@@ -65,7 +70,7 @@ export async function markTeacherAttendance(formData: FormData): Promise<void> {
   const teacherIds = formData.getAll('teacherId').map(String)
   const attendanceDate = new Date(date)
 
-  await db.$transaction(
+  await Promise.all(
     teacherIds.map((userId) => {
       const status = (formData.get(`status_${userId}`) as string) || 'present'
       const note = (formData.get(`note_${userId}`) as string) || null

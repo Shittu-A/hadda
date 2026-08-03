@@ -41,6 +41,17 @@ export default function PaystackPayButton({ amount, email, selections, paystackK
           variable_name: 'student_ids',
           value: studentIds.join(','),
         },
+        // Channels like OPay, bank transfer, and USSD can complete without
+        // ever calling onSuccess below (the payer is redirected out of the
+        // page to finish the charge). The Paystack webhook is what actually
+        // records the payment for those, and it needs the per-student fee
+        // line selections — not just which students — to know what to mark
+        // as paid, so the full selection list travels here too.
+        {
+          display_name: 'Selections',
+          variable_name: 'selections',
+          value: JSON.stringify(selections),
+        },
       ],
     },
   }
