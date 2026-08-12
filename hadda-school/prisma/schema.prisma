@@ -467,6 +467,8 @@ model FeeStructure {
   frequency      FeeFrequency
   isActive       Boolean      @default(true)
   isArrears      Boolean      @default(false) // reserved bucket for previous-terms arrears payments
+  isRegistrationFee Boolean   @default(false) // reserved bucket auto-assigned to every new student at enrollment
+  isFormFee      Boolean      @default(false) // reserved bucket auto-assigned to every new student at enrollment
   description    String?
   createdAt      DateTime     @default(now())
 

@@ -4,6 +4,7 @@ import { db } from '@/lib/db'
 import { auth } from '@/lib/auth'
 import { logAudit } from '@/lib/audit'
 import { generateAdmissionNumber } from '@/lib/utils'
+import { assignEnrollmentFees } from '@/lib/actions/fees'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 
@@ -85,6 +86,8 @@ export async function enrollStudent(formData: FormData) {
         },
       },
     })
+
+    await assignEnrollmentFees(student.id)
 
     await logAudit({
       userId: session.user.id,

@@ -14,6 +14,8 @@ export default auth((req) => {
     pathname.startsWith('/events/') ||
     pathname === '/pay' ||
     pathname.startsWith('/pay/') ||
+    pathname === '/apply' ||
+    pathname === '/teachers' ||
     pathname.startsWith('/api/pay/') ||
     pathname.startsWith('/api/webhooks/') ||
     pathname === '/login' ||

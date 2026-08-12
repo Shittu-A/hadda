@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
-import { db } from '@/lib/db'
 import { renderToBuffer, Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer'
 import { createElement } from 'react'
+import { getTeacherAttendanceReport } from '@/lib/reports/teacher-attendance'
 
 export const dynamic = 'force-dynamic'
 
@@ -42,37 +42,7 @@ export async function GET(req: NextRequest) {
   const from = searchParams.get('from')
   const to = searchParams.get('to')
 
-  const where: any = {}
-  if (from || to) {
-    where.date = {}
-    if (from) where.date.gte = new Date(from)
-    if (to) where.date.lte = new Date(to + 'T23:59:59')
-  }
-
-  const records = await db.teacherAttendance.findMany({
-    where,
-    include: { user: { select: { name: true, email: true } } },
-    orderBy: [{ user: { name: 'asc' } }, { date: 'asc' }],
-  })
-
-  const teacherMap = new Map<string, { name: string; present: number; absent: number; late: number; onLeave: number; total: number }>()
-
-  for (const r of records) {
-    if (!teacherMap.has(r.userId)) {
-      teacherMap.set(r.userId, { name: r.user.name ?? '', present: 0, absent: 0, late: 0, onLeave: 0, total: 0 })
-    }
-    const row = teacherMap.get(r.userId)!
-    row.total++
-    if (r.status === 'present') row.present++
-    else if (r.status === 'absent') row.absent++
-    else if (r.status === 'late') row.late++
-    else if (r.status === 'on_leave') row.onLeave++
-  }
-
-  const rows = Array.from(teacherMap.values()).map((r) => {
-    const attended = r.present + r.late + r.onLeave
-    return { ...r, attendanceRate: r.total > 0 ? `${Math.round((attended / r.total) * 100)}%` : '—' }
-  })
+  const rows = await getTeacherAttendanceReport(from, to)
 
   const generatedAt = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
   const subtitle = `${from && to ? `${from} to ${to}` : 'All Dates'} · Generated ${generatedAt}`
@@ -95,7 +65,7 @@ export async function GET(req: NextRequest) {
         ),
 
         ...rows.map((r, i) =>
-          createElement(View, { key: r.name, style: i % 2 === 1 ? [styles.tableRow, styles.tableRowAlt] : styles.tableRow },
+          createElement(View, { key: r.userId, style: i % 2 === 1 ? [styles.tableRow, styles.tableRowAlt] : styles.tableRow },
             createElement(Text, { style: [styles.cell, styles.colName] }, r.name),
             createElement(Text, { style: [styles.cell, styles.colP] }, String(r.present)),
             createElement(Text, { style: [styles.cell, styles.colA] }, String(r.absent)),

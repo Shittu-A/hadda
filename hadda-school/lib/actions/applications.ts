@@ -5,6 +5,7 @@ import { auth } from '@/lib/auth'
 import { logAudit } from '@/lib/audit'
 import { generateAdmissionNumber } from '@/lib/utils'
 import { getSupabase, ensureBucket } from '@/lib/supabase'
+import { assignEnrollmentFees } from '@/lib/actions/fees'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 
@@ -278,6 +279,8 @@ export async function acceptAndEnroll(formData: FormData) {
           : {}),
       },
     })
+
+    await assignEnrollmentFees(student.id)
 
     await db.applicant.update({
       where: { id: applicant.id },

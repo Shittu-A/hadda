@@ -351,6 +351,47 @@ export async function ensureArrearsFeeStructure() {
   })
 }
 
+// Finds (or lazily creates) the reserved one-time fee bucket for `flag`, keeping
+// its amount in sync with the super-admin-configured Setting each time it's
+// resolved — so a later change to the fee amount is reflected for anyone who
+// hasn't paid yet, the same way any other FeeStructure edit would be.
+async function ensureFlagFeeStructure(flag: 'isRegistrationFee' | 'isFormFee', name: string, settingKey: string) {
+  const setting = await db.setting.findUnique({ where: { key: settingKey } })
+  const amount = setting?.value ? parseFloat(setting.value) : 0
+
+  const existing = await db.feeStructure.findFirst({ where: { [flag]: true } as any })
+  if (existing) {
+    return Number(existing.amount) === amount ? existing : db.feeStructure.update({ where: { id: existing.id }, data: { amount } })
+  }
+
+  const year =
+    (await db.academicYear.findFirst({ where: { isCurrent: true } })) ??
+    (await db.academicYear.findFirst({ orderBy: { startDate: 'desc' } }))
+  if (!year) return null
+
+  return db.feeStructure.create({
+    data: { academicYearId: year.id, name, amount, frequency: 'one_time', [flag]: true } as any,
+  })
+}
+
+// Auto-assigns the registration fee and form fee (super-admin configured amounts,
+// see Settings > Finance) to a newly enrolled student. A fee whose amount hasn't
+// been set yet (still 0) is left unassigned rather than showing a $0 line item.
+export async function assignEnrollmentFees(studentId: string) {
+  const [registrationFee, formFee] = await Promise.all([
+    ensureFlagFeeStructure('isRegistrationFee', 'Registration Fee', 'registration_fee_amount'),
+    ensureFlagFeeStructure('isFormFee', 'Form Fee', 'form_fee_amount'),
+  ])
+
+  const toCreate = [registrationFee, formFee]
+    .filter((fee): fee is NonNullable<typeof fee> => !!fee && Number(fee.amount) > 0)
+    .map((fee) => ({ feeStructureId: fee.id, studentId }))
+
+  if (toCreate.length > 0) {
+    await db.feeAssignment.createMany({ data: toCreate })
+  }
+}
+
 // Admin manually sets how many terms a student owes from before the system started.
 export async function setStudentArrears(formData: FormData) {
   const session = await auth()
