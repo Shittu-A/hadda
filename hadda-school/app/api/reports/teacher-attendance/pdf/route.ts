@@ -22,13 +22,14 @@ const styles = StyleSheet.create({
   tableRowAlt: { backgroundColor: '#faf7f4' },
   headerCell: { fontFamily: 'Helvetica-Bold', color: '#4a3728' },
   cell: { color: '#3d2b1f' },
-  colName: { width: '28%' },
-  colP: { width: '10%', textAlign: 'center' },
-  colA: { width: '10%', textAlign: 'center' },
-  colL: { width: '10%', textAlign: 'center' },
-  colOL: { width: '12%', textAlign: 'center' },
-  colTotal: { width: '10%', textAlign: 'center' },
-  colRate: { width: '10%', textAlign: 'right' },
+  colName: { width: '26%' },
+  colP: { width: '9%', textAlign: 'center' },
+  colA: { width: '9%', textAlign: 'center' },
+  colL: { width: '9%', textAlign: 'center' },
+  colOL: { width: '11%', textAlign: 'center' },
+  colTotal: { width: '9%', textAlign: 'center' },
+  colRate: { width: '13%', textAlign: 'right' },
+  colLateRate: { width: '14%', textAlign: 'right' },
   footer: { marginTop: 20, fontSize: 8, color: '#9ca3af', textAlign: 'center' },
 })
 
@@ -61,7 +62,8 @@ export async function GET(req: NextRequest) {
           createElement(Text, { style: [styles.headerCell, styles.colL] }, 'Late'),
           createElement(Text, { style: [styles.headerCell, styles.colOL] }, 'On Leave'),
           createElement(Text, { style: [styles.headerCell, styles.colTotal] }, 'Total'),
-          createElement(Text, { style: [styles.headerCell, styles.colRate] }, 'Rate'),
+          createElement(Text, { style: [styles.headerCell, styles.colRate] }, 'Attend. Rate'),
+          createElement(Text, { style: [styles.headerCell, styles.colLateRate] }, 'Lateness Rate'),
         ),
 
         ...rows.map((r, i) =>
@@ -73,6 +75,7 @@ export async function GET(req: NextRequest) {
             createElement(Text, { style: [styles.cell, styles.colOL] }, String(r.onLeave)),
             createElement(Text, { style: [styles.cell, styles.colTotal] }, String(r.total)),
             createElement(Text, { style: [styles.cell, styles.colRate] }, r.attendanceRate),
+            createElement(Text, { style: [styles.cell, styles.colLateRate] }, r.latenessRate),
           )
         ),
 

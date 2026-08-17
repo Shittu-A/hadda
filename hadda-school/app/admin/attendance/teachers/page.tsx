@@ -1,6 +1,7 @@
 import { db } from '@/lib/db'
 import { auth } from '@/lib/auth'
 import { markTeacherAttendance, markTeacherArrival, resetTeacherAttendance } from '@/lib/actions/attendance'
+import { getTeacherAttendanceReport } from '@/lib/reports/teacher-attendance'
 import Badge from '@/components/ui/Badge'
 import LiveClock from '@/components/attendance/LiveClock'
 import ActionForm from '@/components/ui/ActionForm'
@@ -29,7 +30,7 @@ async function handleMarkAttendance(formData: FormData) {
 export default async function TeacherAttendancePage({
   searchParams,
 }: {
-  searchParams: Promise<{ date?: string; reset?: string }>
+  searchParams: Promise<{ date?: string; reset?: string; from?: string; to?: string }>
 }) {
   const session = await auth()
   const isSuperAdmin = session?.user.role === 'super_admin'
@@ -40,6 +41,12 @@ export default async function TeacherAttendancePage({
   const attendanceDate = new Date(selectedDate)
   const isToday = selectedDate === today
 
+  // Summary range defaults to the last 30 days so the page opens with something
+  // meaningful without the admin having to pick dates first.
+  const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+  const summaryFrom = sp.from || monthAgo
+  const summaryTo = sp.to || today
+
   const teachers = await db.user.findMany({
     where: { role: { in: ['teacher', 'admin'] }, isActive: true },
     orderBy: { name: 'asc' },
@@ -47,11 +54,14 @@ export default async function TeacherAttendancePage({
 
   const teacherIds = teachers.map((t) => t.id)
 
-  const [records, thresholdSetting] = await Promise.all([
+  const [records, thresholdSetting, summary] = await Promise.all([
     db.teacherAttendance.findMany({
       where: { date: attendanceDate, userId: { in: teacherIds } },
     }),
     db.setting.findUnique({ where: { key: 'teacher_late_threshold' } }),
+    // Same builder the Excel/PDF exports use, so the on-screen figures and the
+    // downloaded report can never drift apart.
+    getTeacherAttendanceReport(summaryFrom, summaryTo),
   ])
 
   const existing = Object.fromEntries(records.map((r) => [r.userId, r]))
@@ -79,6 +89,9 @@ export default async function TeacherAttendancePage({
 
       {/* Date selector */}
       <form method="GET" className="flex flex-col sm:flex-row sm:items-end gap-3">
+        {/* Keep the summary range when only the marking date changes. */}
+        <input type="hidden" name="from" value={summaryFrom} />
+        <input type="hidden" name="to" value={summaryTo} />
         <div className="w-full sm:w-auto">
           <label className="block text-xs font-medium text-coffee-600 mb-1">Date</label>
           <input
@@ -152,6 +165,93 @@ export default async function TeacherAttendancePage({
             )
           })}
         </div>
+      </div>
+
+      {/* Attendance rates over a range */}
+      <div className="bg-white border border-coffee-200 rounded-xl overflow-hidden">
+        <div className="px-4 sm:px-5 py-3 bg-coffee-50 border-b border-coffee-200">
+          <h2 className="text-sm font-semibold text-coffee-700">Attendance Summary</h2>
+          <p className="text-xs text-coffee-500 mt-0.5">
+            Attendance and lateness rates across every day school was in session in this range
+          </p>
+        </div>
+
+        <form method="GET" className="px-4 sm:px-5 py-4 flex flex-col sm:flex-row sm:items-end gap-3 border-b border-coffee-100">
+          {/* Keep the marking date when only the summary range changes. */}
+          <input type="hidden" name="date" value={selectedDate} />
+          <div className="w-full sm:w-auto">
+            <label className="block text-xs font-medium text-coffee-600 mb-1">From</label>
+            <input
+              type="date"
+              name="from"
+              defaultValue={summaryFrom}
+              max={today}
+              className="w-full border border-coffee-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-coffee-400"
+            />
+          </div>
+          <div className="w-full sm:w-auto">
+            <label className="block text-xs font-medium text-coffee-600 mb-1">To</label>
+            <input
+              type="date"
+              name="to"
+              defaultValue={summaryTo}
+              max={today}
+              className="w-full border border-coffee-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-coffee-400"
+            />
+          </div>
+          <button
+            type="submit"
+            className="w-full sm:w-auto bg-coffee-900 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
+          >
+            Apply
+          </button>
+        </form>
+
+        {summary.length === 0 ? (
+          <p className="px-4 sm:px-5 py-8 text-sm text-coffee-400 text-center">
+            No staff records for this range.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-coffee-50/60 border-b border-coffee-200">
+                <tr>
+                  <th className="text-left px-4 py-3 text-coffee-700 font-semibold whitespace-nowrap">Teacher</th>
+                  <th className="text-center px-3 py-3 text-coffee-700 font-semibold whitespace-nowrap">Present</th>
+                  <th className="text-center px-3 py-3 text-coffee-700 font-semibold whitespace-nowrap">Absent</th>
+                  <th className="text-center px-3 py-3 text-coffee-700 font-semibold whitespace-nowrap">Late</th>
+                  <th className="text-center px-3 py-3 text-coffee-700 font-semibold whitespace-nowrap hidden sm:table-cell">On Leave</th>
+                  <th className="text-center px-3 py-3 text-coffee-700 font-semibold whitespace-nowrap hidden md:table-cell">Days</th>
+                  <th className="text-right px-3 py-3 text-coffee-700 font-semibold whitespace-nowrap">Attendance</th>
+                  <th className="text-right px-4 py-3 text-coffee-700 font-semibold whitespace-nowrap">Lateness</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-coffee-100">
+                {summary.map((r) => (
+                  <tr key={r.userId} className="hover:bg-coffee-50 transition-colors">
+                    <td className="px-4 py-2.5">
+                      <p className="font-medium text-coffee-900">{r.name}</p>
+                      <p className="text-xs text-coffee-400">{r.email}</p>
+                    </td>
+                    <td className="px-3 py-2.5 text-center text-coffee-600">{r.present}</td>
+                    <td className="px-3 py-2.5 text-center text-coffee-600">{r.absent}</td>
+                    <td className="px-3 py-2.5 text-center text-coffee-600">{r.late}</td>
+                    <td className="px-3 py-2.5 text-center text-coffee-600 hidden sm:table-cell">{r.onLeave}</td>
+                    <td className="px-3 py-2.5 text-center text-coffee-500 hidden md:table-cell">{r.total}</td>
+                    <td className="px-3 py-2.5 text-right font-medium text-coffee-800">{r.attendanceRate}</td>
+                    <td
+                      className={`px-4 py-2.5 text-right font-medium ${
+                        r.late > 0 ? 'text-amber-700' : 'text-coffee-400'
+                      }`}
+                    >
+                      {r.latenessRate}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Manual bulk override form */}

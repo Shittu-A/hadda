@@ -10,6 +10,7 @@ export type TeacherAttendanceRow = {
   onLeave: number
   total: number
   attendanceRate: string
+  latenessRate: string
 }
 
 /**
@@ -58,6 +59,7 @@ export async function getTeacherAttendanceReport(from: string | null, to: string
       onLeave: 0,
       total: 0,
       attendanceRate: '0%',
+      latenessRate: '0%',
     })
   }
 
@@ -81,6 +83,7 @@ export async function getTeacherAttendanceReport(from: string | null, to: string
         onLeave: 0,
         total: 0,
         attendanceRate: '0%',
+        latenessRate: '0%',
       })
     }
 
@@ -107,6 +110,10 @@ export async function getTeacherAttendanceReport(from: string | null, to: string
   for (const row of rowMap.values()) {
     const attended = row.present + row.late + row.onLeave
     row.attendanceRate = row.total > 0 ? `${Math.round((attended / row.total) * 100)}%` : '—'
+    // Share of school days the teacher turned up late. Measured against every
+    // day school was in session (not just the days they showed up) so it reads
+    // on the same scale as the attendance rate beside it.
+    row.latenessRate = row.total > 0 ? `${Math.round((row.late / row.total) * 100)}%` : '—'
   }
 
   return Array.from(rowMap.values()).sort((a, b) => a.name.localeCompare(b.name))

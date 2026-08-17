@@ -24,6 +24,7 @@ export async function GET(req: NextRequest) {
     'On Leave': r.onLeave,
     'Total Days': r.total,
     'Attendance Rate': r.attendanceRate,
+    'Lateness Rate': r.latenessRate,
   }))
 
   const ws = XLSX.utils.json_to_sheet(rows)
