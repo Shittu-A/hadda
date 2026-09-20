@@ -6,6 +6,7 @@ import { logAudit } from '@/lib/audit'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import bcryptjs from 'bcryptjs'
+import { ALL_PERMISSIONS } from '@/lib/permissions'
 
 const CreateUserSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -28,10 +29,16 @@ const ChangePasswordSchema = z.object({
   newPassword: z.string().min(8, 'Password must be at least 8 characters'),
 })
 
+function selectedPermissions(formData: FormData) {
+  return formData.getAll('permissions').map(String).filter((value): value is (typeof ALL_PERMISSIONS)[number] =>
+    (ALL_PERMISSIONS as readonly string[]).includes(value)
+  )
+}
+
 export async function createUser(formData: FormData) {
   try {
     const session = await auth()
-    if (!session) {
+    if (!session || session.user.role !== 'super_admin') {
       return { success: false, error: 'Unauthorized' }
     }
 
@@ -57,6 +64,7 @@ export async function createUser(formData: FormData) {
     const salt = await bcryptjs.genSalt(10)
     const passwordHash = await bcryptjs.hash(validatedData.password, salt)
 
+    const permissions = selectedPermissions(formData)
     const user = await db.user.create({
       data: {
         name: validatedData.name,
@@ -64,6 +72,7 @@ export async function createUser(formData: FormData) {
         passwordHash,
         role: validatedData.role,
         isActive: true,
+        permissions: validatedData.role === 'admin' ? { createMany: { data: permissions.map(permission => ({ permission })) } } : undefined,
       },
     })
 
@@ -88,7 +97,7 @@ export async function createUser(formData: FormData) {
 export async function updateUser(id: string, formData: FormData) {
   try {
     const session = await auth()
-    if (!session) {
+    if (!session || session.user.role !== 'super_admin') {
       return { success: false, error: 'Unauthorized' }
     }
 
@@ -112,12 +121,16 @@ export async function updateUser(id: string, formData: FormData) {
       return { success: false, error: 'Email already exists' }
     }
 
+    const permissions = selectedPermissions(formData)
     const user = await db.user.update({
       where: { id },
       data: {
         name: validatedData.name,
         email: validatedData.email,
         role: validatedData.role,
+        permissions: validatedData.role === 'admin'
+          ? { deleteMany: {}, createMany: { data: permissions.map(permission => ({ permission })), skipDuplicates: true } }
+          : { deleteMany: {} },
       },
     })
 
@@ -142,7 +155,7 @@ export async function updateUser(id: string, formData: FormData) {
 export async function toggleUserActive(id: string) {
   try {
     const session = await auth()
-    if (!session) {
+    if (!session || session.user.role !== 'super_admin') {
       return { success: false, error: 'Unauthorized' }
     }
 
@@ -184,7 +197,7 @@ export async function toggleUserActive(id: string) {
 export async function changeUserPassword(id: string, formData: FormData) {
   try {
     const session = await auth()
-    if (!session) {
+    if (!session || session.user.role !== 'super_admin') {
       return { success: false, error: 'Unauthorized' }
     }
 
@@ -220,4 +233,3 @@ export async function changeUserPassword(id: string, formData: FormData) {
     return { success: false, error: 'Failed to change password' }
   }
 }
-

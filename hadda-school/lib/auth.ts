@@ -17,6 +17,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const user = await db.user.findUnique({
           where: { email: credentials.email as string },
+          include: { permissions: { select: { permission: true } } },
         })
 
         if (!user || !user.isActive) return null
@@ -24,7 +25,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const ok = await bcryptjs.compare(credentials.password as string, user.passwordHash)
         if (!ok) return null
 
-        return { id: user.id, name: user.name, email: user.email, role: user.role, isActive: user.isActive }
+        return { id: user.id, name: user.name, email: user.email, role: user.role, isActive: user.isActive, permissions: user.permissions.map(row => row.permission) }
       },
     }),
   ],

@@ -10,6 +10,7 @@ import { Card, CardContent } from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import Link from 'next/link'
+import { PERMISSION_GROUPS } from '@/lib/permissions'
 
 const CreateUserSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -45,6 +46,7 @@ export default function NewUserPage() {
       formData.append('email', data.email)
       formData.append('password', data.password)
       formData.append('role', data.role)
+      document.querySelectorAll<HTMLInputElement>('input[name="permissions"]:checked').forEach(input => formData.append('permissions', input.value))
 
       const result = await createUser(formData)
 
@@ -96,6 +98,24 @@ export default function NewUserPage() {
                   <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
                 )}
               </div>
+
+              <fieldset className="border border-coffee-200 rounded-lg p-4 space-y-4">
+                <legend className="px-1 text-sm font-medium text-coffee-700">Admin permissions</legend>
+                <p className="text-xs text-coffee-500">Select only what this admin should be able to access. Teachers do not use these permissions.</p>
+                {PERMISSION_GROUPS.map(group => (
+                  <div key={group.label}>
+                    <p className="text-xs font-semibold text-coffee-700 mb-2">{group.label}</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {group.items.map(([key, label]) => (
+                        <label key={key} className="flex items-center gap-2 text-sm text-coffee-700">
+                          <input type="checkbox" name="permissions" value={key} className="accent-coffee-700" />
+                          {label}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </fieldset>
 
               <div>
                 <label className="block text-sm font-medium text-coffee-700 mb-2">

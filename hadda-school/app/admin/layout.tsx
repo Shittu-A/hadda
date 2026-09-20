@@ -4,6 +4,7 @@ import Sidebar from '@/components/layout/Sidebar'
 import Topnav from '@/components/layout/Topnav'
 import { db } from '@/lib/db'
 import { adminLinks, superAdminLinks } from '@/lib/nav-links'
+import { canAccess } from '@/lib/permissions'
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await auth()
@@ -15,7 +16,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   })
 
   const isSuperAdmin = session.user.role === 'super_admin'
-  const links = isSuperAdmin ? superAdminLinks : adminLinks
+  const links = isSuperAdmin ? superAdminLinks : (await Promise.all(adminLinks.map(async link =>
+    !('permission' in link) || await canAccess(session.user.id, session.user.role, link.permission as any) ? link : null
+  ))).filter(Boolean) as typeof adminLinks
   const role = isSuperAdmin ? 'super_admin' : 'admin'
 
   return (

@@ -4,10 +4,10 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { Coins, Receipt, PiggyBank, HandCoins, Banknote } from 'lucide-react'
+import { requirePermission } from '@/lib/permissions'
 
 export default async function FinanceOverviewPage() {
-  const session = await auth()
-  if (!session) redirect('/login')
+  await requirePermission('finance_balance_view')
 
   const today = new Date()
   today.setHours(0, 0, 0, 0)

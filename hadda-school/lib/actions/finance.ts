@@ -3,19 +3,20 @@
 import { db } from '@/lib/db'
 import { auth } from '@/lib/auth'
 import { logAudit } from '@/lib/audit'
+import { canAccess } from '@/lib/permissions'
 import { revalidatePath } from 'next/cache'
 
 // The finance books are super-admin only — an admin's Fees pages cover student
 // billing, and /admin/finance is gated in app/admin/finance/layout.tsx. These
 // actions repeat the check so they cannot be invoked directly by an admin.
-async function requireSuperAdmin() {
+async function requireFinancePermission(permission: 'finance_expenses_manage' | 'finance_manual_income_manage' | 'finance_extra_income_manage') {
   const session = await auth()
-  if (!session || session.user.role !== 'super_admin') return null
+  if (!session || !(await canAccess(session.user.id, session.user.role, permission))) return null
   return session
 }
 
 export async function createExpense(formData: FormData) {
-  const session = await requireSuperAdmin()
+  const session = await requireFinancePermission('finance_expenses_manage')
   if (!session) return { success: false, error: 'Unauthorized' }
 
   const name = (formData.get('name') as string)?.trim()
@@ -53,7 +54,7 @@ export async function createExpense(formData: FormData) {
 }
 
 export async function deleteExpense(formData: FormData): Promise<void> {
-  const session = await requireSuperAdmin()
+  const session = await requireFinancePermission('finance_expenses_manage')
   if (!session) return
 
   const id = formData.get('id') as string
@@ -75,7 +76,7 @@ export async function deleteExpense(formData: FormData): Promise<void> {
 }
 
 export async function createIncome(formData: FormData) {
-  const session = await requireSuperAdmin()
+  const session = await requireFinancePermission('finance_manual_income_manage')
   if (!session) return { success: false, error: 'Unauthorized' }
 
   const source = (formData.get('source') as string)?.trim()
@@ -113,7 +114,7 @@ export async function createIncome(formData: FormData) {
 }
 
 export async function deleteIncome(formData: FormData): Promise<void> {
-  const session = await requireSuperAdmin()
+  const session = await requireFinancePermission('finance_manual_income_manage')
   if (!session) return
 
   const id = formData.get('id') as string

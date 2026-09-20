@@ -12,6 +12,32 @@ enum Role {
   teacher
 }
 
+// Feature-level access for admin accounts. Super admins deliberately do not
+// need rows here: they always have every permission.
+enum Permission {
+  students_manage
+  applications_manage
+  classes_manage
+  student_attendance_manage
+  teacher_attendance_manage
+  attendance_photos_manage
+  leave_requests_manage
+  fees_manage
+  fee_balances_view
+  memorization_manage
+  promotions_manage
+  reports_view
+  teacher_profiles_manage
+  uploads_manage
+  communications_manage
+  activity_monitoring_view
+  finance_expenses_manage
+  finance_manual_income_manage
+  finance_extra_income_manage
+  finance_reports_view
+  finance_balance_view
+}
+
 enum StudentStatus {
   active
   promoted
@@ -174,6 +200,19 @@ model User {
   attendancePhotos    ClassAttendancePhoto[]
   expenses            Expense[]
   incomeEntries       IncomeEntry[]
+  permissions         UserPermission[]
+}
+
+model UserPermission {
+  id         String     @id @default(cuid())
+  userId     String
+  permission Permission
+  createdAt  DateTime   @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, permission])
+  @@index([permission])
 }
 
 model AcademicYear {

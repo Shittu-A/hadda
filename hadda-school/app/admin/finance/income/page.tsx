@@ -6,6 +6,7 @@ import { formatCurrency, formatDate } from '@/lib/utils'
 import { createIncome, deleteIncome } from '@/lib/actions/finance'
 import ActionForm from '@/components/ui/ActionForm'
 import SubmitButton from '@/components/ui/SubmitButton'
+import { requirePermission } from '@/lib/permissions'
 
 const CATEGORIES = ['donation', 'grant', 'fundraising', 'rental', 'other'] as const
 
@@ -25,6 +26,7 @@ export default async function IncomePage({
 }: {
   searchParams: Promise<{ category?: string; from?: string; to?: string; page?: string }>
 }) {
+  await requirePermission('finance_manual_income_manage')
   const session = await auth()
   if (!session) redirect('/login')
 

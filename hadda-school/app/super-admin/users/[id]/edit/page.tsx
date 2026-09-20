@@ -3,10 +3,11 @@ import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { updateUser, changeUserPassword } from '@/lib/actions/users'
 import SubmitButton from '@/components/ui/SubmitButton'
+import { PERMISSION_GROUPS } from '@/lib/permissions'
 
 export default async function EditUserPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const user = await db.user.findUnique({ where: { id } })
+  const user = await db.user.findUnique({ where: { id }, include: { permissions: true } })
   if (!user) notFound()
 
   async function handleUpdate(formData: FormData) {
@@ -82,6 +83,24 @@ export default async function EditUserPage({ params }: { params: Promise<{ id: s
             Save Changes
           </SubmitButton>
         </div>
+        {user.role === 'admin' && (
+          <fieldset className="border border-coffee-200 rounded-lg p-4 space-y-4">
+            <legend className="px-1 text-sm font-medium text-coffee-700">Feature permissions</legend>
+            {PERMISSION_GROUPS.map(group => (
+              <div key={group.label}>
+                <p className="text-xs font-semibold text-coffee-700 mb-2">{group.label}</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {group.items.map(([key, label]) => (
+                    <label key={key} className="flex items-center gap-2 text-sm text-coffee-700">
+                      <input name="permissions" type="checkbox" value={key} defaultChecked={user.permissions.some(p => p.permission === key)} className="accent-coffee-700" />
+                      {label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </fieldset>
+        )}
       </form>
 
       {/* Change password */}
