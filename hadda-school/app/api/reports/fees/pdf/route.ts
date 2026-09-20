@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/lib/auth'
+import { canViewFeeBalances } from '@/lib/permissions'
 import { db } from '@/lib/db'
 import { renderToBuffer, Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer'
 import { createElement } from 'react'
@@ -133,6 +134,9 @@ export async function GET(req: NextRequest) {
   const session = await auth()
   if (!session || (session.user.role !== 'admin' && session.user.role !== 'super_admin')) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+  if (!(await canViewFeeBalances(session.user.id, session.user.role))) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
   const { searchParams } = req.nextUrl

@@ -14,6 +14,11 @@ export async function hasPermission(userId: string, role: Role, permission: Perm
   return !!row
 }
 
+// Managing fees implies seeing balances; fee_balances_view grants read-only access to them.
+export async function canViewFeeBalances(userId: string, role: Role) {
+  return (await hasPermission(userId, role, 'fee_balances_view')) || (await hasPermission(userId, role, 'fees_manage'))
+}
+
 export async function requirePermission(permission: PermissionKey) {
   const session = await auth()
   if (!session) redirect('/login')

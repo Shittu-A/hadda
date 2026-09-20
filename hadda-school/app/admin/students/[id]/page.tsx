@@ -1,4 +1,6 @@
 import { db } from '@/lib/db'
+import { auth } from '@/lib/auth'
+import { canAccess, canViewFeeBalances } from '@/lib/permissions'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -30,6 +32,12 @@ export default async function StudentDetailPage({
 }) {
   const { id } = await params
   const sp = await searchParams
+  const session = await auth()
+  if (!session) redirect('/login')
+  const [canSendSms, canSeeBalances] = await Promise.all([
+    canAccess(session.user.id, session.user.role, 'communications_manage'),
+    canViewFeeBalances(session.user.id, session.user.role),
+  ])
   const student = await db.student.findFirst({
     where: { id, deletedAt: null },
     include: {
@@ -198,70 +206,72 @@ export default async function StudentDetailPage({
           </div>
 
           {/* Previous-terms arrears */}
-          <div className="bg-white border border-coffee-200 rounded-xl p-4 sm:p-5">
-            <div className="flex items-center justify-between mb-1">
-              <h2 className="font-semibold text-coffee-800">Outstanding from Previous Terms</h2>
-              {arrearsOutstanding > 0 && (
-                <span className="text-sm font-bold text-red-600">{formatCurrency(arrearsOutstanding)}</span>
-              )}
-            </div>
-            <p className="text-xs text-coffee-500 mb-4">
-              Fees owed from before this system. Owed amount = terms owing × the student&apos;s termly fee
-              {termlyValue > 0 ? ` (${formatCurrency(termlyValue)}/term)` : ''}. Record payments via the Record Payment button using the &ldquo;Previous Terms (Arrears)&rdquo; fee.
-            </p>
-
-            {student.arrearsTerms > 0 && (
-              <dl className="grid grid-cols-3 gap-3 text-sm mb-4">
-                <div>
-                  <dt className="text-coffee-500 text-xs">Terms owing</dt>
-                  <dd className="text-coffee-900 font-semibold">{student.arrearsTerms}</dd>
-                </div>
-                <div>
-                  <dt className="text-coffee-500 text-xs">Total owed</dt>
-                  <dd className="text-coffee-900 font-semibold">{formatCurrency(arrearsGross)}</dd>
-                </div>
-                <div>
-                  <dt className="text-coffee-500 text-xs">Paid so far</dt>
-                  <dd className="text-coffee-900 font-semibold">{formatCurrency(arrearsPaid)}</dd>
-                </div>
-              </dl>
-            )}
-            {student.arrearsTerms > 0 && termlyValue === 0 && (
-              <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4">
-                No termly fee is assigned to this student yet, so the owed amount shows as ₦0. Assign a termly fee to value the arrears.
+          {canSeeBalances && (
+            <div className="bg-white border border-coffee-200 rounded-xl p-4 sm:p-5">
+              <div className="flex items-center justify-between mb-1">
+                <h2 className="font-semibold text-coffee-800">Outstanding from Previous Terms</h2>
+                {arrearsOutstanding > 0 && (
+                  <span className="text-sm font-bold text-red-600">{formatCurrency(arrearsOutstanding)}</span>
+                )}
+              </div>
+              <p className="text-xs text-coffee-500 mb-4">
+                Fees owed from before this system. Owed amount = terms owing × the student&apos;s termly fee
+                {termlyValue > 0 ? ` (${formatCurrency(termlyValue)}/term)` : ''}. Record payments via the Record Payment button using the &ldquo;Previous Terms (Arrears)&rdquo; fee.
               </p>
-            )}
 
-            <ActionForm action={handleSetArrears} successMessage="Arrears updated." className="flex flex-col sm:flex-row sm:items-end gap-3">
-              <input type="hidden" name="studentId" value={student.id} />
-              <div className="w-full sm:w-32">
-                <label className="block text-xs font-medium text-coffee-600 mb-1">Terms owing</label>
-                <input
-                  type="number"
-                  name="arrearsTerms"
-                  min={0}
-                  defaultValue={student.arrearsTerms}
-                  className="w-full border border-coffee-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-400"
-                />
-              </div>
-              <div className="flex-1">
-                <label className="block text-xs font-medium text-coffee-600 mb-1">Note (optional)</label>
-                <input
-                  type="text"
-                  name="arrearsNote"
-                  defaultValue={student.arrearsNote ?? ''}
-                  placeholder="e.g. 2024/25 Term 2 & 3"
-                  className="w-full border border-coffee-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-400"
-                />
-              </div>
-              <SubmitButton
-                pendingText="Saving…"
-                className="w-full sm:w-auto bg-coffee-900 text-white rounded-lg px-5 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
-              >
-                Save
-              </SubmitButton>
-            </ActionForm>
-          </div>
+              {student.arrearsTerms > 0 && (
+                <dl className="grid grid-cols-3 gap-3 text-sm mb-4">
+                  <div>
+                    <dt className="text-coffee-500 text-xs">Terms owing</dt>
+                    <dd className="text-coffee-900 font-semibold">{student.arrearsTerms}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-coffee-500 text-xs">Total owed</dt>
+                    <dd className="text-coffee-900 font-semibold">{formatCurrency(arrearsGross)}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-coffee-500 text-xs">Paid so far</dt>
+                    <dd className="text-coffee-900 font-semibold">{formatCurrency(arrearsPaid)}</dd>
+                  </div>
+                </dl>
+              )}
+              {student.arrearsTerms > 0 && termlyValue === 0 && (
+                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4">
+                  No termly fee is assigned to this student yet, so the owed amount shows as ₦0. Assign a termly fee to value the arrears.
+                </p>
+              )}
+
+              <ActionForm action={handleSetArrears} successMessage="Arrears updated." className="flex flex-col sm:flex-row sm:items-end gap-3">
+                <input type="hidden" name="studentId" value={student.id} />
+                <div className="w-full sm:w-32">
+                  <label className="block text-xs font-medium text-coffee-600 mb-1">Terms owing</label>
+                  <input
+                    type="number"
+                    name="arrearsTerms"
+                    min={0}
+                    defaultValue={student.arrearsTerms}
+                    className="w-full border border-coffee-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-400"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="block text-xs font-medium text-coffee-600 mb-1">Note (optional)</label>
+                  <input
+                    type="text"
+                    name="arrearsNote"
+                    defaultValue={student.arrearsNote ?? ''}
+                    placeholder="e.g. 2024/25 Term 2 & 3"
+                    className="w-full border border-coffee-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-400"
+                  />
+                </div>
+                <SubmitButton
+                  pendingText="Saving…"
+                  className="w-full sm:w-auto bg-coffee-900 text-white rounded-lg px-5 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
+                >
+                  Save
+                </SubmitButton>
+              </ActionForm>
+            </div>
+          )}
 
           {/* Recent Payments */}
           {student.feePayments.length > 0 && (
@@ -374,25 +384,29 @@ export default async function StudentDetailPage({
                   label="Letter not printed"
                 />
               </div>
-              <form action={handleSendBalanceSms}>
-                <SubmitButton
-                  pendingText="Sending…"
-                  className="block w-full text-center border border-coffee-200 text-coffee-700 rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-50 transition-colors"
-                >
-                  Send Balance SMS
-                </SubmitButton>
-              </form>
-              {sp.smsResult && (() => {
-                const [status, errorRaw] = sp.smsResult.split(':')
-                const error = errorRaw ? decodeURIComponent(errorRaw) : null
-                if (status === 'sent') {
-                  return <p className="text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">Balance reminder SMS sent.</p>
-                }
-                if (status === 'skipped') {
-                  return <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">SMS not sent — SMS provider not configured yet.</p>
-                }
-                return <p className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">Could not send SMS{error ? `: ${error}` : ''}.</p>
-              })()}
+              {canSendSms && (
+                <>
+                <form action={handleSendBalanceSms}>
+                  <SubmitButton
+                    pendingText="Sending…"
+                    className="block w-full text-center border border-coffee-200 text-coffee-700 rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-50 transition-colors"
+                  >
+                    Send Balance SMS
+                  </SubmitButton>
+                </form>
+                {sp.smsResult && (() => {
+                  const [status, errorRaw] = sp.smsResult.split(':')
+                  const error = errorRaw ? decodeURIComponent(errorRaw) : null
+                  if (status === 'sent') {
+                    return <p className="text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">Balance reminder SMS sent.</p>
+                  }
+                  if (status === 'skipped') {
+                    return <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">SMS not sent — SMS provider not configured yet.</p>
+                  }
+                  return <p className="text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">Could not send SMS{error ? `: ${error}` : ''}.</p>
+                })()}
+                </>
+              )}
             </div>
           </div>
 

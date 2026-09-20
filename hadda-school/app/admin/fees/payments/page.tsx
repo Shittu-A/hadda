@@ -1,5 +1,6 @@
 import { db } from '@/lib/db'
 import { auth } from '@/lib/auth'
+import { canAccess } from '@/lib/permissions'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Badge from '@/components/ui/Badge'
@@ -34,6 +35,7 @@ export default async function FeePaymentsPage({
 }) {
   const session = await auth()
   if (!session) redirect('/login')
+  const canSendSms = await canAccess(session.user.id, session.user.role, 'communications_manage')
 
   const sp = await searchParams
   const today = new Date().toISOString().split('T')[0]
@@ -117,14 +119,16 @@ export default async function FeePaymentsPage({
           <p className="text-coffee-600 text-sm mt-0.5">Record and view all fee payments</p>
         </div>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-          <form action={handleSmsAll}>
-            <SubmitButton
-              pendingText="Sending…"
-              className="w-full sm:w-auto text-center border border-coffee-200 text-coffee-700 rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-50 transition-colors"
-            >
-              SMS all debtors
-            </SubmitButton>
-          </form>
+          {canSendSms && (
+            <form action={handleSmsAll}>
+              <SubmitButton
+                pendingText="Sending…"
+                className="w-full sm:w-auto text-center border border-coffee-200 text-coffee-700 rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-50 transition-colors"
+              >
+                SMS all debtors
+              </SubmitButton>
+            </form>
+          )}
           <Link
             href="/admin/fees"
             className="w-full sm:w-auto text-center text-sm text-coffee-500 hover:text-coffee-800 transition-colors"
