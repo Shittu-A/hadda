@@ -10,7 +10,7 @@ import { Card, CardContent } from '@/components/ui/Card'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import Link from 'next/link'
-import { PERMISSION_GROUPS } from '@/lib/permissions'
+import { PERMISSION_GROUPS } from '@/lib/permission-groups'
 
 const CreateUserSchema = z.object({
   name: z.string().min(1, 'Name is required'),
