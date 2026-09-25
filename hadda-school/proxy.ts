@@ -1,12 +1,12 @@
 import NextAuth from 'next-auth'
 import { authConfig } from './lib/auth.config'
 import { NextResponse } from 'next/server'
+import { db } from './lib/db'
 
 const permissionRoutes: Array<[string, string]> = [
   ['/admin/activity-monitoring', 'activity_monitoring_view'],
   ['/admin/finance/expenses', 'finance_expenses_manage'],
   ['/admin/finance/income', 'finance_manual_income_manage'],
-  ['/admin/finance', 'finance_balance_view'],
   ['/admin/applications', 'applications_manage'], ['/admin/students', 'students_manage'],
   ['/admin/alumni', 'students_manage'], ['/admin/classes', 'classes_manage'],
   ['/admin/attendance/students', 'student_attendance_manage'], ['/admin/attendance/teachers', 'teacher_attendance_manage'],
@@ -18,7 +18,7 @@ const permissionRoutes: Array<[string, string]> = [
 
 const { auth } = NextAuth(authConfig)
 
-export default auth((req) => {
+export default auth(async (req) => {
   const { pathname } = req.nextUrl
   const session = req.auth
 
@@ -69,8 +69,14 @@ export default auth((req) => {
   }
 
   const requiredPermission = permissionRoutes.find(([prefix]) => pathname.startsWith(prefix))?.[1]
-  if (requiredPermission && role !== 'super_admin' && !(session.user.permissions ?? []).includes(requiredPermission)) {
-    return redirectTo('/admin/dashboard?denied=1')
+  // Checked against the database, not the JWT: the token's permission list is
+  // frozen at login, so grants made afterwards would otherwise be refused.
+  if (requiredPermission && role !== 'super_admin') {
+    const granted = role === 'admin' && await db.userPermission.findUnique({
+      where: { userId_permission: { userId: session.user.id, permission: requiredPermission as any } },
+      select: { id: true },
+    })
+    if (!granted) return redirectTo('/admin/dashboard?denied=1')
   }
 
   return NextResponse.next()

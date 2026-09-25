@@ -28,3 +28,6 @@ export const PERMISSION_GROUPS = [
 ] as const satisfies ReadonlyArray<{ label: string; items: readonly (readonly [PermissionKey, string])[] }>
 
 export const ALL_PERMISSIONS = PERMISSION_GROUPS.flatMap(group => group.items.map(([key]) => key))
+
+// Any one of these opens the Finance section; each page then checks its own permission.
+export const FINANCE_PAGE_PERMISSIONS = ['finance_balance_view', 'finance_expenses_manage', 'finance_manual_income_manage'] as const satisfies readonly PermissionKey[]

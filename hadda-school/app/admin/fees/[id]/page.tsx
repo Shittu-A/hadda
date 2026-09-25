@@ -54,7 +54,7 @@ async function handleAddGrant(formData: FormData) {
 
 export default async function FeeStructureDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const [fee, classes] = await Promise.all([
+  const [fee, classes, paymentTotals] = await Promise.all([
     db.feeStructure.findUnique({
       where: { id },
       include: {
@@ -82,6 +82,8 @@ export default async function FeeStructureDetailPage({ params }: { params: Promi
       },
     }),
     db.classRoom.findMany({ orderBy: { order: 'asc' }, select: { id: true, name: true } }),
+    // The payments list above is capped at 50 rows, so the stats come from an aggregate.
+    db.feePayment.aggregate({ where: { feeStructureId: id }, _count: true, _sum: { amountPaid: true } }),
   ])
 
   if (!fee) notFound()
@@ -91,7 +93,7 @@ export default async function FeeStructureDetailPage({ params }: { params: Promi
   const assignedClassIds = new Set(classAssignments.map((a) => a.classId!))
   const unassignedClasses = classes.filter((c) => !assignedClassIds.has(c.id))
 
-  const totalCollected = fee.payments.reduce((sum, p) => sum + Number(p.amountPaid), 0)
+  const totalCollected = Number(paymentTotals._sum.amountPaid ?? 0)
 
   // Roster context for the apply / scholarship / grant controls.
   const [payingCount, scholarshipCount, grantStudents] = await Promise.all([
@@ -138,7 +140,7 @@ export default async function FeeStructureDetailPage({ params }: { params: Promi
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         <div className="bg-white border border-coffee-200 rounded-xl p-3 sm:p-4 text-center">
-          <p className="text-xl sm:text-2xl font-bold text-coffee-900">{fee.payments.length}</p>
+          <p className="text-xl sm:text-2xl font-bold text-coffee-900">{paymentTotals._count}</p>
           <p className="text-xs text-coffee-500 mt-0.5">Total Payments</p>
         </div>
         <div className="bg-white border border-coffee-200 rounded-xl p-3 sm:p-4 text-center">

@@ -3,6 +3,7 @@
 import { db } from '@/lib/db'
 import { auth } from '@/lib/auth'
 import { logAudit } from '@/lib/audit'
+import { canAccess } from '@/lib/permissions'
 import { revalidatePath } from 'next/cache'
 import { randomUUID } from 'crypto'
 
@@ -506,16 +507,22 @@ export async function recordFeePayment(formData: FormData) {
   return { success: true }
 }
 
-export async function deleteFeePayment(formData: FormData): Promise<void> {
+export async function deleteFeePayment(formData: FormData) {
   const session = await auth()
-  if (!session) return
+  if (!session || !(await canAccess(session.user.id, session.user.role, 'fees_manage'))) {
+    return { success: false, error: 'Unauthorized' }
+  }
+  // The UI makes the user type DELETE; enforce it here too.
+  if (String(formData.get('confirm') ?? '').trim().toUpperCase() !== 'DELETE') {
+    return { success: false, error: 'Type DELETE to confirm the deletion.' }
+  }
 
   const id = formData.get('id') as string
   const payment = await db.feePayment.findUnique({
     where: { id },
     select: { studentId: true, feeStructureId: true },
   })
-  if (!payment) return
+  if (!payment) return { success: false, error: 'Payment not found.' }
 
   await db.feePayment.delete({ where: { id } })
 
@@ -530,6 +537,7 @@ export async function deleteFeePayment(formData: FormData): Promise<void> {
   revalidatePath('/admin/fees/payments')
   revalidatePath(`/admin/students/${payment.studentId}`)
   revalidatePath(`/admin/fees/${payment.feeStructureId}`)
+  return { success: true }
 }
 
 export async function upsertFeeDiscount(formData: FormData): Promise<void> {

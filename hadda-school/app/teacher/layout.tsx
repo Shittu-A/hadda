@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import Sidebar from '@/components/layout/Sidebar'
 import Topnav from '@/components/layout/Topnav'
 import { db } from '@/lib/db'
-import { LayoutDashboard, CalendarCheck, Clock, BookOpen, FileText, Camera, Banknote } from 'lucide-react'
+import { LayoutDashboard, CalendarCheck, Clock, BookOpen, FileText, Camera, Banknote, ShieldCheck } from 'lucide-react'
 
 const teacherLinks = [
   { href: '/teacher', label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
@@ -24,10 +24,15 @@ export default async function TeacherLayout({ children }: { children: React.Reac
     where: { userId: session.user.id, readAt: null },
   })
 
+  // Admins who teach reach this portal from their admin sidebar; give them a way back.
+  const links = session.user.role === 'teacher'
+    ? teacherLinks
+    : [...teacherLinks, { href: session.user.role === 'super_admin' ? '/super-admin' : '/admin', label: 'Back to Admin', icon: <ShieldCheck size={18} /> }]
+
   return (
     <div className="min-h-screen bg-coffee-100">
-      <Sidebar links={teacherLinks} role="teacher" />
-      <Topnav user={{ name: session.user.name!, role: session.user.role }} notificationCount={notificationCount} links={teacherLinks} role="teacher" />
+      <Sidebar links={links} role="teacher" />
+      <Topnav user={{ name: session.user.name!, role: session.user.role }} notificationCount={notificationCount} links={links} role="teacher" />
       <main className="ml-0 md:ml-64 pt-16 p-4 md:p-8">
         {children}
       </main>

@@ -10,8 +10,9 @@ export default async function ActivityMonitoringPage({ searchParams }: { searchP
   const sp = await searchParams
   const selectedDate = sp.date || new Date().toISOString().slice(0, 10)
   const date = day(selectedDate)
+  // Admins who are assigned a class this year are teachers too and are monitored alongside them.
   const teachers = await db.user.findMany({
-    where: { role: 'teacher', isActive: true }, orderBy: { name: 'asc' },
+    where: { isActive: true, OR: [{ role: 'teacher' }, { role: 'admin', taughtClasses: { some: { class: { academicYear: { isCurrent: true } } } } }] }, orderBy: { name: 'asc' },
     include: { taughtClasses: { where: { class: { academicYear: { isCurrent: true } } }, include: { class: { select: { id: true, name: true } } } } },
   })
   const classIds = teachers.flatMap(t => t.taughtClasses.map(c => c.classId))

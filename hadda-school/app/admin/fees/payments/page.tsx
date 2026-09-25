@@ -7,6 +7,7 @@ import Badge from '@/components/ui/Badge'
 import ActionForm from '@/components/ui/ActionForm'
 import SubmitButton from '@/components/ui/SubmitButton'
 import { formatCurrency, formatDate } from '@/lib/utils'
+import DeletePaymentButton from './DeletePaymentButton'
 import { recordFeePayment, deleteFeePayment, ensureArrearsFeeStructure } from '@/lib/actions/fees'
 import { sendBulkBalanceReminders } from '@/lib/actions/sms'
 import StudentIdPaymentForm from './StudentIdPaymentForm'
@@ -18,8 +19,7 @@ async function handleRecord(formData: FormData) {
 
 async function handleDelete(formData: FormData) {
   'use server'
-  await deleteFeePayment(formData)
-  return { success: true }
+  return deleteFeePayment(formData)
 }
 
 async function handleSmsAll(): Promise<void> {
@@ -426,12 +426,7 @@ export default async function FeePaymentsPage({
                       </a>
                       <ActionForm action={handleDelete} successMessage="Payment deleted." className="inline">
                         <input type="hidden" name="id" value={p.id} />
-                        <SubmitButton
-                          pendingText="Deleting…"
-                          className="text-xs text-red-400 hover:text-red-600 transition-colors"
-                        >
-                          Delete
-                        </SubmitButton>
+                        <DeletePaymentButton label={`${p.student.firstName} ${p.student.lastName} (${formatCurrency(Number(p.amountPaid))})`} />
                       </ActionForm>
                     </td>
                   </tr>

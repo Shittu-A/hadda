@@ -5,6 +5,7 @@ import {
   CalendarClock,
   Activity,
 } from 'lucide-react'
+import { FINANCE_PAGE_PERMISSIONS } from '@/lib/permission-groups'
 
 export const adminLinks = [
   { href: '/admin', label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
@@ -15,8 +16,8 @@ export const adminLinks = [
   { href: '/admin/attendance/teachers', label: 'Teacher Attendance', icon: <UserCheck size={18} />, permission: 'teacher_attendance_manage' },
   { href: '/admin/attendance/class-photos', label: 'Class Photos', icon: <Camera size={18} />, permission: 'attendance_photos_manage' },
   { href: '/admin/leave-requests', label: 'Leave Requests', icon: <CalendarCheck size={18} />, permission: 'leave_requests_manage' },
-  // No Finance link: the income/expenses overview is super-admin only.
   { href: '/admin/fees', label: 'Fees', icon: <Banknote size={18} />, permission: 'fees_manage' },
+  { href: '/admin/finance', label: 'Finance', icon: <Coins size={18} />, permission: FINANCE_PAGE_PERMISSIONS },
   { href: '/admin/memorization', label: 'Memorization', icon: <BookOpen size={18} />, permission: 'memorization_manage' },
   { href: '/admin/promotions', label: 'Promotions', icon: <ArrowUpCircle size={18} />, permission: 'promotions_manage' },
   { href: '/admin/alumni', label: 'Alumni', icon: <Archive size={18} />, permission: 'students_manage' },

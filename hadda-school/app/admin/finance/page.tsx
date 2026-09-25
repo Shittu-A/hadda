@@ -4,10 +4,18 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { Coins, Receipt, PiggyBank, HandCoins, Banknote } from 'lucide-react'
-import { requirePermission } from '@/lib/permissions'
+import { getUserPermissions } from '@/lib/permissions'
 
 export default async function FinanceOverviewPage() {
-  await requirePermission('finance_balance_view')
+  const session = await auth()
+  if (!session) redirect('/login')
+  const granted = await getUserPermissions(session.user.id, session.user.role)
+  const canExpenses = granted.has('finance_expenses_manage')
+  const canIncome = granted.has('finance_manual_income_manage')
+  // Without balance access, send the user straight to the finance page they can use.
+  if (!granted.has('finance_balance_view')) {
+    redirect(canExpenses ? '/admin/finance/expenses' : canIncome ? '/admin/finance/income' : '/admin/dashboard?denied=1')
+  }
 
   const today = new Date()
   today.setHours(0, 0, 0, 0)
@@ -96,18 +104,18 @@ export default async function FinanceOverviewPage() {
           <p className="text-coffee-600 text-sm mt-0.5">All-time income, expenses, and available balance</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2">
-          <Link
+          {canIncome && <Link
             href="/admin/finance/income"
             className="text-center border border-coffee-200 text-coffee-700 rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-50 transition-colors"
           >
             Manage Income →
-          </Link>
-          <Link
+          </Link>}
+          {canExpenses && <Link
             href="/admin/finance/expenses"
             className="text-center border border-coffee-200 text-coffee-700 rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-50 transition-colors"
           >
             Manage Expenses →
-          </Link>
+          </Link>}
         </div>
       </div>
 
@@ -150,7 +158,7 @@ export default async function FinanceOverviewPage() {
             <h2 className="font-semibold text-coffee-800 flex items-center gap-2">
               <HandCoins size={16} className="text-green-700" /> Recent Other Income
             </h2>
-            <Link href="/admin/finance/income" className="text-xs text-coffee-400 hover:text-coffee-700">View all →</Link>
+            {canIncome && <Link href="/admin/finance/income" className="text-xs text-coffee-400 hover:text-coffee-700">View all →</Link>}
           </div>
           {recentIncome.length === 0 ? (
             <p className="text-coffee-400 text-sm">No manual income recorded yet.</p>
@@ -182,7 +190,7 @@ export default async function FinanceOverviewPage() {
             <h2 className="font-semibold text-coffee-800 flex items-center gap-2">
               <Receipt size={16} className="text-red-600" /> Recent Expenses
             </h2>
-            <Link href="/admin/finance/expenses" className="text-xs text-coffee-400 hover:text-coffee-700">View all →</Link>
+            {canExpenses && <Link href="/admin/finance/expenses" className="text-xs text-coffee-400 hover:text-coffee-700">View all →</Link>}
           </div>
           {recentExpenses.length === 0 ? (
             <p className="text-coffee-400 text-sm">No expenses recorded yet.</p>

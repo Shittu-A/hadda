@@ -5,7 +5,9 @@ import type { Permission, Role } from '@prisma/client'
 
 export type PermissionKey = Permission
 
-export { PERMISSION_GROUPS, ALL_PERMISSIONS } from '@/lib/permission-groups'
+import { ALL_PERMISSIONS } from '@/lib/permission-groups'
+
+export { PERMISSION_GROUPS, ALL_PERMISSIONS, FINANCE_PAGE_PERMISSIONS } from '@/lib/permission-groups'
 
 export async function hasPermission(userId: string, role: Role, permission: PermissionKey) {
   if (role === 'super_admin') return true
@@ -28,4 +30,12 @@ export async function requirePermission(permission: PermissionKey) {
 
 export async function canAccess(userId: string, role: Role, permission: PermissionKey) {
   return hasPermission(userId, role, permission)
+}
+
+// Read fresh from the database (not the login-time JWT) so grants and revocations apply immediately.
+export async function getUserPermissions(userId: string, role: Role): Promise<Set<PermissionKey>> {
+  if (role === 'super_admin') return new Set(ALL_PERMISSIONS)
+  if (role !== 'admin') return new Set()
+  const rows = await db.userPermission.findMany({ where: { userId }, select: { permission: true } })
+  return new Set(rows.map(row => row.permission))
 }
