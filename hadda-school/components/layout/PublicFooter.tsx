@@ -13,6 +13,7 @@ export default function PublicFooter() {
         <div className="flex gap-3 sm:gap-4 text-xs sm:text-sm flex-wrap justify-center">
           <Link href="/events" className="hover:text-white transition-colors">Events</Link>
           <Link href="/pay" className="hover:text-white transition-colors">Pay Fees</Link>
+          <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
         </div>
       </div>
     </footer>
