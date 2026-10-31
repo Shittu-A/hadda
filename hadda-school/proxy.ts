@@ -28,6 +28,7 @@ export default auth(async (req) => {
     pathname.startsWith('/events/') ||
     pathname === '/pay' ||
     pathname.startsWith('/pay/') ||
+    pathname === '/privacy' ||
     pathname === '/apply' ||
     pathname === '/teachers' ||
     pathname.startsWith('/api/pay/') ||
