@@ -1,0 +1,41 @@
+import { auth } from '@/lib/auth'
+import { db } from '@/lib/db'
+import { redirect } from 'next/navigation'
+import type { Permission, Role } from '@prisma/client'
+
+export type PermissionKey = Permission
+
+import { ALL_PERMISSIONS } from '@/lib/permission-groups'
+
+export { PERMISSION_GROUPS, ALL_PERMISSIONS, FINANCE_PAGE_PERMISSIONS } from '@/lib/permission-groups'
+
+export async function hasPermission(userId: string, role: Role, permission: PermissionKey) {
+  if (role === 'super_admin') return true
+  if (role !== 'admin') return false
+  const row = await db.userPermission.findUnique({ where: { userId_permission: { userId, permission } } })
+  return !!row
+}
+
+// Managing fees implies seeing balances; fee_balances_view grants read-only access to them.
+export async function canViewFeeBalances(userId: string, role: Role) {
+  return (await hasPermission(userId, role, 'fee_balances_view')) || (await hasPermission(userId, role, 'fees_manage'))
+}
+
+export async function requirePermission(permission: PermissionKey) {
+  const session = await auth()
+  if (!session) redirect('/login')
+  if (!(await hasPermission(session.user.id, session.user.role, permission))) redirect('/admin/dashboard?denied=1')
+  return session
+}
+
+export async function canAccess(userId: string, role: Role, permission: PermissionKey) {
+  return hasPermission(userId, role, permission)
+}
+
+// Read fresh from the database (not the login-time JWT) so grants and revocations apply immediately.
+export async function getUserPermissions(userId: string, role: Role): Promise<Set<PermissionKey>> {
+  if (role === 'super_admin') return new Set(ALL_PERMISSIONS)
+  if (role !== 'admin') return new Set()
+  const rows = await db.userPermission.findMany({ where: { userId }, select: { permission: true } })
+  return new Set(rows.map(row => row.permission))
+}

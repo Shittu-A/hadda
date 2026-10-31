@@ -23,6 +23,8 @@ export const SETTINGS_CONFIG: SettingDef[] = [
   { key: 'paystack_secret_key', label: 'Paystack Secret Key', group: 'finance', type: 'text', placeholder: 'sk_live_...' },
   { key: 'flutterwave_public_key', label: 'Flutterwave Public Key', group: 'finance', type: 'text', placeholder: 'FLWPUBK_TEST-...' },
   { key: 'flutterwave_secret_key', label: 'Flutterwave Secret Key', group: 'finance', type: 'text', placeholder: 'FLWSECK_TEST-...' },
+  { key: 'registration_fee_amount', label: 'Registration Fee', group: 'finance', type: 'number', placeholder: '5000' },
+  { key: 'form_fee_amount', label: 'Form Fee', group: 'finance', type: 'number', placeholder: '2000' },
   // SMS
   {
     key: 'sms_provider',

@@ -6,6 +6,7 @@ import { logAudit } from '@/lib/audit'
 import { getStudentBalance } from '@/lib/fees/balance'
 import { sendSms } from '@/lib/sms/termii'
 import { formatCurrency } from '@/lib/utils'
+import { canAccess } from '@/lib/permissions'
 
 async function getCurrencySymbol() {
   const setting = await db.setting.findUnique({ where: { key: 'currency_symbol' } })
@@ -33,11 +34,11 @@ function primaryGuardianPhone(guardians: { phone: string | null; isPrimary: bool
 type SmsActionResult = { success: boolean; skipped?: boolean; error?: string }
 
 // Sends a single balance-reminder SMS to a student's primary guardian.
-// Admin/super_admin only. Uses getStudentBalance() (lib/fees/balance.ts) so the
+// Needs the communications_manage permission. Uses getStudentBalance() (lib/fees/balance.ts) so the
 // amount quoted always matches what the payments UI and receipts show.
 export async function sendBalanceReminder(studentId: string): Promise<SmsActionResult> {
   const session = await auth()
-  if (!session || (session.user.role !== 'admin' && session.user.role !== 'super_admin')) {
+  if (!session || !(await canAccess(session.user.id, session.user.role, 'communications_manage'))) {
     return { success: false, error: 'Unauthorized' }
   }
 
@@ -93,10 +94,10 @@ export async function sendBalanceReminder(studentId: string): Promise<SmsActionR
 }
 
 // Sends the balance reminder to every active student with an outstanding balance.
-// Admin/super_admin only. Reuses sendBalanceReminder() per student.
+// Needs the communications_manage permission. Reuses sendBalanceReminder() per student.
 export async function sendBulkBalanceReminders(): Promise<{ sent: number; skipped: number; failed: number }> {
   const session = await auth()
-  if (!session || (session.user.role !== 'admin' && session.user.role !== 'super_admin')) {
+  if (!session || !(await canAccess(session.user.id, session.user.role, 'communications_manage'))) {
     return { sent: 0, skipped: 0, failed: 0 }
   }
 
@@ -139,8 +140,11 @@ export async function sendParentNotification({
   phone?: string
   message: string
 }): Promise<SmsActionResult> {
+  // A 'use server' export is callable by any logged-in user, so check the permission here too.
   const session = await auth()
-  if (!session) return { success: false, error: 'Unauthorized' }
+  if (!session || !(await canAccess(session.user.id, session.user.role, 'communications_manage'))) {
+    return { success: false, error: 'Unauthorized' }
+  }
 
   let toPhone = phone ?? null
   let resolvedStudentId: string | undefined = studentId

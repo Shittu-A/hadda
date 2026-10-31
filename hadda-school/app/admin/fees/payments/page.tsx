@@ -1,11 +1,13 @@
 import { db } from '@/lib/db'
 import { auth } from '@/lib/auth'
+import { canAccess } from '@/lib/permissions'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Badge from '@/components/ui/Badge'
 import ActionForm from '@/components/ui/ActionForm'
 import SubmitButton from '@/components/ui/SubmitButton'
 import { formatCurrency, formatDate } from '@/lib/utils'
+import DeletePaymentButton from './DeletePaymentButton'
 import { recordFeePayment, deleteFeePayment, ensureArrearsFeeStructure } from '@/lib/actions/fees'
 import { sendBulkBalanceReminders } from '@/lib/actions/sms'
 import StudentIdPaymentForm from './StudentIdPaymentForm'
@@ -17,8 +19,7 @@ async function handleRecord(formData: FormData) {
 
 async function handleDelete(formData: FormData) {
   'use server'
-  await deleteFeePayment(formData)
-  return { success: true }
+  return deleteFeePayment(formData)
 }
 
 async function handleSmsAll(): Promise<void> {
@@ -34,6 +35,7 @@ export default async function FeePaymentsPage({
 }) {
   const session = await auth()
   if (!session) redirect('/login')
+  const canSendSms = await canAccess(session.user.id, session.user.role, 'communications_manage')
 
   const sp = await searchParams
   const today = new Date().toISOString().split('T')[0]
@@ -117,14 +119,16 @@ export default async function FeePaymentsPage({
           <p className="text-coffee-600 text-sm mt-0.5">Record and view all fee payments</p>
         </div>
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-          <form action={handleSmsAll}>
-            <SubmitButton
-              pendingText="Sending…"
-              className="w-full sm:w-auto text-center border border-coffee-200 text-coffee-700 rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-50 transition-colors"
-            >
-              SMS all debtors
-            </SubmitButton>
-          </form>
+          {canSendSms && (
+            <form action={handleSmsAll}>
+              <SubmitButton
+                pendingText="Sending…"
+                className="w-full sm:w-auto text-center border border-coffee-200 text-coffee-700 rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-50 transition-colors"
+              >
+                SMS all debtors
+              </SubmitButton>
+            </form>
+          )}
           <Link
             href="/admin/fees"
             className="w-full sm:w-auto text-center text-sm text-coffee-500 hover:text-coffee-800 transition-colors"
@@ -422,12 +426,7 @@ export default async function FeePaymentsPage({
                       </a>
                       <ActionForm action={handleDelete} successMessage="Payment deleted." className="inline">
                         <input type="hidden" name="id" value={p.id} />
-                        <SubmitButton
-                          pendingText="Deleting…"
-                          className="text-xs text-red-400 hover:text-red-600 transition-colors"
-                        >
-                          Delete
-                        </SubmitButton>
+                        <DeletePaymentButton label={`${p.student.firstName} ${p.student.lastName} (${formatCurrency(Number(p.amountPaid))})`} />
                       </ActionForm>
                     </td>
                   </tr>

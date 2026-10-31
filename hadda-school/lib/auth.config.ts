@@ -7,6 +7,7 @@ export const authConfig: NextAuthConfig = {
       if (user) {
         token.role = (user as any).role
         token.isActive = (user as any).isActive
+        token.permissions = (user as any).permissions ?? []
       }
       return token
     },
@@ -15,6 +16,7 @@ export const authConfig: NextAuthConfig = {
         session.user.id = token.sub as string
         session.user.role = token.role as any
         session.user.isActive = token.isActive as boolean
+        session.user.permissions = (token.permissions as any) ?? []
       }
       return session
     },

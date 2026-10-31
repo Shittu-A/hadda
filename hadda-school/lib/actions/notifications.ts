@@ -5,6 +5,7 @@ import { auth } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 import { logAudit } from '@/lib/audit'
 import { sendParentNotification } from '@/lib/actions/sms'
+import { canAccess } from '@/lib/permissions'
 
 export async function markAllNotificationsRead(): Promise<void> {
   const session = await auth()
@@ -39,10 +40,10 @@ export async function markNotificationRead(formData: FormData): Promise<void> {
 // Notification here only targets internal Users (userId is required on the model);
 // there's no existing concept of a parent-facing broadcast. This is a new, additive
 // action: it texts every active student's primary guardian via SMS (lib/sms/termii.ts)
-// rather than writing Notification rows. Admin/super_admin only.
+// rather than writing Notification rows. Needs the communications_manage permission.
 export async function broadcastSmsNotification(message: string): Promise<{ sent: number; skipped: number; failed: number }> {
   const session = await auth()
-  if (!session || (session.user.role !== 'admin' && session.user.role !== 'super_admin')) {
+  if (!session || !(await canAccess(session.user.id, session.user.role, 'communications_manage'))) {
     return { sent: 0, skipped: 0, failed: 0 }
   }
 

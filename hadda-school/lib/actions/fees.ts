@@ -3,6 +3,7 @@
 import { db } from '@/lib/db'
 import { auth } from '@/lib/auth'
 import { logAudit } from '@/lib/audit'
+import { canAccess } from '@/lib/permissions'
 import { revalidatePath } from 'next/cache'
 import { randomUUID } from 'crypto'
 
@@ -351,6 +352,47 @@ export async function ensureArrearsFeeStructure() {
   })
 }
 
+// Finds (or lazily creates) the reserved one-time fee bucket for `flag`, keeping
+// its amount in sync with the super-admin-configured Setting each time it's
+// resolved — so a later change to the fee amount is reflected for anyone who
+// hasn't paid yet, the same way any other FeeStructure edit would be.
+async function ensureFlagFeeStructure(flag: 'isRegistrationFee' | 'isFormFee', name: string, settingKey: string) {
+  const setting = await db.setting.findUnique({ where: { key: settingKey } })
+  const amount = setting?.value ? parseFloat(setting.value) : 0
+
+  const existing = await db.feeStructure.findFirst({ where: { [flag]: true } as any })
+  if (existing) {
+    return Number(existing.amount) === amount ? existing : db.feeStructure.update({ where: { id: existing.id }, data: { amount } })
+  }
+
+  const year =
+    (await db.academicYear.findFirst({ where: { isCurrent: true } })) ??
+    (await db.academicYear.findFirst({ orderBy: { startDate: 'desc' } }))
+  if (!year) return null
+
+  return db.feeStructure.create({
+    data: { academicYearId: year.id, name, amount, frequency: 'one_time', [flag]: true } as any,
+  })
+}
+
+// Auto-assigns the registration fee and form fee (super-admin configured amounts,
+// see Settings > Finance) to a newly enrolled student. A fee whose amount hasn't
+// been set yet (still 0) is left unassigned rather than showing a $0 line item.
+export async function assignEnrollmentFees(studentId: string) {
+  const [registrationFee, formFee] = await Promise.all([
+    ensureFlagFeeStructure('isRegistrationFee', 'Registration Fee', 'registration_fee_amount'),
+    ensureFlagFeeStructure('isFormFee', 'Form Fee', 'form_fee_amount'),
+  ])
+
+  const toCreate = [registrationFee, formFee]
+    .filter((fee): fee is NonNullable<typeof fee> => !!fee && Number(fee.amount) > 0)
+    .map((fee) => ({ feeStructureId: fee.id, studentId }))
+
+  if (toCreate.length > 0) {
+    await db.feeAssignment.createMany({ data: toCreate })
+  }
+}
+
 // Admin manually sets how many terms a student owes from before the system started.
 export async function setStudentArrears(formData: FormData) {
   const session = await auth()
@@ -465,16 +507,22 @@ export async function recordFeePayment(formData: FormData) {
   return { success: true }
 }
 
-export async function deleteFeePayment(formData: FormData): Promise<void> {
+export async function deleteFeePayment(formData: FormData) {
   const session = await auth()
-  if (!session) return
+  if (!session || !(await canAccess(session.user.id, session.user.role, 'fees_manage'))) {
+    return { success: false, error: 'Unauthorized' }
+  }
+  // The UI makes the user type DELETE; enforce it here too.
+  if (String(formData.get('confirm') ?? '').trim().toUpperCase() !== 'DELETE') {
+    return { success: false, error: 'Type DELETE to confirm the deletion.' }
+  }
 
   const id = formData.get('id') as string
   const payment = await db.feePayment.findUnique({
     where: { id },
     select: { studentId: true, feeStructureId: true },
   })
-  if (!payment) return
+  if (!payment) return { success: false, error: 'Payment not found.' }
 
   await db.feePayment.delete({ where: { id } })
 
@@ -489,6 +537,7 @@ export async function deleteFeePayment(formData: FormData): Promise<void> {
   revalidatePath('/admin/fees/payments')
   revalidatePath(`/admin/students/${payment.studentId}`)
   revalidatePath(`/admin/fees/${payment.feeStructureId}`)
+  return { success: true }
 }
 
 export async function upsertFeeDiscount(formData: FormData): Promise<void> {

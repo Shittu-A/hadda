@@ -6,6 +6,7 @@ import { formatCurrency, formatDate } from '@/lib/utils'
 import { createExpense, deleteExpense } from '@/lib/actions/finance'
 import ActionForm from '@/components/ui/ActionForm'
 import SubmitButton from '@/components/ui/SubmitButton'
+import { requirePermission } from '@/lib/permissions'
 
 const CATEGORIES = [
   'refreshment', 'salary', 'utilities', 'maintenance',
@@ -28,6 +29,7 @@ export default async function ExpensesPage({
 }: {
   searchParams: Promise<{ category?: string; from?: string; to?: string; page?: string }>
 }) {
+  await requirePermission('finance_expenses_manage')
   const session = await auth()
   if (!session) redirect('/login')
 

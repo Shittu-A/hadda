@@ -1,10 +1,12 @@
 import { db } from '@/lib/db'
 import { auth } from '@/lib/auth'
+import { canViewFeeBalances } from '@/lib/permissions'
 import { redirect } from 'next/navigation'
 
 export default async function ReportsPage() {
   const session = await auth()
   if (!session) redirect('/login')
+  const canSeeBalances = await canViewFeeBalances(session.user.id, session.user.role)
 
   const [classes, academicYears, terms] = await Promise.all([
     db.classRoom.findMany({ orderBy: { order: 'asc' }, select: { id: true, name: true } }),
@@ -89,60 +91,62 @@ export default async function ReportsPage() {
         </div>
 
         {/* Fee Collection Report */}
-        <div className="bg-white border border-coffee-200 rounded-xl p-5">
-          <div className="mb-4">
-            <h2 className="font-semibold text-coffee-800">Fee Collection Report</h2>
-            <p className="text-xs text-coffee-400 mt-0.5">Payments collected and outstanding balances per student</p>
+        {canSeeBalances && (
+          <div className="bg-white border border-coffee-200 rounded-xl p-5">
+            <div className="mb-4">
+              <h2 className="font-semibold text-coffee-800">Fee Collection Report</h2>
+              <p className="text-xs text-coffee-400 mt-0.5">Payments collected and outstanding balances per student</p>
+            </div>
+            <form method="GET" action="/api/reports/fees" className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-coffee-600 mb-1">Academic Year</label>
+                <select
+                  name="yearId"
+                  defaultValue={currentYear?.id ?? ''}
+                  className="w-full border border-coffee-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-400"
+                >
+                  <option value="">All years</option>
+                  {academicYears.map((y) => (
+                    <option key={y.id} value={y.id}>
+                      {y.name}{y.isCurrent ? ' (current)' : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-coffee-600 mb-1">Class</label>
+                <select
+                  name="classId"
+                  className="w-full border border-coffee-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-400"
+                >
+                  <option value="">All classes</option>
+                  {classes.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                <button
+                  type="submit"
+                  name="format"
+                  value="xlsx"
+                  className="flex-1 bg-coffee-900 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
+                >
+                  Download Excel
+                </button>
+                <button
+                  type="submit"
+                  name="format"
+                  value="pdf"
+                  formAction="/api/reports/fees/pdf"
+                  className="flex-1 border border-coffee-200 text-coffee-700 rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-50 transition-colors"
+                >
+                  Download PDF
+                </button>
+              </div>
+            </form>
           </div>
-          <form method="GET" action="/api/reports/fees" className="space-y-3">
-            <div>
-              <label className="block text-xs font-medium text-coffee-600 mb-1">Academic Year</label>
-              <select
-                name="yearId"
-                defaultValue={currentYear?.id ?? ''}
-                className="w-full border border-coffee-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-400"
-              >
-                <option value="">All years</option>
-                {academicYears.map((y) => (
-                  <option key={y.id} value={y.id}>
-                    {y.name}{y.isCurrent ? ' (current)' : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-coffee-600 mb-1">Class</label>
-              <select
-                name="classId"
-                className="w-full border border-coffee-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-coffee-400"
-              >
-                <option value="">All classes</option>
-                {classes.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
-              </select>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-2 pt-1">
-              <button
-                type="submit"
-                name="format"
-                value="xlsx"
-                className="flex-1 bg-coffee-900 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-800 transition-colors"
-              >
-                Download Excel
-              </button>
-              <button
-                type="submit"
-                name="format"
-                value="pdf"
-                formAction="/api/reports/fees/pdf"
-                className="flex-1 border border-coffee-200 text-coffee-700 rounded-lg px-4 py-2 text-sm font-medium hover:bg-coffee-50 transition-colors"
-              >
-                Download PDF
-              </button>
-            </div>
-          </form>
-        </div>
+        )}
 
         {/* Memorization Report */}
         <div className="bg-white border border-coffee-200 rounded-xl p-5">
