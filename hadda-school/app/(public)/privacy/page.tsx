@@ -2,16 +2,26 @@ import type { Metadata } from 'next'
 import PublicNav from '@/components/layout/PublicNav'
 import PublicFooter from '@/components/layout/PublicFooter'
 
+const APP_NAME = 'Abubakar Umar Balarabe Quran'
+const PACKAGE_NAME = 'com.balarabe.quran'
+const DEVELOPER = 'Fasaha Global Enterprises'
+const DEVELOPER_EMAIL = 'fasahaglobalenterprises@gmail.com'
+const DEVELOPER_SITE = 'https://fasahaglobalenterprises.com.ng/'
+const LAST_UPDATED = 'November 13, 2026'
+
 export const metadata: Metadata = {
-  title: 'Privacy Policy — Abdullahi Umar Balarabe Quran',
-  description: 'Abdullahi Umar Balarabe Quran is an offline recitation app that does not collect any data.',
+  title: `Privacy Policy — ${APP_NAME}`,
+  description: `Privacy policy for ${APP_NAME}, an offline Qur'an recitation app by ${DEVELOPER}. The app does not collect any personal data.`,
 }
 
-const lastUpdated = new Date().toLocaleDateString('en-US', {
-  year: 'numeric',
-  month: 'long',
-  day: 'numeric',
-})
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <h2 className="text-xs font-semibold uppercase tracking-widest text-coffee-400 mb-2">{title}</h2>
+      {children}
+    </div>
+  )
+}
 
 export default function PrivacyPolicyPage() {
   return (
@@ -20,91 +30,108 @@ export default function PrivacyPolicyPage() {
 
       <section className="pt-24 sm:pt-32 pb-8 sm:pb-12 bg-coffee-100">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center">
-          <p className="text-xs font-semibold uppercase tracking-widest text-coffee-500">Abdullahi Umar Balarabe Quran</p>
+          <p className="text-xs font-semibold uppercase tracking-widest text-coffee-500">{APP_NAME}</p>
           <h1 className="text-2xl sm:text-4xl font-extrabold text-coffee-900 mt-2">Privacy Policy</h1>
-          <p className="text-coffee-600 mt-3 text-sm sm:text-base">Last updated: {lastUpdated}</p>
+          <p className="text-coffee-600 mt-3 text-sm sm:text-base">Last updated: {LAST_UPDATED}</p>
         </div>
       </section>
 
       <section className="py-12">
         <div className="max-w-3xl mx-auto px-4 sm:px-6">
           <div className="bg-amber-50 border border-amber-200 rounded-xl px-5 py-4 mb-10 text-sm text-amber-800">
-            <strong>In short:</strong> Abdullahi Umar Balarabe Quran plays recitations entirely offline on your
-            device. It does not collect, store, or transmit any personal data, usage data, or identifiers.
+            <strong>In short:</strong> {APP_NAME}, published by {DEVELOPER}, plays Qur&apos;an recitations
+            offline on your device. It does not collect, store, share, or transmit any personal data, usage
+            data, or identifiers.
           </div>
 
           <div className="space-y-8 text-coffee-700 text-sm sm:text-base leading-relaxed">
-            <div>
-              <h2 className="text-xs font-semibold uppercase tracking-widest text-coffee-400 mb-2">Overview</h2>
+            <Section title="Who we are">
               <p>
-                Abdullahi Umar Balarabe Quran (&quot;the App&quot;) lets listeners play Quran recitations by
-                Abdullahi Umar Balarabe, a teacher at Abdullahi Bin Masuud Academy. The App works offline, with
-                no accounts, no servers, and no data collection — this policy explains exactly what that means.
+                This policy applies to the Android app <strong>{APP_NAME}</strong> (package name{' '}
+                <code>{PACKAGE_NAME}</code>) (&quot;the App&quot;), published on Google Play by{' '}
+                <strong>{DEVELOPER}</strong> (&quot;we&quot;, &quot;us&quot;). The App plays Qur&apos;an
+                recitations by Abubakar Umar Balarabe, a Qur&apos;an teacher at Abdullahi Bin Masuud Academy.
               </p>
-            </div>
+              <ul className="list-none mt-3 space-y-1">
+                <li>Developer: {DEVELOPER}</li>
+                <li>
+                  Email: <a className="underline" href={`mailto:${DEVELOPER_EMAIL}`}>{DEVELOPER_EMAIL}</a>
+                </li>
+                <li>
+                  Website: <a className="underline" href={DEVELOPER_SITE}>{DEVELOPER_SITE}</a>
+                </li>
+              </ul>
+            </Section>
 
-            <div>
-              <h2 className="text-xs font-semibold uppercase tracking-widest text-coffee-400 mb-2">Information we collect</h2>
+            <Section title="Information we collect">
               <p>We do not collect any personal data. Specifically, the App does not collect, store, or transmit:</p>
               <ul className="list-disc pl-5 mt-2 space-y-1">
-                <li>Your name, email address, or any contact information</li>
+                <li>Your name, email address, phone number, or any contact information</li>
                 <li>Device identifiers, advertising IDs, or location</li>
                 <li>Usage analytics, crash reports, or listening history</li>
                 <li>Any account, login, or profile information — the App has none</li>
               </ul>
-            </div>
-
-            <div>
-              <h2 className="text-xs font-semibold uppercase tracking-widest text-coffee-400 mb-2">Offline functionality</h2>
-              <p>
-                Recitations play directly from audio bundled with or downloaded into the App. Once downloaded,
-                playback does not require an internet connection, and no record of what you listen to or when
-                is kept anywhere, on the device or off it.
+              <p className="mt-2">
+                Your preferences (such as theme, playback speed, and last played surah) are saved only on your
+                device and never leave it.
               </p>
-            </div>
+            </Section>
 
-            <div>
-              <h2 className="text-xs font-semibold uppercase tracking-widest text-coffee-400 mb-2">Permissions</h2>
+            <Section title="How we use information">
+              <p>Because we collect no personal data, we do not use, sell, or share any.</p>
+            </Section>
+
+            <Section title="Offline functionality and internet access">
               <p>
-                The App requests only the device permissions strictly necessary to play and, where applicable,
-                download audio (such as storage access). It does not request access to your contacts, camera,
-                microphone, or location.
+                The recitations are built into the App and play without an internet connection. The App may
+                connect to the internet only to download app updates (code and content fixes) from our update
+                server. These requests contain no personal information.
               </p>
-            </div>
+            </Section>
 
-            <div>
-              <h2 className="text-xs font-semibold uppercase tracking-widest text-coffee-400 mb-2">Third parties</h2>
+            <Section title="Permissions">
+              <p>
+                The App requests only the permissions needed to play audio, including playing in the background
+                and showing playback controls in the notification area. It does not request access to your
+                contacts, camera, microphone, or location.
+              </p>
+            </Section>
+
+            <Section title="Third parties">
               <p>
                 The App does not integrate third-party analytics, advertising networks, or tracking software of
-                any kind. Because no data is collected, none is shared with advertisers, analytics providers, or
-                any other third party.
+                any kind. No data is shared with advertisers, analytics providers, or any other third party.
               </p>
-            </div>
+            </Section>
 
-            <div>
-              <h2 className="text-xs font-semibold uppercase tracking-widest text-coffee-400 mb-2">Children&apos;s privacy</h2>
+            <Section title="Data retention and deletion">
               <p>
-                The App is suitable for listeners of all ages, including children, because it does not
-                knowingly collect any personal information from anyone, regardless of age.
+                We hold no personal data about you, so there is nothing for us to retain or delete. Preferences
+                stored on your device are removed when you clear the App&apos;s data or uninstall the App. If you
+                have any question about your data, email us at {DEVELOPER_EMAIL} and we will respond.
               </p>
-            </div>
+            </Section>
 
-            <div>
-              <h2 className="text-xs font-semibold uppercase tracking-widest text-coffee-400 mb-2">Changes to this policy</h2>
+            <Section title="Children's privacy">
               <p>
-                If this policy ever changes — for example, if a future version of the App introduces a feature
-                that involves data collection — this page will be updated, and the &quot;Last updated&quot; date
-                above will reflect the change.
+                The App is suitable for listeners of all ages, including children. It does not knowingly collect
+                personal information from anyone, including children under 13.
               </p>
-            </div>
+            </Section>
 
-            <div>
-              <h2 className="text-xs font-semibold uppercase tracking-widest text-coffee-400 mb-2">Contact</h2>
+            <Section title="Changes to this policy">
               <p>
-                Questions about this policy can be directed to Abdullahi Bin Masuud Academy through the contact
-                details on our homepage.
+                If this policy changes — for example, if a future version of the App introduces a feature that
+                involves data — we will update this page and the &quot;Last updated&quot; date above.
               </p>
-            </div>
+            </Section>
+
+            <Section title="Contact">
+              <p>
+                Questions about this policy can be sent to {DEVELOPER} at{' '}
+                <a className="underline" href={`mailto:${DEVELOPER_EMAIL}`}>{DEVELOPER_EMAIL}</a>.
+              </p>
+            </Section>
           </div>
         </div>
       </section>
